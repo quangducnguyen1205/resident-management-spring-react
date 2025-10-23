@@ -115,5 +115,5 @@ CREATE TABLE thu_phi_ho_khau (
     CONSTRAINT fk_thuphi_dotthuphi FOREIGN KEY (dot_thu_phi_id) REFERENCES dot_thu_phi(id),
     CONSTRAINT fk_thuphi_collected_by FOREIGN KEY (collected_by) REFERENCES tai_khoan(id)
 );
-
+ALTER USER postgres WITH PASSWORD '123456';
 
