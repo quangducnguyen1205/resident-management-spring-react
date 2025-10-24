@@ -1,17 +1,22 @@
-# IDE
+# Operating System
+.DS_Store
+Thumbs.db
+
+# IDE - IntelliJ
 .idea/
 *.iml
 *.iws
 *.ipr
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Build
+# Build Outputs & Caches
 /target/
-/node_modules/
 /dist/
+/.vite/
+/.cache/
+*.log
+
+# Dependencies
+/node_modules/
 
 # Maven
 .mvn/wrapper/maven-wrapper.jar
@@ -42,6 +47,6 @@ build/
 # VS Code
 .vscode/
 
-# Local Docker
+# Docker Local Overrides
 **/docker-compose.override.yml
 **/Dockerfile.local
