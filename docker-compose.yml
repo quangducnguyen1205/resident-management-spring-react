@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
-  postgres:
-    image: postgres:15-alpine
+  db:
+    image: postgres:15
     container_name: quanlydancu-postgres
     environment:
       POSTGRES_DB: QuanLyDanCu
@@ -19,6 +17,30 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: quanlydancu-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/QuanLyDanCu
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   postgres_data:

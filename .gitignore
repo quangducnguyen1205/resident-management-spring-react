@@ -41,3 +41,7 @@ build/
 
 # VS Code
 .vscode/
+
+# Local Docker
+**/docker-compose.override.yml
+**/Dockerfile.local
