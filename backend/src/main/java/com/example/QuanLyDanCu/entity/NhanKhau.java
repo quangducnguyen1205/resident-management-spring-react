@@ -28,9 +28,8 @@ public class NhanKhau {
     private LocalDate ngayCap;
     private String noiCap;
 
-    @ManyToOne
-    @JoinColumn(name = "ho_khau_id")
-    private HoKhau hoKhau;
+    @Column(name = "ho_khau_id")
+    private Long hoKhauId;
 
     private Long createdBy;
     private Long updatedBy;
