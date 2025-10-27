@@ -1,0 +1,329 @@
+{
+  "info": {
+    "name": "Quản Lý Dân Cư API",
+    "description": "Collection for testing Quản Lý Dân Cư REST API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('token', jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenDangNhap\": \"admin\",\n  \"matKhau\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Đợt Thu Phí",
+      "item": [
+        {
+          "name": "Lấy tất cả đợt thu phí",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dot-thu-phi",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dot-thu-phi"]
+            }
+          }
+        },
+        {
+          "name": "Lấy đợt thu phí theo ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dot-thu-phi/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dot-thu-phi", "1"]
+            }
+          }
+        },
+        {
+          "name": "Tạo đợt thu phí mới",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenDot\": \"Thu phí quản lý tháng 1/2025\",\n  \"loai\": \"QUAN_LY\",\n  \"ngayBatDau\": \"2025-01-01\",\n  \"ngayKetThuc\": \"2025-01-31\",\n  \"dinhMuc\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dot-thu-phi",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dot-thu-phi"]
+            }
+          }
+        },
+        {
+          "name": "Cập nhật đợt thu phí",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenDot\": \"Thu phí quản lý tháng 1/2025 (Đã cập nhật)\",\n  \"loai\": \"QUAN_LY\",\n  \"ngayBatDau\": \"2025-01-01\",\n  \"ngayKetThuc\": \"2025-01-31\",\n  \"dinhMuc\": 60000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dot-thu-phi/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dot-thu-phi", "1"]
+            }
+          }
+        },
+        {
+          "name": "Xóa đợt thu phí",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dot-thu-phi/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dot-thu-phi", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Thu Phí Hộ Khẩu",
+      "item": [
+        {
+          "name": "Lấy tất cả thu phí",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/thu-phi-ho-khau",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "thu-phi-ho-khau"]
+            }
+          }
+        },
+        {
+          "name": "Lấy thu phí theo hộ khẩu",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/ho-khau/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "thu-phi-ho-khau", "ho-khau", "1"]
+            }
+          }
+        },
+        {
+          "name": "Lấy thu phí theo đợt",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/dot-thu-phi/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "thu-phi-ho-khau", "dot-thu-phi", "1"]
+            }
+          }
+        },
+        {
+          "name": "Ghi nhận thu phí",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hoKhauId\": 1,\n  \"dotThuPhiId\": 1,\n  \"soTienDaThu\": 50000,\n  \"ngayThu\": \"2025-01-15\",\n  \"months\": \"1\",\n  \"ghiChu\": \"Đã thanh toán đủ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/thu-phi-ho-khau",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "thu-phi-ho-khau"]
+            }
+          }
+        },
+        {
+          "name": "Cập nhật thu phí",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hoKhauId\": 1,\n  \"dotThuPhiId\": 1,\n  \"soTienDaThu\": 60000,\n  \"ngayThu\": \"2025-01-15\",\n  \"months\": \"1\",\n  \"ghiChu\": \"Đã thanh toán + phụ phí\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "thu-phi-ho-khau", "1"]
+            }
+          }
+        },
+        {
+          "name": "Xóa thu phí",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "thu-phi-ho-khau", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hộ Khẩu",
+      "item": [
+        {
+          "name": "Lấy tất cả hộ khẩu",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hokhau",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hokhau"]
+            }
+          }
+        },
+        {
+          "name": "Lấy hộ khẩu theo ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hokhau/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hokhau", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

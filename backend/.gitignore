@@ -1,0 +1,24 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# macOS
+.DS_Store
+
+# Docker Compose (backend only)
+docker-compose.backend.yml
+
+# Logs
+*.log
+
+# Spring Boot
+spring-boot-devtools.properties
