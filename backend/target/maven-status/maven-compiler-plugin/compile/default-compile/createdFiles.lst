@@ -15,9 +15,11 @@ com\example\QuanLyDanCu\entity\BienDong$BienDongBuilder.class
 com\example\QuanLyDanCu\config\SecurityConfig.class
 com\example\QuanLyDanCu\security\JwtFilter.class
 com\example\QuanLyDanCu\service\HoKhauService.class
+com\example\QuanLyDanCu\repository\NhanKhauRepository$AgeBucketGenderCount.class
 com\example\QuanLyDanCu\controller\NhanKhauController.class
 com\example\QuanLyDanCu\entity\TaiKhoan$TaiKhoanBuilder.class
 com\example\QuanLyDanCu\entity\HoKhau.class
+com\example\QuanLyDanCu\repository\NhanKhauRepository$GenderCount.class
 com\example\QuanLyDanCu\repository\BienDongRepository.class
 com\example\QuanLyDanCu\entity\TaiKhoan.class
 com\example\QuanLyDanCu\security\JwtUtil.class

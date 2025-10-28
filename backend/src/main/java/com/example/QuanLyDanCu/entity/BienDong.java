@@ -2,29 +2,43 @@ package com.example.QuanLyDanCu.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bien_dong")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
+@Builder
 public class BienDong {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String loai;
-    private String noiDung;
-    private LocalDateTime thoiGian;
+    private String loai;                    // VARCHAR(100)
 
-    @ManyToOne
-    @JoinColumn(name = "ho_khau_id")
-    private HoKhau hoKhau;
+    @Column(name = "noi_dung", length = 1000)
+    private String noiDung;                 // VARCHAR(1000)
 
-    @ManyToOne
-    @JoinColumn(name = "nhan_khau_id")
-    private NhanKhau nhanKhau;
+    @Column(name = "thoi_gian")
+    private LocalDateTime thoiGian;         // TIMESTAMP
 
+    // FK dạng Long
+    @Column(name = "ho_khau_id")
+    private Long hoKhauId;
+
+    @Column(name = "nhan_khau_id")
+    private Long nhanKhauId;
+
+    @Column(name = "created_by")
     private Long createdBy;
+
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @PrePersist
+    void onCreate() {
+        if (thoiGian == null) thoiGian = LocalDateTime.now();
+        if (createdAt == null) createdAt = LocalDateTime.now();
+    }
 }
