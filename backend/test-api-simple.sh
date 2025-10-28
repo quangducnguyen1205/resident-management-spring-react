@@ -142,11 +142,10 @@ if [ ! -z "$JWT_TOKEN" ]; then
     # Create
     create_data='{
         "tenDot": "Đợt thu phí test tháng 10/2025",
-        "loaiPhi": "PHI_QUAN_LY",
-        "moTa": "Thu phí quản lý khu chung cư",
-        "soTien": 100000,
-        "batDau": "2025-10-01",
-        "ketThuc": "2025-10-31"
+        "loai": "QUAN_LY",
+        "ngayBatDau": "2025-10-01",
+        "ngayKetThuc": "2025-10-31",
+        "dinhMuc": 100000
     }'
     
     create_response=$(curl -s -w "\n%{http_code}" -X POST \
@@ -181,11 +180,10 @@ if [ ! -z "$JWT_TOKEN" ]; then
         # Update
         update_data='{
             "tenDot": "Đợt thu phí test - UPDATED",
-            "loaiPhi": "PHI_QUAN_LY",
-            "moTa": "Thu phí quản lý - Đã cập nhật",
-            "soTien": 150000,
-            "batDau": "2025-10-01",
-            "ketThuc": "2025-10-31"
+            "loai": "QUAN_LY",
+            "ngayBatDau": "2025-10-01",
+            "ngayKetThuc": "2025-10-31",
+            "dinhMuc": 150000
         }'
         test_endpoint "PUT /api/dot-thu-phi/{id}" "PUT" "/api/dot-thu-phi/$DOT_ID" "$update_data" "$JWT_TOKEN" "200"
         
@@ -269,8 +267,8 @@ if [ ! -z "$JWT_TOKEN" ]; then
     
     bad_data='{
         "tenDot": "",
-        "loaiPhi": "INVALID",
-        "soTien": -1000
+        "loai": "INVALID",
+        "dinhMuc": -1000
     }'
     test_endpoint "POST /api/dot-thu-phi (bad request)" "POST" "/api/dot-thu-phi" "$bad_data" "$JWT_TOKEN" "400"
 fi

@@ -128,7 +128,7 @@ public class ThuPhiHoKhauService {
     // Helper methods
     private void checkPermission(Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
+        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
             throw new AccessDeniedException("Bạn không có quyền thực hiện thao tác này!");
         }
     }
