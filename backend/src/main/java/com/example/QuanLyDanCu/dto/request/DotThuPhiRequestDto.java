@@ -7,6 +7,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @Schema(description = "Request DTO for DotThuPhi entity")
 public class DotThuPhiRequestDto {
@@ -21,10 +23,12 @@ public class DotThuPhiRequestDto {
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
     @Schema(description = "Ngày bắt đầu thu", example = "2025-01-01")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate ngayBatDau;
 
     @NotNull(message = "Ngày kết thúc không được để trống")
     @Schema(description = "Ngày kết thúc thu", example = "2025-01-31")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate ngayKetThuc;
 
     @NotNull(message = "Định mức không được để trống")

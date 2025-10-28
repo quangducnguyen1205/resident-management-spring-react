@@ -5,9 +5,25 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import java.util.HashMap; // <-- Thêm import
+import java.util.Map; // <-- Thêm import
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * Bắt lỗi validation cho request body (@RequestBody).
+     * Trả về 400 (Bad Request) cùng một Map các lỗi.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            errors.put(error.getField(), error.getDefaultMessage());
+        });
+        return ResponseEntity.badRequest().body(errors);
+    }
 
     // Bắt AccessDeniedException
     @ExceptionHandler(AccessDeniedException.class)
