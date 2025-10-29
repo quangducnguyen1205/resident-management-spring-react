@@ -1,5 +1,7 @@
 package com.example.QuanLyDanCu.service;
 
+import com.example.QuanLyDanCu.dto.request.NhanKhauRequestDto;
+import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
 import com.example.QuanLyDanCu.entity.NhanKhau;
 import com.example.QuanLyDanCu.entity.TaiKhoan;
 import com.example.QuanLyDanCu.entity.BienDong;
@@ -15,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +26,172 @@ public class NhanKhauService {
     private final NhanKhauRepository nhanKhauRepo;
     private final BienDongRepository bienDongRepo;
     private final TaiKhoanRepository taiKhoanRepo;
+
+    // ========== DTO-based methods ==========
+
+    // Lấy tất cả nhân khẩu (DTO)
+    public List<NhanKhauResponseDto> getAllDto() {
+        return nhanKhauRepo.findAll().stream()
+                .map(this::toResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    // Lấy nhân khẩu theo id (DTO)
+    public NhanKhauResponseDto getByIdDto(Long id) {
+        NhanKhau nk = nhanKhauRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
+        return toResponseDto(nk);
+    }
+
+    // Thêm nhân khẩu mới (DTO)
+    public NhanKhauResponseDto createDto(NhanKhauRequestDto dto, Authentication auth) {
+        String role = auth.getAuthorities().iterator().next().getAuthority();
+        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+            throw new AccessDeniedException("Bạn không có quyền thêm nhân khẩu!");
+        }
+
+        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
+
+        NhanKhau nk = NhanKhau.builder()
+                .hoTen(dto.getHoTen())
+                .ngaySinh(dto.getNgaySinh())
+                .gioiTinh(dto.getGioiTinh())
+                .danToc(dto.getDanToc())
+                .quocTich(dto.getQuocTich())
+                .ngheNghiep(dto.getNgheNghiep())
+                .cmndCccd(dto.getCmndCccd())
+                .ngayCap(dto.getNgayCap())
+                .noiCap(dto.getNoiCap())
+                .quanHeChuHo(dto.getQuanHeChuHo())
+                .ngayChuyenDi(dto.getNgayChuyenDi())
+                .noiChuyenDi(dto.getNoiChuyenDi())
+                .ghiChu(dto.getGhiChu())
+                .hoKhauId(dto.getHoKhauId())
+                .createdAt(LocalDateTime.now())
+                .createdBy(user.getId())
+                .updatedAt(LocalDateTime.now())
+                .updatedBy(user.getId())
+                .build();
+
+        NhanKhau saved = nhanKhauRepo.save(nk);
+        return toResponseDto(saved);
+    }
+
+    // Cập nhật nhân khẩu (DTO)
+    public NhanKhauResponseDto updateDto(Long id, NhanKhauRequestDto dto, Authentication auth) {
+        String role = auth.getAuthorities().iterator().next().getAuthority();
+        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+            throw new AccessDeniedException("Bạn không có quyền sửa nhân khẩu!");
+        }
+
+        NhanKhau existing = nhanKhauRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
+
+        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
+
+        boolean changed = false;
+
+        // Cập nhật các trường thông tin cá nhân
+        if (dto.getHoTen() != null && !Objects.equals(existing.getHoTen(), dto.getHoTen())) {
+            existing.setHoTen(dto.getHoTen());
+            changed = true;
+        }
+        if (dto.getNgaySinh() != null && !Objects.equals(existing.getNgaySinh(), dto.getNgaySinh())) {
+            existing.setNgaySinh(dto.getNgaySinh());
+            changed = true;
+        }
+        if (dto.getGioiTinh() != null && !Objects.equals(existing.getGioiTinh(), dto.getGioiTinh())) {
+            existing.setGioiTinh(dto.getGioiTinh());
+            changed = true;
+        }
+        if (dto.getDanToc() != null && !Objects.equals(existing.getDanToc(), dto.getDanToc())) {
+            existing.setDanToc(dto.getDanToc());
+            changed = true;
+        }
+        if (dto.getQuocTich() != null && !Objects.equals(existing.getQuocTich(), dto.getQuocTich())) {
+            existing.setQuocTich(dto.getQuocTich());
+            changed = true;
+        }
+        if (dto.getNgheNghiep() != null && !Objects.equals(existing.getNgheNghiep(), dto.getNgheNghiep())) {
+            existing.setNgheNghiep(dto.getNgheNghiep());
+            changed = true;
+        }
+        if (dto.getCmndCccd() != null && !Objects.equals(existing.getCmndCccd(), dto.getCmndCccd())) {
+            existing.setCmndCccd(dto.getCmndCccd());
+            changed = true;
+        }
+        if (dto.getNgayCap() != null && !Objects.equals(existing.getNgayCap(), dto.getNgayCap())) {
+            existing.setNgayCap(dto.getNgayCap());
+            changed = true;
+        }
+        if (dto.getNoiCap() != null && !Objects.equals(existing.getNoiCap(), dto.getNoiCap())) {
+            existing.setNoiCap(dto.getNoiCap());
+            changed = true;
+        }
+        if (dto.getQuanHeChuHo() != null && !Objects.equals(existing.getQuanHeChuHo(), dto.getQuanHeChuHo())) {
+            existing.setQuanHeChuHo(dto.getQuanHeChuHo());
+            changed = true;
+        }
+        if (dto.getNgayChuyenDi() != null && !Objects.equals(existing.getNgayChuyenDi(), dto.getNgayChuyenDi())) {
+            existing.setNgayChuyenDi(dto.getNgayChuyenDi());
+            changed = true;
+        }
+        if (dto.getNoiChuyenDi() != null && !Objects.equals(existing.getNoiChuyenDi(), dto.getNoiChuyenDi())) {
+            existing.setNoiChuyenDi(dto.getNoiChuyenDi());
+            changed = true;
+        }
+        if (dto.getGhiChu() != null && !Objects.equals(existing.getGhiChu(), dto.getGhiChu())) {
+            existing.setGhiChu(dto.getGhiChu());
+            changed = true;
+        }
+        if (dto.getHoKhauId() != null && !Objects.equals(existing.getHoKhauId(), dto.getHoKhauId())) {
+            existing.setHoKhauId(dto.getHoKhauId());
+            changed = true;
+        }
+
+        if (!changed) {
+            throw new RuntimeException("Không có gì để thay đổi!");
+        }
+
+        existing.setUpdatedAt(LocalDateTime.now());
+        existing.setUpdatedBy(user.getId());
+
+        NhanKhau saved = nhanKhauRepo.save(existing);
+        return toResponseDto(saved);
+    }
+
+    // Mapper: Entity -> Response DTO
+    private NhanKhauResponseDto toResponseDto(NhanKhau nk) {
+        return NhanKhauResponseDto.builder()
+                .id(nk.getId())
+                .hoTen(nk.getHoTen())
+                .ngaySinh(nk.getNgaySinh())
+                .gioiTinh(nk.getGioiTinh())
+                .danToc(nk.getDanToc())
+                .quocTich(nk.getQuocTich())
+                .ngheNghiep(nk.getNgheNghiep())
+                .cmndCccd(nk.getCmndCccd())
+                .ngayCap(nk.getNgayCap())
+                .noiCap(nk.getNoiCap())
+                .quanHeChuHo(nk.getQuanHeChuHo())
+                .ngayChuyenDi(nk.getNgayChuyenDi())
+                .noiChuyenDi(nk.getNoiChuyenDi())
+                .ghiChu(nk.getGhiChu())
+                .tamVangTu(nk.getTamVangTu())
+                .tamVangDen(nk.getTamVangDen())
+                .tamTruTu(nk.getTamTruTu())
+                .tamTruDen(nk.getTamTruDen())
+                .hoKhauId(nk.getHoKhauId())
+                .createdBy(nk.getCreatedBy())
+                .updatedBy(nk.getUpdatedBy())
+                .createdAt(nk.getCreatedAt())
+                .updatedAt(nk.getUpdatedAt())
+                .build();
+    }
+
+    // ========== Entity-based methods (keeping for special operations) ==========
 
     // Lấy tất cả nhân khẩu
     public List<NhanKhau> getAll() {

@@ -1,5 +1,7 @@
 package com.example.QuanLyDanCu.service;
 
+import com.example.QuanLyDanCu.dto.request.BienDongRequestDto;
+import com.example.QuanLyDanCu.dto.response.BienDongResponseDto;
 import com.example.QuanLyDanCu.entity.BienDong;
 import com.example.QuanLyDanCu.entity.TaiKhoan;
 import com.example.QuanLyDanCu.repository.BienDongRepository;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,67 +22,102 @@ public class BienDongService {
     private final BienDongRepository bienDongRepository;
     private final TaiKhoanRepository taiKhoanRepository;
 
-    // Lấy tất cả biến động
-    public List<BienDong> getAll() {
-        return bienDongRepository.findAll(); // Lấy tất cả biến động từ cơ sở dữ liệu
+    // ========== DTO-based methods ==========
+
+    // Lấy tất cả biến động (DTO)
+    public List<BienDongResponseDto> getAllDto() {
+        return bienDongRepository.findAll().stream()
+                .map(this::toResponseDto)
+                .collect(Collectors.toList());
     }
 
-    // Tạo mới biến động
-    public BienDong create(BienDong bienDong, Authentication auth) {
-        // Kiểm tra quyền người dùng
+    // Lấy biến động theo ID (DTO)
+    public BienDongResponseDto getByIdDto(Long id) {
+        BienDong bd = bienDongRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động với id = " + id));
+        return toResponseDto(bd);
+    }
+
+    // Tạo mới biến động (DTO)
+    public BienDongResponseDto createDto(BienDongRequestDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
         if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
             throw new RuntimeException("Bạn không có quyền tạo biến động!");
         }
 
-        // Lấy thông tin người dùng từ Authentication
         TaiKhoan user = taiKhoanRepository.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
 
-        bienDong.setCreatedAt(LocalDateTime.now()); // Gán thời gian tạo
-        bienDong.setCreatedBy(user.getId());        // Gán ID người tạo
+        BienDong bienDong = BienDong.builder()
+                .loai(dto.getLoai())
+                .noiDung(dto.getNoiDung())
+                .thoiGian(dto.getThoiGian() != null ? dto.getThoiGian() : LocalDateTime.now())
+                .hoKhauId(dto.getHoKhauId())
+                .nhanKhauId(dto.getNhanKhauId())
+                .createdAt(LocalDateTime.now())
+                .createdBy(user.getId())
+                .build();
 
-        return bienDongRepository.save(bienDong);  // Lưu biến động vào cơ sở dữ liệu
+        BienDong saved = bienDongRepository.save(bienDong);
+        return toResponseDto(saved);
     }
 
-    // Cập nhật biến động
-    public BienDong update(Long id, BienDong bienDong, Authentication auth) {
-        // Kiểm tra quyền người dùng
+    // Cập nhật biến động (DTO)
+    public BienDongResponseDto updateDto(Long id, BienDongRequestDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
         if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
             throw new RuntimeException("Bạn không có quyền sửa biến động!");
         }
 
-        // Lấy biến động hiện tại từ cơ sở dữ liệu
-        BienDong existingBienDong = bienDongRepository.findById(id)
+        BienDong existing = bienDongRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động với id = " + id));
 
         boolean changed = false;
 
         // Kiểm tra và cập nhật loại biến động
-        if (bienDong.getLoai() != null && !Objects.equals(existingBienDong.getLoai(), bienDong.getLoai())) {
-            existingBienDong.setLoai(bienDong.getLoai());
+        if (dto.getLoai() != null && !Objects.equals(existing.getLoai(), dto.getLoai())) {
+            existing.setLoai(dto.getLoai());
             changed = true;
         }
 
-        // Kiểm tra và cập nhật nội dung biến động
-        if (bienDong.getNoiDung() != null && !Objects.equals(existingBienDong.getNoiDung(), bienDong.getNoiDung())) {
-            existingBienDong.setNoiDung(bienDong.getNoiDung());
+        // Kiểm tra và cập nhật nội dung
+        if (dto.getNoiDung() != null && !Objects.equals(existing.getNoiDung(), dto.getNoiDung())) {
+            existing.setNoiDung(dto.getNoiDung());
             changed = true;
         }
 
-        // Nếu không có sự thay đổi, throw lỗi
+        // Kiểm tra và cập nhật thời gian
+        if (dto.getThoiGian() != null && !Objects.equals(existing.getThoiGian(), dto.getThoiGian())) {
+            existing.setThoiGian(dto.getThoiGian());
+            changed = true;
+        }
+
         if (!changed) {
-            throw new RuntimeException("Không có gì để thay đổi!");
+            throw new RuntimeException("Không có gì thay đổi!");
         }
 
         // Gán thông tin cập nhật
         TaiKhoan user = taiKhoanRepository.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
-        existingBienDong.setCreatedAt(LocalDateTime.now());  // Thời gian cập nhật
-        existingBienDong.setCreatedBy(user.getId());  // Lấy ID người sửa
+        existing.setCreatedAt(LocalDateTime.now());  // Thời gian cập nhật
+        existing.setCreatedBy(user.getId());  // Lấy ID người sửa
 
-        return bienDongRepository.save(existingBienDong); // Lưu lại biến động đã cập nhật
+        BienDong saved = bienDongRepository.save(existing);
+        return toResponseDto(saved);
+    }
+
+    // Mapper: Entity -> Response DTO
+    private BienDongResponseDto toResponseDto(BienDong bd) {
+        return BienDongResponseDto.builder()
+                .id(bd.getId())
+                .loai(bd.getLoai())
+                .noiDung(bd.getNoiDung())
+                .thoiGian(bd.getThoiGian())
+                .hoKhauId(bd.getHoKhauId())
+                .nhanKhauId(bd.getNhanKhauId())
+                .createdBy(bd.getCreatedBy())
+                .createdAt(bd.getCreatedAt())
+                .build();
     }
 
     // Xóa biến động
