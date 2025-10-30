@@ -1,0 +1,187 @@
+/*// src/pages/Login.jsx
+import React, { useState, useContext } from "react";
+import InputField from "../components/InputField";
+import Button from "../components/Button";
+import Loader from "../components/Loader";
+import { AuthContext } from "../contexts/AuthContext";
+import authService from "../api/authService";
+import { useNavigate } from "react-router-dom";
+
+const Login = () => {
+  const navigate = useNavigate();
+  const { setUser } = useContext(AuthContext);
+
+  // State lưu giá trị form
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Hàm xử lý login
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await authService.login(email, password);
+      if (response.token) {
+        // Lưu user vào context
+        setUser({
+          email,
+          token: response.token,
+        });
+        navigate("/dashboard");
+      } else {
+        setError("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      }
+    } catch (err) {
+      setError(err.message || "Lỗi kết nối máy chủ.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Đăng nhập hệ thống thu phí
+        </h2>
+
+        <form onSubmit={handleLogin}>
+          <InputField
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Nhập email..."
+          />
+
+          <InputField
+            label="Mật khẩu"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Nhập mật khẩu..."
+          />
+
+          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+          <Button
+            label="Đăng nhập"
+            onClick={handleLogin}
+            loading={loading}
+          />
+
+          {loading && <Loader />}
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
+*/
+import React, { useState, useContext } from "react";
+import { AuthContext } from "../contexts/AuthContext";
+import authService from "../api/authService";
+import { useNavigate } from "react-router-dom";
+
+const Login = () => {
+  const navigate = useNavigate();
+  const { setUser } = useContext(AuthContext);
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await authService.login(username, password);
+      if (response?.token) {
+        setUser({ username, token: response.token });
+        navigate("/dashboard");
+      } else {
+        // Nếu authService trả về null/undefined hoặc object không có token
+        setError("Tên đăng nhập hoặc mật khẩu không đúng");
+      }
+    } catch (err) {
+      // Hiện thị thông điệp lỗi cụ thể từ service nếu có,
+      // còn không thì hiển thị thông báo kết nối chung.
+      // Ghi log lỗi cho mục đích debug.
+      // Ví dụ khi dùng mock API và credential không khớp, authService hiện ném Error('Email hoặc mật khẩu không đúng')
+      console.error(err);
+      setError(err?.message || "Lỗi kết nối máy chủ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen">
+      {/* --- Bên trái: logo / hình minh họa --- */}
+      <div className="flex-1 bg-white flex justify-center items-center border-r">
+        <div className="flex space-x-3 items-end">
+          <div className="w-0 h-0 border-l-[35px] border-r-[35px] border-b-[60px] border-l-transparent border-r-transparent border-b-yellow-400"></div>
+          <div className="w-[40px] h-[90px] bg-blue-500"></div>
+          <div className="w-[40px] h-[100px] bg-red-500 rounded-tr-md"></div>
+        </div>
+      </div>
+
+      {/* --- Bên phải: form đăng nhập --- */}
+      <div className="flex-1 flex justify-center items-center bg-white">
+        <div className="w-full max-w-sm px-8">
+          <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">
+            Login
+          </h2>
+          <div className="w-16 h-[3px] bg-teal-400 mx-auto mb-8"></div>
+
+          <form onSubmit={handleLogin} className="flex flex-col space-y-6">
+            <div>
+              <input
+                type="text"
+                placeholder="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full border-b border-gray-400 focus:outline-none focus:border-teal-400 py-2 text-gray-700"
+              />
+            </div>
+
+            <div>
+              <input
+                type="password"
+                placeholder="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border-b border-gray-400 focus:outline-none focus:border-teal-400 py-2 text-gray-700"
+              />
+              <div className="text-right text-sm text-gray-500 mt-1 hover:text-teal-500 cursor-pointer">
+                Forgot Password ?
+              </div>
+            </div>
+
+            {error && (
+              <p className="text-red-500 text-center text-sm">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-teal-400 text-white font-semibold py-3 rounded-xl hover:bg-teal-500 transition duration-200"
+            >
+              {loading ? "Đang đăng nhập..." : "SIGN IN"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
