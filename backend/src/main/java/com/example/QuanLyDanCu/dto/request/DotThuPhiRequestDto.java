@@ -1,5 +1,6 @@
 package com.example.QuanLyDanCu.dto.request;
 
+import com.example.QuanLyDanCu.enums.LoaiThuPhi;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -17,9 +18,9 @@ public class DotThuPhiRequestDto {
     @Schema(description = "Tên đợt thu phí", example = "Thu phí quản lý tháng 1/2025")
     private String tenDot;
 
-    @NotBlank(message = "Loại phí không được để trống")
-    @Schema(description = "Loại phí (QUAN_LY, VE_SINH, BAO_VE, ...)", example = "QUAN_LY")
-    private String loai;
+    @NotNull(message = "Loại phí không được để trống")
+    @Schema(description = "Loại phí: BAT_BUOC (bắt buộc) hoặc TU_NGUYEN (tự nguyện)", example = "BAT_BUOC", allowableValues = {"BAT_BUOC", "TU_NGUYEN"})
+    private LoaiThuPhi loai;
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
     @Schema(description = "Ngày bắt đầu thu", example = "2025-01-01")

@@ -27,23 +27,23 @@ public class HoKhauService {
     // ========== DTO-based methods ==========
 
     // Lấy tất cả hộ khẩu (DTO)
-    public List<HoKhauResponseDto> getAllDto() {
+    public List<HoKhauResponseDto> getAll() {
         return repo.findAll().stream()
                 .map(this::toResponseDto)
                 .collect(Collectors.toList());
     }
 
     // Lấy hộ khẩu theo id (DTO)
-    public HoKhauResponseDto getByIdDto(Long id) {
+    public HoKhauResponseDto getById(Long id) {
         HoKhau hk = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu id = " + id));
         return toResponseDto(hk);
     }
 
     // Thêm hộ khẩu mới (DTO)
-    public HoKhauResponseDto createDto(HoKhauRequestDto dto, Authentication auth) {
+    public HoKhauResponseDto create(HoKhauRequestDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new AccessDeniedException("Bạn không có quyền thêm hộ khẩu!");
         }
 
@@ -64,9 +64,9 @@ public class HoKhauService {
     }
 
     // Cập nhật hộ khẩu (DTO)
-    public HoKhauResponseDto updateDto(Long id, HoKhauRequestDto dto, Authentication auth) {
+    public HoKhauResponseDto update(Long id, HoKhauRequestDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new AccessDeniedException("Bạn không có quyền sửa hộ khẩu!");
         }
 
@@ -132,7 +132,7 @@ public class HoKhauService {
     // Xóa hộ khẩu
     public void delete(Long id, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new AccessDeniedException("Bạn không có quyền xóa hộ khẩu!");
         }
 

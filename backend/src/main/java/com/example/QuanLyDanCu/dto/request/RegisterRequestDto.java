@@ -22,7 +22,7 @@ public class RegisterRequestDto {
     @JsonProperty("password")
     private String password;
 
-    @NotBlank(message = "Vai trò không được để trống")
+    @NotBlank(message = "Vai trò (ADMIN, TOTRUONG, USER) không được để trống")
     @JsonProperty("role")
     private String role;
 

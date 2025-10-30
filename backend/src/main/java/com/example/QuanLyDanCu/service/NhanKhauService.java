@@ -1,5 +1,6 @@
 package com.example.QuanLyDanCu.service;
 
+import com.example.QuanLyDanCu.dto.request.DangKyTamTruTamVangRequestDto;
 import com.example.QuanLyDanCu.dto.request.NhanKhauRequestDto;
 import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
 import com.example.QuanLyDanCu.entity.NhanKhau;
@@ -30,23 +31,23 @@ public class NhanKhauService {
     // ========== DTO-based methods ==========
 
     // Lấy tất cả nhân khẩu (DTO)
-    public List<NhanKhauResponseDto> getAllDto() {
+    public List<NhanKhauResponseDto> getAll() {
         return nhanKhauRepo.findAll().stream()
-                .map(this::toResponseDto)
+                .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
     // Lấy nhân khẩu theo id (DTO)
-    public NhanKhauResponseDto getByIdDto(Long id) {
+    public NhanKhauResponseDto getById(Long id) {
         NhanKhau nk = nhanKhauRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
-        return toResponseDto(nk);
+        return toResponseDTO(nk);
     }
 
     // Thêm nhân khẩu mới (DTO)
-    public NhanKhauResponseDto createDto(NhanKhauRequestDto dto, Authentication auth) {
+    public NhanKhauResponseDto create(NhanKhauRequestDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new AccessDeniedException("Bạn không có quyền thêm nhân khẩu!");
         }
 
@@ -75,13 +76,13 @@ public class NhanKhauService {
                 .build();
 
         NhanKhau saved = nhanKhauRepo.save(nk);
-        return toResponseDto(saved);
+        return toResponseDTO(saved);
     }
 
     // Cập nhật nhân khẩu (DTO)
-    public NhanKhauResponseDto updateDto(Long id, NhanKhauRequestDto dto, Authentication auth) {
+    public NhanKhauResponseDto update(Long id, NhanKhauRequestDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new AccessDeniedException("Bạn không có quyền sửa nhân khẩu!");
         }
 
@@ -159,115 +160,13 @@ public class NhanKhauService {
         existing.setUpdatedBy(user.getId());
 
         NhanKhau saved = nhanKhauRepo.save(existing);
-        return toResponseDto(saved);
-    }
-
-    // Mapper: Entity -> Response DTO
-    private NhanKhauResponseDto toResponseDto(NhanKhau nk) {
-        return NhanKhauResponseDto.builder()
-                .id(nk.getId())
-                .hoTen(nk.getHoTen())
-                .ngaySinh(nk.getNgaySinh())
-                .gioiTinh(nk.getGioiTinh())
-                .danToc(nk.getDanToc())
-                .quocTich(nk.getQuocTich())
-                .ngheNghiep(nk.getNgheNghiep())
-                .cmndCccd(nk.getCmndCccd())
-                .ngayCap(nk.getNgayCap())
-                .noiCap(nk.getNoiCap())
-                .quanHeChuHo(nk.getQuanHeChuHo())
-                .ngayChuyenDi(nk.getNgayChuyenDi())
-                .noiChuyenDi(nk.getNoiChuyenDi())
-                .ghiChu(nk.getGhiChu())
-                .tamVangTu(nk.getTamVangTu())
-                .tamVangDen(nk.getTamVangDen())
-                .tamTruTu(nk.getTamTruTu())
-                .tamTruDen(nk.getTamTruDen())
-                .hoKhauId(nk.getHoKhauId())
-                .createdBy(nk.getCreatedBy())
-                .updatedBy(nk.getUpdatedBy())
-                .createdAt(nk.getCreatedAt())
-                .updatedAt(nk.getUpdatedAt())
-                .build();
-    }
-
-    // ========== Entity-based methods (keeping for special operations) ==========
-
-    // Lấy tất cả nhân khẩu
-    public List<NhanKhau> getAll() {
-        return nhanKhauRepo.findAll();
-    }
-
-    // Lấy nhân khẩu theo id
-    public NhanKhau getById(Long id) {
-        return nhanKhauRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
-    }
-
-    // Thêm nhân khẩu mới
-    public NhanKhau create(NhanKhau nk, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền thêm nhân khẩu!");
-        }
-
-        // Lấy ID người hiện tại từ Authentication
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
-
-        nk.setCreatedAt(LocalDateTime.now()); // timestamp hệ thống
-        nk.setCreatedBy(user.getId());        // ID người tạo
-        nk.setUpdatedAt(LocalDateTime.now()); // timestamp hệ thống
-        nk.setUpdatedBy(user.getId());
-
-        return nhanKhauRepo.save(nk);
-    }
-
-    // Cập nhật nhân khẩu
-    public NhanKhau update(Long id, NhanKhau nk, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền sửa nhân khẩu!");
-        }
-
-        NhanKhau existing = nhanKhauRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
-
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
-        boolean changed = false;
-
-        // --- Cập nhật thông tin nhân khẩu ---
-        if (nk.getHoTen() != null && !Objects.equals(existing.getHoTen(), nk.getHoTen())) {
-            existing.setHoTen(nk.getHoTen());
-            changed = true;
-        }
-
-        if (nk.getNgaySinh() != null && !Objects.equals(existing.getNgaySinh(), nk.getNgaySinh())) {
-            existing.setNgaySinh(nk.getNgaySinh());
-            changed = true;
-        }
-
-        if (nk.getGioiTinh() != null && !Objects.equals(existing.getGioiTinh(), nk.getGioiTinh())) {
-            existing.setGioiTinh(nk.getGioiTinh());
-            changed = true;
-        }
-
-        // Nếu không có gì thay đổi
-        if (!changed) {
-            throw new RuntimeException("Không có gì để thay đổi!");
-        }
-
-        existing.setUpdatedAt(LocalDateTime.now()); // timestamp update
-        existing.setUpdatedBy(user.getId());        // ID người sửa
-
-        return nhanKhauRepo.save(existing);
+        return toResponseDTO(saved);
     }
 
     // Xóa nhân khẩu
     public void delete(Long id, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new AccessDeniedException("Bạn không có quyền xóa nhân khẩu!");
         }
 
@@ -275,26 +174,28 @@ public class NhanKhauService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
         nhanKhauRepo.delete(nk);
     }
+
     // --- TẠM TRÚ ---
-    public NhanKhau dangKyTamTru(Long id, LocalDate tu, LocalDate den, String lyDo, Authentication auth) {
+    public NhanKhauResponseDto dangKyTamTru(Long id, DangKyTamTruTamVangRequestDto dto, Authentication auth) {
         checkRole(auth);
-        if (tu == null) throw new RuntimeException("Ngày bắt đầu tạm trú (tu) không được để trống");
+        if (!dto.getNgayBatDau().isBefore(dto.getNgayKetThuc()))
+            throw new IllegalArgumentException("Ngày bắt đầu phải bé hơn ngày kết thúc");
 
         NhanKhau nk = nhanKhauRepo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu"));
         TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
 
-        nk.setTamTruTu(tu);
-        nk.setTamTruDen(den);
+        nk.setTamTruTu(dto.getNgayBatDau());
+        nk.setTamTruDen(dto.getNgayKetThuc());
         nk.setUpdatedAt(LocalDateTime.now());
         nk.setUpdatedBy(user.getId());
 
         BienDong bd = BienDong.builder()
                 .loai("Tạm trú")
                 .noiDung("Đăng ký tạm trú cho " + nk.getHoTen()
-                        + " từ " + tu
-                        + (den != null ? " đến " + den : "")
-                        + (lyDo != null ? " - Lý do: " + lyDo : ""))
+                        + " từ " + dto.getNgayBatDau()
+                        + (dto.getNgayKetThuc() != null ? " đến " + dto.getNgayKetThuc() : "")
+                        + (dto.getLyDo() != null ? " - Lý do: " + dto.getLyDo() : ""))
                 .thoiGian(LocalDateTime.now())
                 .hoKhauId(nk.getHoKhauId())
                 .nhanKhauId(nk.getId())
@@ -303,55 +204,59 @@ public class NhanKhauService {
                 .build();
         bienDongRepo.save(bd);
 
-        return nhanKhauRepo.save(nk);
+        NhanKhau saved = nhanKhauRepo.save(nk);
+        return toResponseDTO(saved);
     }
 
-    public NhanKhau huyTamTru(Long id, Authentication auth) {
+    public void huyTamTru(Long id, Authentication auth) {
         checkRole(auth);
 
-        NhanKhau nk = nhanKhauRepo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu"));
+        NhanKhau existing = nhanKhauRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
         TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
-
-        nk.setTamTruTu(null);
-        nk.setTamTruDen(null);
-        nk.setUpdatedAt(LocalDateTime.now());
-        nk.setUpdatedBy(user.getId());
+        existing.setTamTruTu(null);
+        existing.setTamTruDen(null);
+        existing.setUpdatedAt(LocalDateTime.now());
+        existing.setUpdatedBy(user.getId());
 
         BienDong bd = BienDong.builder()
                 .loai("Hủy tạm trú")
-                .noiDung("Hủy tạm trú cho " + nk.getHoTen())
+                .noiDung("Hủy tạm trú cho " + existing.getHoTen())
                 .thoiGian(LocalDateTime.now())
-                .hoKhauId(nk.getHoKhauId())
-                .nhanKhauId(nk.getId())
+                .hoKhauId(existing.getHoKhauId())
+                .nhanKhauId(existing.getId())
                 .createdBy(user.getId())
                 .createdAt(LocalDateTime.now())
                 .build();
-        bienDongRepo.save(bd);
 
-        return nhanKhauRepo.save(nk);
+        bienDongRepo.save(bd);
+        nhanKhauRepo.save(existing);
     }
 
+
     // --- TẠM VẮNG ---
-    public NhanKhau dangKyTamVang(Long id, LocalDate tu, LocalDate den, String lyDo, Authentication auth) {
+    public NhanKhauResponseDto dangKyTamVang(Long id, DangKyTamTruTamVangRequestDto dto, Authentication auth) {
         checkRole(auth);
-        if (tu == null) throw new RuntimeException("Ngày bắt đầu tạm vắng (tu) không được để trống");
+
+        if (!dto.getNgayBatDau().isBefore(dto.getNgayKetThuc()))
+            throw new IllegalArgumentException("Ngày bắt đầu phải bé hơn ngày kết thúc");
 
         NhanKhau nk = nhanKhauRepo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu"));
         TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
 
-        nk.setTamVangTu(tu);
-        nk.setTamVangDen(den);
+        nk.setTamVangTu(dto.getNgayBatDau());
+        nk.setTamVangDen(dto.getNgayKetThuc());
         nk.setUpdatedAt(LocalDateTime.now());
         nk.setUpdatedBy(user.getId());
 
         BienDong bd = BienDong.builder()
-                .loai("Tạm vắng")
+                .loai("Tạm trú")
                 .noiDung("Đăng ký tạm vắng cho " + nk.getHoTen()
-                        + " từ " + tu
-                        + (den != null ? " đến " + den : "")
-                        + (lyDo != null ? " - Lý do: " + lyDo : ""))
+                        + " từ " + dto.getNgayBatDau()
+                        + (dto.getNgayKetThuc() != null ? " đến " + dto.getNgayKetThuc() : "")
+                        + (dto.getLyDo() != null ? " - Lý do: " + dto.getLyDo() : ""))
                 .thoiGian(LocalDateTime.now())
                 .hoKhauId(nk.getHoKhauId())
                 .nhanKhauId(nk.getId())
@@ -360,33 +265,34 @@ public class NhanKhauService {
                 .build();
         bienDongRepo.save(bd);
 
-        return nhanKhauRepo.save(nk);
+        NhanKhau saved = nhanKhauRepo.save(nk);
+        return toResponseDTO(saved);
     }
 
-    public NhanKhau huyTamVang(Long id, Authentication auth) {
+    public void huyTamVang(Long id, Authentication auth) {
         checkRole(auth);
 
-        NhanKhau nk = nhanKhauRepo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu"));
+        NhanKhau existing = nhanKhauRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
         TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
-
-        nk.setTamVangTu(null);
-        nk.setTamVangDen(null);
-        nk.setUpdatedAt(LocalDateTime.now());
-        nk.setUpdatedBy(user.getId());
+        existing.setTamVangTu(null);
+        existing.setTamVangDen(null);
+        existing.setUpdatedAt(LocalDateTime.now());
+        existing.setUpdatedBy(user.getId());
 
         BienDong bd = BienDong.builder()
                 .loai("Kết thúc tạm vắng")
-                .noiDung("Kết thúc tạm vắng cho " + nk.getHoTen())
+                .noiDung("Kết thúc tạm vắng cho " + existing.getHoTen())
                 .thoiGian(LocalDateTime.now())
-                .hoKhauId(nk.getHoKhauId())
-                .nhanKhauId(nk.getId())
+                .hoKhauId(existing.getHoKhauId())
+                .nhanKhauId(existing.getId())
                 .createdBy(user.getId())
                 .createdAt(LocalDateTime.now())
                 .build();
-        bienDongRepo.save(bd);
 
-        return nhanKhauRepo.save(nk);
+        bienDongRepo.save(bd);
+        nhanKhauRepo.save(existing);
     }
 
     // --- KHAI TỬ ---
@@ -413,14 +319,6 @@ public class NhanKhauService {
         bienDongRepo.save(bd);
 
         return nhanKhauRepo.save(nk);
-    }
-
-    // --- helper ---
-    private void checkRole(Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền thực hiện thao tác này!");
-        }
     }
 
     // Search theo tên
@@ -501,4 +399,40 @@ public class NhanKhauService {
         return out;
     }
 
+    // --- helper ---
+    private void checkRole(Authentication auth) {
+        String role = auth.getAuthorities().iterator().next().getAuthority();
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
+            throw new AccessDeniedException("Bạn không có quyền thực hiện thao tác này!");
+        }
+    }
+
+    // Mapper: Entity -> Response DTO
+    private NhanKhauResponseDto toResponseDTO(NhanKhau nk) {
+        return NhanKhauResponseDto.builder()
+                .id(nk.getId())
+                .hoTen(nk.getHoTen())
+                .ngaySinh(nk.getNgaySinh())
+                .gioiTinh(nk.getGioiTinh())
+                .danToc(nk.getDanToc())
+                .quocTich(nk.getQuocTich())
+                .ngheNghiep(nk.getNgheNghiep())
+                .cmndCccd(nk.getCmndCccd())
+                .ngayCap(nk.getNgayCap())
+                .noiCap(nk.getNoiCap())
+                .quanHeChuHo(nk.getQuanHeChuHo())
+                .ngayChuyenDi(nk.getNgayChuyenDi())
+                .noiChuyenDi(nk.getNoiChuyenDi())
+                .ghiChu(nk.getGhiChu())
+                .tamVangTu(nk.getTamVangTu())
+                .tamVangDen(nk.getTamVangDen())
+                .tamTruTu(nk.getTamTruTu())
+                .tamTruDen(nk.getTamTruDen())
+                .hoKhauId(nk.getHoKhauId())
+                .createdBy(nk.getCreatedBy())
+                .updatedBy(nk.getUpdatedBy())
+                .createdAt(nk.getCreatedAt())
+                .updatedAt(nk.getUpdatedAt())
+                .build();
+    }
 }

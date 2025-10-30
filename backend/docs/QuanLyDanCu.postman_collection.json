@@ -1,1266 +1,1174 @@
-{{
-
-  "info": {  "info": {
-
-    "name": "Quản Lý Dân Cư API - Complete Collection",    "name": "Quản Lý Dân Cư API - Complete Collection",
-
-    "description": "Comprehensive API collection for QuanLyDanCu backend - Updated Oct 2025",    "description": "Comprehensive API collection for QuanLyDanCu backend - Updated Oct 2025",
-
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-
-    "version": "2.0.0"    "version": "2.0.0"
-
-  },  },
-
-  "variable": [  "variable": [
-
-    {    {
-
-      "key": "baseUrl",      "key": "baseUrl",
-
-      "value": "http://localhost:8080",      "value": "http://localhost:8080",
-
-      "type": "string"      "type": "string"
-
-    },    },
-
-    {    {
-
-      "key": "token",      "key": "token",
-
-      "value": "",      "value": "",
-
-      "type": "string"      "type": "string"
-
-    }    }
-
-  ],  ],
-
-  "item": [  "item": [
-
-    {    {
-
-      "name": "1. Authentication",      "name": "Auth",
-
-      "description": "User authentication endpoints",      "item": [
-
-      "item": [        {
-
-        {          "name": "Login",
-
-          "name": "Login",          "event": [
-
-          "event": [            {
-
-            {              "listen": "test",
-
-              "listen": "test",              "script": {
-
-              "script": {                "exec": [
-
-                "exec": [                  "if (pm.response.code === 200) {",
-
-                  "if (pm.response.code === 200) {",                  "    var jsonData = pm.response.json();",
-
-                  "    var jsonData = pm.response.json();",                  "    pm.collectionVariables.set('token', jsonData.token);",
-
-                  "    pm.collectionVariables.set('token', jsonData.token);",                  "}"
-
-                  "    pm.environment.set('token', jsonData.token);",                ],
-
-                  "}"                "type": "text/javascript"
-
-                ],              }
-
-                "type": "text/javascript"            }
-
-              }          ],
-
-            }          "request": {
-
-          ],            "method": "POST",
-
-          "request": {            "header": [
-
-            "method": "POST",              {
-
-            "header": [                "key": "Content-Type",
-
-              {                "value": "application/json"
-
-                "key": "Content-Type",              }
-
-                "value": "application/json"            ],
-
-              }            "body": {
-
-            ],              "mode": "raw",
-
-            "body": {              "raw": "{\n  \"tenDangNhap\": \"admin\",\n  \"matKhau\": \"password\"\n}"
-
-              "mode": "raw",            },
-
-              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"            "url": {
-
-            },              "raw": "{{baseUrl}}/api/auth/login",
-
-            "url": {              "host": ["{{baseUrl}}"],
-
-              "raw": "{{baseUrl}}/api/auth/login",              "path": ["api", "auth", "login"]
-
-              "host": ["{{baseUrl}}"],            }
-
-              "path": ["api", "auth", "login"]          }
-
-            },        }
-
-            "description": "Login with admin credentials. Token is automatically saved to collection variable."      ]
-
-          },    },
-
-          "response": [    {
-
-            {      "name": "Đợt Thu Phí",
-
-              "name": "Login Success Example",      "item": [
-
-              "originalRequest": {        {
-
-                "method": "POST",          "name": "Lấy tất cả đợt thu phí",
-
-                "body": {          "request": {
-
-                  "mode": "raw",            "method": "GET",
-
-                  "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"            "header": [
-
-                },              {
-
-                "url": {                "key": "Authorization",
-
-                  "raw": "{{baseUrl}}/api/auth/login",                "value": "Bearer {{token}}"
-
-                  "host": ["{{baseUrl}}"],              }
-
-                  "path": ["api", "auth", "login"]            ],
-
-                }            "url": {
-
-              },              "raw": "{{baseUrl}}/api/dot-thu-phi",
-
-              "status": "OK",              "host": ["{{baseUrl}}"],
-
-              "code": 200,              "path": ["api", "dot-thu-phi"]
-
-              "_postman_previewlanguage": "json",            }
-
-              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"username\": \"admin\",\n  \"role\": \"ROLE_ADMIN\"\n}"          }
-
-            }        },
-
-          ]        {
-
-        },          "name": "Lấy đợt thu phí theo ID",
-
-        {          "request": {
-
-          "name": "Register",            "method": "GET",
-
-          "request": {            "header": [
-
-            "method": "POST",              {
-
-            "header": [                "key": "Authorization",
-
-              {                "value": "Bearer {{token}}"
-
-                "key": "Content-Type",              }
-
-                "value": "application/json"            ],
-
-              }            "url": {
-
-            ],              "raw": "{{baseUrl}}/api/dot-thu-phi/1",
-
-            "body": {              "host": ["{{baseUrl}}"],
-
-              "mode": "raw",              "path": ["api", "dot-thu-phi", "1"]
-
-              "raw": "{\n  \"tenDangNhap\": \"newuser\",\n  \"matKhau\": \"password123\",\n  \"vaiTro\": \"ROLE_KETOAN\",\n  \"trangThai\": true\n}"            }
-
-            },          }
-
-            "url": {        },
-
-              "raw": "{{baseUrl}}/api/auth/register",        {
-
-              "host": ["{{baseUrl}}"],          "name": "Tạo đợt thu phí mới",
-
-              "path": ["api", "auth", "register"]          "request": {
-
-            },            "method": "POST",
-
-            "description": "Register a new user account. Roles: ROLE_ADMIN, ROLE_TOTRUONG, ROLE_KETOAN"            "header": [
-
-          }              {
-
-        }                "key": "Content-Type",
-
-      ]                "value": "application/json"
-
-    },              },
-
-    {              {
-
-      "name": "2. Hộ Khẩu (Household)",                "key": "Authorization",
-
-      "description": "Household management endpoints",                "value": "Bearer {{token}}"
-
-      "item": [              }
-
-        {            ],
-
-          "name": "Get All Households",            "body": {
-
-          "request": {              "mode": "raw",
-
-            "method": "GET",              "raw": "{\n  \"tenDot\": \"Thu phí quản lý tháng 1/2025\",\n  \"loai\": \"QUAN_LY\",\n  \"ngayBatDau\": \"2025-01-01\",\n  \"ngayKetThuc\": \"2025-01-31\",\n  \"dinhMuc\": 50000\n}"
-
-            "header": [            },
-
-              {            "url": {
-
-                "key": "Authorization",              "raw": "{{baseUrl}}/api/dot-thu-phi",
-
-                "value": "Bearer {{token}}"              "host": ["{{baseUrl}}"],
-
-              }              "path": ["api", "dot-thu-phi"]
-
-            ],            }
-
-            "url": {          }
-
-              "raw": "{{baseUrl}}/api/ho-khau",        },
-
-              "host": ["{{baseUrl}}"],        {
-
-              "path": ["api", "ho-khau"]          "name": "Cập nhật đợt thu phí",
-
-            },          "request": {
-
-            "description": "Retrieve all households with their details"            "method": "PUT",
-
-          }            "header": [
-
-        },              {
-
-        {                "key": "Content-Type",
-
-          "name": "Get Household by ID",                "value": "application/json"
-
-          "request": {              },
-
-            "method": "GET",              {
-
-            "header": [                "key": "Authorization",
-
-              {                "value": "Bearer {{token}}"
-
-                "key": "Authorization",              }
-
-                "value": "Bearer {{token}}"            ],
-
-              }            "body": {
-
-            ],              "mode": "raw",
-
-            "url": {              "raw": "{\n  \"tenDot\": \"Thu phí quản lý tháng 1/2025 (Đã cập nhật)\",\n  \"loai\": \"QUAN_LY\",\n  \"ngayBatDau\": \"2025-01-01\",\n  \"ngayKetThuc\": \"2025-01-31\",\n  \"dinhMuc\": 60000\n}"
-
-              "raw": "{{baseUrl}}/api/ho-khau/1",            },
-
-              "host": ["{{baseUrl}}"],            "url": {
-
-              "path": ["api", "ho-khau", "1"]              "raw": "{{baseUrl}}/api/dot-thu-phi/1",
-
-            },              "host": ["{{baseUrl}}"],
-
-            "description": "Get specific household by ID"              "path": ["api", "dot-thu-phi", "1"]
-
-          }            }
-
-        },          }
-
-        {        },
-
-          "name": "Create Household",        {
-
-          "request": {          "name": "Xóa đợt thu phí",
-
-            "method": "POST",          "request": {
-
-            "header": [            "method": "DELETE",
-
-              {            "header": [
-
-                "key": "Content-Type",              {
-
-                "value": "application/json"                "key": "Authorization",
-
-              },                "value": "Bearer {{token}}"
-
-              {              }
-
-                "key": "Authorization",            ],
-
-                "value": "Bearer {{token}}"            "url": {
-
-              }              "raw": "{{baseUrl}}/api/dot-thu-phi/1",
-
-            ],              "host": ["{{baseUrl}}"],
-
-            "body": {              "path": ["api", "dot-thu-phi", "1"]
-
-              "mode": "raw",            }
-
-              "raw": "{\n  \"soHoKhau\": \"HK999\",\n  \"tenChuHo\": \"Nguyễn Văn Test\",\n  \"diaChiThuongTru\": \"123 Test Street\",\n  \"ghiChu\": \"Test household\"\n}"          }
-
-            },        }
-
-            "url": {      ]
-
-              "raw": "{{baseUrl}}/api/ho-khau",    },
-
-              "host": ["{{baseUrl}}"],    {
-
-              "path": ["api", "ho-khau"]      "name": "Thu Phí Hộ Khẩu",
-
-            },      "item": [
-
-            "description": "Create a new household (ADMIN/TOTRUONG only)"        {
-
-          }          "name": "Lấy tất cả thu phí",
-
-        },          "request": {
-
-        {            "method": "GET",
-
-          "name": "Update Household",            "header": [
-
-          "request": {              {
-
-            "method": "PUT",                "key": "Authorization",
-
-            "header": [                "value": "Bearer {{token}}"
-
-              {              }
-
-                "key": "Content-Type",            ],
-
-                "value": "application/json"            "url": {
-
-              },              "raw": "{{baseUrl}}/api/thu-phi-ho-khau",
-
-              {              "host": ["{{baseUrl}}"],
-
-                "key": "Authorization",              "path": ["api", "thu-phi-ho-khau"]
-
-                "value": "Bearer {{token}}"            }
-
-              }          }
-
-            ],        },
-
-            "body": {        {
-
-              "mode": "raw",          "name": "Lấy thu phí theo hộ khẩu",
-
-              "raw": "{\n  \"soHoKhau\": \"HK999\",\n  \"tenChuHo\": \"Nguyễn Văn Test Updated\",\n  \"diaChiThuongTru\": \"456 Updated Street\",\n  \"ghiChu\": \"Updated test household\"\n}"          "request": {
-
-            },            "method": "GET",
-
-            "url": {            "header": [
-
-              "raw": "{{baseUrl}}/api/ho-khau/1",              {
-
-              "host": ["{{baseUrl}}"],                "key": "Authorization",
-
-              "path": ["api", "ho-khau", "1"]                "value": "Bearer {{token}}"
-
-            },              }
-
-            "description": "Update existing household (ADMIN/TOTRUONG only)"            ],
-
-          }            "url": {
-
-        },              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/ho-khau/1",
-
-        {              "host": ["{{baseUrl}}"],
-
-          "name": "Delete Household",              "path": ["api", "thu-phi-ho-khau", "ho-khau", "1"]
-
-          "request": {            }
-
-            "method": "DELETE",          }
-
-            "header": [        },
-
-              {        {
-
-                "key": "Authorization",          "name": "Lấy thu phí theo đợt",
-
-                "value": "Bearer {{token}}"          "request": {
-
-              }            "method": "GET",
-
-            ],            "header": [
-
-            "url": {              {
-
-              "raw": "{{baseUrl}}/api/ho-khau/1",                "key": "Authorization",
-
-              "host": ["{{baseUrl}}"],                "value": "Bearer {{token}}"
-
-              "path": ["api", "ho-khau", "1"]              }
-
-            },            ],
-
-            "description": "Delete household (ADMIN only)"            "url": {
-
-          }              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/dot-thu-phi/1",
-
-        }              "host": ["{{baseUrl}}"],
-
-      ]              "path": ["api", "thu-phi-ho-khau", "dot-thu-phi", "1"]
-
-    },            }
-
-    {          }
-
-      "name": "3. Nhân Khẩu (Citizen)",        },
-
-      "description": "Citizen management endpoints",        {
-
-      "item": [          "name": "Ghi nhận thu phí",
-
-        {          "request": {
-
-          "name": "Get All Citizens",            "method": "POST",
-
-          "request": {            "header": [
-
-            "method": "GET",              {
-
-            "header": [                "key": "Content-Type",
-
-              {                "value": "application/json"
-
-                "key": "Authorization",              },
-
-                "value": "Bearer {{token}}"              {
-
-              }                "key": "Authorization",
-
-            ],                "value": "Bearer {{token}}"
-
-            "url": {              }
-
-              "raw": "{{baseUrl}}/api/nhan-khau",            ],
-
-              "host": ["{{baseUrl}}"],            "body": {
-
-              "path": ["api", "nhan-khau"]              "mode": "raw",
-
-            },              "raw": "{\n  \"hoKhauId\": 1,\n  \"dotThuPhiId\": 1,\n  \"soTienDaThu\": 50000,\n  \"ngayThu\": \"2025-01-15\",\n  \"months\": \"1\",\n  \"ghiChu\": \"Đã thanh toán đủ\"\n}"
-
-            "description": "Retrieve all citizens"            },
-
-          }            "url": {
-
-        },              "raw": "{{baseUrl}}/api/thu-phi-ho-khau",
-
-        {              "host": ["{{baseUrl}}"],
-
-          "name": "Get Citizen by ID",              "path": ["api", "thu-phi-ho-khau"]
-
-          "request": {            }
-
-            "method": "GET",          }
-
-            "header": [        },
-
-              {        {
-
-                "key": "Authorization",          "name": "Cập nhật thu phí",
-
-                "value": "Bearer {{token}}"          "request": {
-
-              }            "method": "PUT",
-
-            ],            "header": [
-
-            "url": {              {
-
-              "raw": "{{baseUrl}}/api/nhan-khau/1",                "key": "Content-Type",
-
-              "host": ["{{baseUrl}}"],                "value": "application/json"
-
-              "path": ["api", "nhan-khau", "1"]              },
-
-            },              {
-
-            "description": "Get specific citizen by ID"                "key": "Authorization",
-
-          }                "value": "Bearer {{token}}"
-
-        },              }
-
-        {            ],
-
-          "name": "Search Citizens",            "body": {
-
-          "request": {              "mode": "raw",
-
-            "method": "GET",              "raw": "{\n  \"hoKhauId\": 1,\n  \"dotThuPhiId\": 1,\n  \"soTienDaThu\": 60000,\n  \"ngayThu\": \"2025-01-15\",\n  \"months\": \"1\",\n  \"ghiChu\": \"Đã thanh toán + phụ phí\"\n}"
-
-            "header": [            },
-
-              {            "url": {
-
-                "key": "Authorization",              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
-
-                "value": "Bearer {{token}}"              "host": ["{{baseUrl}}"],
-
-              }              "path": ["api", "thu-phi-ho-khau", "1"]
-
-            ],            }
-
-            "url": {          }
-
-              "raw": "{{baseUrl}}/api/nhan-khau/search?keyword=Nguyễn",        },
-
-              "host": ["{{baseUrl}}"],        {
-
-              "path": ["api", "nhan-khau", "search"],          "name": "Xóa thu phí",
-
-              "query": [          "request": {
-
-                {            "method": "DELETE",
-
-                  "key": "keyword",            "header": [
-
-                  "value": "Nguyễn"              {
-
-                }                "key": "Authorization",
-
-              ]                "value": "Bearer {{token}}"
-
-            },              }
-
-            "description": "Search citizens by name, CCCD, or other fields"            ],
-
-          }            "url": {
-
-        },              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
-
-        {              "host": ["{{baseUrl}}"],
-
-          "name": "Get Gender Statistics",              "path": ["api", "thu-phi-ho-khau", "1"]
-
-          "request": {            }
-
-            "method": "GET",          }
-
-            "header": [        }
-
-              {      ]
-
-                "key": "Authorization",    },
-
-                "value": "Bearer {{token}}"    {
-
-              }      "name": "Hộ Khẩu",
-
-            ],      "item": [
-
-            "url": {        {
-
-              "raw": "{{baseUrl}}/api/nhan-khau/stats/gender",          "name": "Lấy tất cả hộ khẩu",
-
-              "host": ["{{baseUrl}}"],          "request": {
-
-              "path": ["api", "nhan-khau", "stats", "gender"]            "method": "GET",
-
-            },            "header": [
-
-            "description": "Get citizen count by gender"              {
-
-          }                "key": "Authorization",
-
-        },                "value": "Bearer {{token}}"
-
-        {              }
-
-          "name": "Get Age Statistics",            ],
-
-          "request": {            "url": {
-
-            "method": "GET",              "raw": "{{baseUrl}}/api/hokhau",
-
-            "header": [              "host": ["{{baseUrl}}"],
-
-              {              "path": ["api", "hokhau"]
-
-                "key": "Authorization",            }
-
-                "value": "Bearer {{token}}"          }
-
-              }        },
-
-            ],        {
-
-            "url": {          "name": "Lấy hộ khẩu theo ID",
-
-              "raw": "{{baseUrl}}/api/nhan-khau/stats/age?underAge=18&retireAge=60",          "request": {
-
-              "host": ["{{baseUrl}}"],            "method": "GET",
-
-              "path": ["api", "nhan-khau", "stats", "age"],            "header": [
-
-              "query": [              {
-
-                {                "key": "Authorization",
-
-                  "key": "underAge",                "value": "Bearer {{token}}"
-
-                  "value": "18"              }
-
-                },            ],
-
-                {            "url": {
-
-                  "key": "retireAge",              "raw": "{{baseUrl}}/api/hokhau/1",
-
-                  "value": "60"              "host": ["{{baseUrl}}"],
-
-                }              "path": ["api", "hokhau", "1"]
-
-              ]            }
-
-            },          }
-
-            "description": "Get age distribution statistics"        }
-
-          }      ]
-
-        },    }
-
-        {  ]
-
-          "name": "Create Citizen",}
-
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"hoTen\": \"Test Citizen\",\n  \"ngaySinh\": \"1990-01-01\",\n  \"gioiTinh\": \"Nam\",\n  \"danToc\": \"Kinh\",\n  \"quocTich\": \"Việt Nam\",\n  \"ngheNghiep\": \"Developer\",\n  \"cmndCccd\": \"123456789012\",\n  \"ngayCap\": \"2020-01-01\",\n  \"noiCap\": \"CA TP.HCM\",\n  \"quanHeChuHo\": \"Con\",\n  \"hoKhauId\": 1,\n  \"ghiChu\": \"Test citizen\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/nhan-khau",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "nhan-khau"]
-            },
-            "description": "Create new citizen (ADMIN/TOTRUONG only)"
-          }
-        },
-        {
-          "name": "Update Citizen",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"hoTen\": \"Test Citizen Updated\",\n  \"ngheNghiep\": \"Senior Developer\",\n  \"ghiChu\": \"Updated information\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/nhan-khau/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "nhan-khau", "1"]
-            },
-            "description": "Update citizen information (ADMIN/TOTRUONG only)"
-          }
-        },
-        {
-          "name": "Delete Citizen",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/nhan-khau/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "nhan-khau", "1"]
-            },
-            "description": "Delete citizen (ADMIN only)"
-          }
-        },
-        {
-          "name": "Register Temporary Residence",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"noiTamTru\": \"123 Temporary Address\",\n  \"tuNgay\": \"2025-01-01\",\n  \"denNgay\": \"2025-12-31\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/nhan-khau/1/tamtru",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "nhan-khau", "1", "tamtru"]
-            },
-            "description": "Register temporary residence for citizen"
-          }
-        },
-        {
-          "name": "Cancel Temporary Residence",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/nhan-khau/1/tamtru",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "nhan-khau", "1", "tamtru"]
-            },
-            "description": "Cancel temporary residence registration"
-          }
-        },
-        {
-          "name": "Register Temporary Absence",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"noiTamVang\": \"Overseas\",\n  \"tuNgay\": \"2025-01-01\",\n  \"denNgay\": \"2025-06-30\",\n  \"lyDo\": \"Study abroad\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/nhan-khau/1/tamvang",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "nhan-khau", "1", "tamvang"]
-            },
-            "description": "Register temporary absence for citizen"
-          }
-        },
-        {
-          "name": "Cancel Temporary Absence",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/nhan-khau/1/tamvang",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "nhan-khau", "1", "tamvang"]
-            },
-            "description": "Cancel temporary absence registration"
-          }
-        },
-        {
-          "name": "Register Death",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"ngayKhaiTu\": \"2025-01-01\",\n  \"lyDo\": \"Natural causes\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/nhan-khau/1/khaitu",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "nhan-khau", "1", "khaitu"]
-            },
-            "description": "Register death of citizen"
-          }
-        }
-      ]
-    },
-    {
-      "name": "4. Biến Động (Population Changes)",
-      "description": "Population change tracking endpoints",
-      "item": [
-        {
-          "name": "Get All Changes",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/bien-dong",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "bien-dong"]
-            },
-            "description": "Retrieve all population changes"
-          }
-        },
-        {
-          "name": "Get Change by ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/bien-dong/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "bien-dong", "1"]
-            },
-            "description": "Get specific change record by ID"
-          }
-        },
-        {
-          "name": "Create Change Record",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"loai\": \"SINH\",\n  \"nhanKhauId\": 1,\n  \"noiDung\": \"New birth registered\",\n  \"thoiGian\": \"2025-01-15\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/bien-dong",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "bien-dong"]
-            },
-            "description": "Create new change record. Types: SINH, TU, CHUYEN_DEN, CHUYEN_DI, TAM_VANG"
-          }
-        },
-        {
-          "name": "Update Change Record",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"loai\": \"SINH\",\n  \"noiDung\": \"Updated birth information\",\n  \"thoiGian\": \"2025-01-16\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/bien-dong/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "bien-dong", "1"]
-            },
-            "description": "Update existing change record"
-          }
-        },
-        {
-          "name": "Delete Change Record",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/bien-dong/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "bien-dong", "1"]
-            },
-            "description": "Delete change record (ADMIN only)"
-          }
-        }
-      ]
-    },
-    {
-      "name": "5. Đợt Thu Phí (Fee Periods)",
-      "description": "Fee period management endpoints",
-      "item": [
-        {
-          "name": "Get All Fee Periods",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/dot-thu-phi",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "dot-thu-phi"]
-            },
-            "description": "Retrieve all fee periods"
-          }
-        },
-        {
-          "name": "Get Fee Period by ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/dot-thu-phi/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "dot-thu-phi", "1"]
-            },
-            "description": "Get specific fee period by ID"
-          }
-        },
-        {
-          "name": "Create Fee Period",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"ten\": \"Phí vệ sinh tháng 1/2025\",\n  \"batDau\": \"2025-01-01\",\n  \"ketThuc\": \"2025-01-31\",\n  \"donGia\": 6000,\n  \"loai\": \"VE_SINH\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/dot-thu-phi",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "dot-thu-phi"]
-            },
-            "description": "Create new fee period. Types: VE_SINH, QUAN_LY, DONG_GOP"
-          }
-        },
-        {
-          "name": "Update Fee Period",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"ten\": \"Phí vệ sinh tháng 1/2025 (Updated)\",\n  \"batDau\": \"2025-01-01\",\n  \"ketThuc\": \"2025-01-31\",\n  \"donGia\": 7000,\n  \"loai\": \"VE_SINH\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/dot-thu-phi/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "dot-thu-phi", "1"]
-            },
-            "description": "Update existing fee period"
-          }
-        },
-        {
-          "name": "Delete Fee Period",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/dot-thu-phi/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "dot-thu-phi", "1"]
-            },
-            "description": "Delete fee period (ADMIN only)"
-          }
-        }
-      ]
-    },
-    {
-      "name": "6. Thu Phí Hộ Khẩu (Household Fees)",
-      "description": "Household fee payment management",
-      "item": [
-        {
-          "name": "Get All Fee Payments",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/thu-phi-ho-khau",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "thu-phi-ho-khau"]
-            },
-            "description": "Retrieve all fee payment records"
-          }
-        },
-        {
-          "name": "Get Payment Statistics",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/stats",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "thu-phi-ho-khau", "stats"]
-            },
-            "description": "Get payment statistics (total collected, pending, etc.)"
-          }
-        },
-        {
-          "name": "Calculate Fee for Household",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/calc?hoKhauId=1&dotThuPhiId=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "thu-phi-ho-khau", "calc"],
-              "query": [
-                {
-                  "key": "hoKhauId",
-                  "value": "1",
-                  "description": "Household ID"
-                },
-                {
-                  "key": "dotThuPhiId",
-                  "value": "1",
-                  "description": "Fee Period ID"
-                }
-              ]
-            },
-            "description": "Calculate fee amount for a household considering discounts (elderly, students)"
-          }
-        },
-        {
-          "name": "Get Payment by ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "thu-phi-ho-khau", "1"]
-            },
-            "description": "Get specific payment record by ID"
-          }
-        },
-        {
-          "name": "Get Payments by Household",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/ho-khau/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "thu-phi-ho-khau", "ho-khau", "1"]
-            },
-            "description": "Get all payment records for a specific household"
-          }
-        },
-        {
-          "name": "Get Payments by Fee Period",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/dot-thu-phi/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "thu-phi-ho-khau", "dot-thu-phi", "1"]
-            },
-            "description": "Get all payment records for a specific fee period"
-          }
-        },
-        {
-          "name": "Record Payment",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"hoKhauId\": 1,\n  \"dotThuPhiId\": 1,\n  \"soTienDaThu\": 18000,\n  \"ngayThu\": \"2025-01-15\",\n  \"months\": \"1\",\n  \"ghiChu\": \"Paid in full\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/thu-phi-ho-khau",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "thu-phi-ho-khau"]
-            },
-            "description": "Record a new fee payment (ADMIN/TOTRUONG/KETOAN)"
-          }
-        },
-        {
-          "name": "Update Payment",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"soTienDaThu\": 20000,\n  \"ghiChu\": \"Updated payment amount\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "thu-phi-ho-khau", "1"]
-            },
-            "description": "Update existing payment record"
-          }
-        },
-        {
-          "name": "Delete Payment",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "thu-phi-ho-khau", "1"]
-            },
-            "description": "Delete payment record (ADMIN only)"
-          }
-        }
-      ]
-    }
-  ]
+{
+	"info": {
+		"name": "Quản Lý Dân Cư API - Complete Collection",
+		"description": "Comprehensive API collection for QuanLyDanCu backend - Updated Oct 2025",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"version": "2.0.0"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"description": "User authentication endpoints",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('token', jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tenDangNhap\": \"admin\",\n  \"matKhau\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with admin credentials. Token is automatically saved to collection variable."
+					},
+					"response": [
+						{
+							"name": "Login Success Example",
+							"originalRequest": {
+								"method": "POST",
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/auth/login",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"username\": \"admin\",\n  \"role\": \"ROLE_ADMIN\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tenDangNhap\": \"newuser\",\n  \"matKhau\": \"password123\",\n  \"vaiTro\": \"ROLE_KETOAN\",\n  \"trangThai\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user account. Roles: ROLE_ADMIN, ROLE_TOTRUONG, ROLE_KETOAN"
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Hộ Khẩu (Household)",
+			"description": "Household management endpoints",
+			"item": [
+				{
+					"name": "Get All Households",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/ho-khau",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"ho-khau"
+							]
+						},
+						"description": "Retrieve all households with their details"
+					}
+				},
+				{
+					"name": "Get Household by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/ho-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"ho-khau",
+								"1"
+							]
+						},
+						"description": "Get specific household by ID"
+					}
+				},
+				{
+					"name": "Create Household",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"soHoKhau\": \"HK999\",\n  \"tenChuHo\": \"Nguyễn Văn Test\",\n  \"diaChiThuongTru\": \"123 Test Street\",\n  \"ghiChu\": \"Test household\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ho-khau",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"ho-khau"
+							]
+						},
+						"description": "Create a new household (ADMIN/TOTRUONG only)"
+					}
+				},
+				{
+					"name": "Update Household",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"soHoKhau\": \"HK999\",\n  \"tenChuHo\": \"Nguyễn Văn Test Updated\",\n  \"diaChiThuongTru\": \"456 Updated Street\",\n  \"ghiChu\": \"Updated test household\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ho-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"ho-khau",
+								"1"
+							]
+						},
+						"description": "Update existing household (ADMIN/TOTRUONG only)"
+					}
+				},
+				{
+					"name": "Delete Household",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/ho-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"ho-khau",
+								"1"
+							]
+						},
+						"description": "Delete household (ADMIN only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Nhân Khẩu (Citizen)",
+			"description": "Citizen management endpoints",
+			"item": [
+				{
+					"name": "Get All Citizens",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau"
+							]
+						},
+						"description": "Retrieve all citizens"
+					}
+				},
+				{
+					"name": "Get Citizen by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"1"
+							]
+						},
+						"description": "Get specific citizen by ID"
+					}
+				},
+				{
+					"name": "Search Citizens",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/search?keyword=Nguyễn",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"search"
+							],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "Nguyễn"
+								}
+							]
+						},
+						"description": "Search citizens by name, CCCD, or other fields"
+					}
+				},
+				{
+					"name": "Get Gender Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/stats/gender",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"stats",
+								"gender"
+							]
+						},
+						"description": "Get citizen count by gender"
+					}
+				},
+				{
+					"name": "Get Age Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/stats/age?underAge=18&retireAge=60",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"stats",
+								"age"
+							],
+							"query": [
+								{
+									"key": "underAge",
+									"value": "18"
+								},
+								{
+									"key": "retireAge",
+									"value": "60"
+								}
+							]
+						},
+						"description": "Get age distribution statistics"
+					}
+				},
+				{
+					"name": "Create Citizen",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"hoTen\": \"Test Citizen\",\n  \"ngaySinh\": \"1990-01-01\",\n  \"gioiTinh\": \"Nam\",\n  \"danToc\": \"Kinh\",\n  \"quocTich\": \"Việt Nam\",\n  \"ngheNghiep\": \"Developer\",\n  \"cmndCccd\": \"123456789012\",\n  \"ngayCap\": \"2020-01-01\",\n  \"noiCap\": \"CA TP.HCM\",\n  \"quanHeChuHo\": \"Con\",\n  \"hoKhauId\": 1,\n  \"ghiChu\": \"Test citizen\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau"
+							]
+						},
+						"description": "Create new citizen (ADMIN/TOTRUONG only)"
+					}
+				},
+				{
+					"name": "Update Citizen",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"hoTen\": \"Test Citizen Updated\",\n  \"ngheNghiep\": \"Senior Developer\",\n  \"ghiChu\": \"Updated information\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"1"
+							]
+						},
+						"description": "Update citizen information (ADMIN/TOTRUONG only)"
+					}
+				},
+				{
+					"name": "Delete Citizen",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"1"
+							]
+						},
+						"description": "Delete citizen (ADMIN only)"
+					}
+				},
+				{
+					"name": "Register Temporary Residence",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"noiTamTru\": \"123 Temporary Address\",\n  \"tuNgay\": \"2025-01-01\",\n  \"denNgay\": \"2025-12-31\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/1/tamtru",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"1",
+								"tamtru"
+							]
+						},
+						"description": "Register temporary residence for citizen"
+					}
+				},
+				{
+					"name": "Cancel Temporary Residence",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/1/tamtru",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"1",
+								"tamtru"
+							]
+						},
+						"description": "Cancel temporary residence registration"
+					}
+				},
+				{
+					"name": "Register Temporary Absence",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"noiTamVang\": \"Overseas\",\n  \"tuNgay\": \"2025-01-01\",\n  \"denNgay\": \"2025-06-30\",\n  \"lyDo\": \"Study abroad\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/1/tamvang",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"1",
+								"tamvang"
+							]
+						},
+						"description": "Register temporary absence for citizen"
+					}
+				},
+				{
+					"name": "Cancel Temporary Absence",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/1/tamvang",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"1",
+								"tamvang"
+							]
+						},
+						"description": "Cancel temporary absence registration"
+					}
+				},
+				{
+					"name": "Register Death",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ngayKhaiTu\": \"2025-01-01\",\n  \"lyDo\": \"Natural causes\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/nhan-khau/1/khaitu",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nhan-khau",
+								"1",
+								"khaitu"
+							]
+						},
+						"description": "Register death of citizen"
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Biến Động (Population Changes)",
+			"description": "Population change tracking endpoints",
+			"item": [
+				{
+					"name": "Get All Changes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/bien-dong",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"bien-dong"
+							]
+						},
+						"description": "Retrieve all population changes"
+					}
+				},
+				{
+					"name": "Get Change by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/bien-dong/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"bien-dong",
+								"1"
+							]
+						},
+						"description": "Get specific change record by ID"
+					}
+				},
+				{
+					"name": "Create Change Record",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"loai\": \"SINH\",\n  \"nhanKhauId\": 1,\n  \"noiDung\": \"New birth registered\",\n  \"thoiGian\": \"2025-01-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/bien-dong",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"bien-dong"
+							]
+						},
+						"description": "Create new change record. Types: SINH, TU, CHUYEN_DEN, CHUYEN_DI, TAM_VANG"
+					}
+				},
+				{
+					"name": "Update Change Record",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"loai\": \"SINH\",\n  \"noiDung\": \"Updated birth information\",\n  \"thoiGian\": \"2025-01-16\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/bien-dong/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"bien-dong",
+								"1"
+							]
+						},
+						"description": "Update existing change record"
+					}
+				},
+				{
+					"name": "Delete Change Record",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/bien-dong/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"bien-dong",
+								"1"
+							]
+						},
+						"description": "Delete change record (ADMIN only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Đợt Thu Phí (Fee Periods)",
+			"description": "Fee period management endpoints",
+			"item": [
+				{
+					"name": "Get All Fee Periods",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/dot-thu-phi",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"dot-thu-phi"
+							]
+						},
+						"description": "Retrieve all fee periods"
+					}
+				},
+				{
+					"name": "Get Fee Period by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/dot-thu-phi/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"dot-thu-phi",
+								"1"
+							]
+						},
+						"description": "Get specific fee period by ID"
+					}
+				},
+				{
+					"name": "Create Fee Period",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ten\": \"Phí vệ sinh tháng 1/2025\",\n  \"batDau\": \"2025-01-01\",\n  \"ketThuc\": \"2025-01-31\",\n  \"donGia\": 6000,\n  \"loai\": \"VE_SINH\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/dot-thu-phi",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"dot-thu-phi"
+							]
+						},
+						"description": "Create new fee period. Types: VE_SINH, QUAN_LY, DONG_GOP"
+					}
+				},
+				{
+					"name": "Update Fee Period",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ten\": \"Phí vệ sinh tháng 1/2025 (Updated)\",\n  \"batDau\": \"2025-01-01\",\n  \"ketThuc\": \"2025-01-31\",\n  \"donGia\": 7000,\n  \"loai\": \"VE_SINH\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/dot-thu-phi/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"dot-thu-phi",
+								"1"
+							]
+						},
+						"description": "Update existing fee period"
+					}
+				},
+				{
+					"name": "Delete Fee Period",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/dot-thu-phi/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"dot-thu-phi",
+								"1"
+							]
+						},
+						"description": "Delete fee period (ADMIN only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Thu Phí Hộ Khẩu (Household Fees)",
+			"description": "Household fee payment management",
+			"item": [
+				{
+					"name": "Get All Fee Payments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/thu-phi-ho-khau",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thu-phi-ho-khau"
+							]
+						},
+						"description": "Retrieve all fee payment records"
+					}
+				},
+				{
+					"name": "Get Payment Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/thu-phi-ho-khau/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thu-phi-ho-khau",
+								"stats"
+							]
+						},
+						"description": "Get payment statistics (total collected, pending, etc.)"
+					}
+				},
+				{
+					"name": "Calculate Fee for Household",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/thu-phi-ho-khau/calc?hoKhauId=1&dotThuPhiId=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thu-phi-ho-khau",
+								"calc"
+							],
+							"query": [
+								{
+									"key": "hoKhauId",
+									"value": "1",
+									"description": "Household ID"
+								},
+								{
+									"key": "dotThuPhiId",
+									"value": "1",
+									"description": "Fee Period ID"
+								}
+							]
+						},
+						"description": "Calculate fee amount for a household considering discounts (elderly, students)"
+					}
+				},
+				{
+					"name": "Get Payment by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thu-phi-ho-khau",
+								"1"
+							]
+						},
+						"description": "Get specific payment record by ID"
+					}
+				},
+				{
+					"name": "Get Payments by Household",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/thu-phi-ho-khau/ho-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thu-phi-ho-khau",
+								"ho-khau",
+								"1"
+							]
+						},
+						"description": "Get all payment records for a specific household"
+					}
+				},
+				{
+					"name": "Get Payments by Fee Period",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/thu-phi-ho-khau/dot-thu-phi/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thu-phi-ho-khau",
+								"dot-thu-phi",
+								"1"
+							]
+						},
+						"description": "Get all payment records for a specific fee period"
+					}
+				},
+				{
+					"name": "Record Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"hoKhauId\": 1,\n  \"dotThuPhiId\": 1,\n  \"soTienDaThu\": 18000,\n  \"ngayThu\": \"2025-01-15\",\n  \"months\": \"1\",\n  \"ghiChu\": \"Paid in full\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/thu-phi-ho-khau",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thu-phi-ho-khau"
+							]
+						},
+						"description": "Record a new fee payment (ADMIN/TOTRUONG/KETOAN)"
+					}
+				},
+				{
+					"name": "Update Payment",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"soTienDaThu\": 20000,\n  \"ghiChu\": \"Updated payment amount\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thu-phi-ho-khau",
+								"1"
+							]
+						},
+						"description": "Update existing payment record"
+					}
+				},
+				{
+					"name": "Delete Payment",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/thu-phi-ho-khau/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"thu-phi-ho-khau",
+								"1"
+							]
+						},
+						"description": "Delete payment record (ADMIN only)"
+					}
+				}
+			]
+		}
+	]
 }

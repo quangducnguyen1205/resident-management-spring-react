@@ -1,5 +1,6 @@
 package com.example.QuanLyDanCu.controller;
 
+import com.example.QuanLyDanCu.dto.request.DangKyTamTruTamVangRequestDto;
 import com.example.QuanLyDanCu.dto.request.NhanKhauRequestDto;
 import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
 import com.example.QuanLyDanCu.entity.NhanKhau;
@@ -15,14 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
-
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @RestController
 @RequestMapping("/api/nhan-khau")
@@ -38,7 +34,7 @@ public class NhanKhauController {
         @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
     })
     public ResponseEntity<List<NhanKhauResponseDto>> getAll() {
-        return ResponseEntity.ok(nhanKhauService.getAllDto());
+        return ResponseEntity.ok(nhanKhauService.getAll());
     }
 
     @GetMapping("/{id}")
@@ -50,7 +46,7 @@ public class NhanKhauController {
     public ResponseEntity<NhanKhauResponseDto> getById(
             @Parameter(description = "ID của nhân khẩu", example = "1")
             @PathVariable Long id) {
-        return ResponseEntity.ok(nhanKhauService.getByIdDto(id));
+        return ResponseEntity.ok(nhanKhauService.getById(id));
     }
 
     @PostMapping
@@ -63,7 +59,7 @@ public class NhanKhauController {
     public ResponseEntity<NhanKhauResponseDto> create(
             @Valid @RequestBody NhanKhauRequestDto dto,
             Authentication auth) {
-        NhanKhauResponseDto created = nhanKhauService.createDto(dto, auth);
+        NhanKhauResponseDto created = nhanKhauService.create(dto, auth);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -79,7 +75,7 @@ public class NhanKhauController {
             @PathVariable Long id,
             @Valid @RequestBody NhanKhauRequestDto dto,
             Authentication auth) {
-        return ResponseEntity.ok(nhanKhauService.updateDto(id, dto, auth));
+        return ResponseEntity.ok(nhanKhauService.update(id, dto, auth));
     }
 
     @DeleteMapping("/{id}")
@@ -99,46 +95,62 @@ public class NhanKhauController {
 
     // --- TẠM TRÚ ---
     @PutMapping("/{id}/tamtru")
-    public NhanKhau dangKyTamTru(
+    @Operation(summary = "Cập nhật thông tin tạm trú", description = "Cập nhập thông tin tạm trú theo ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ hoặc không tìm thấy nhân khẩu"),
+            @ApiResponse(responseCode = "403", description = "Không có quyền thực hiện thao tác")
+    })
+    public ResponseEntity<NhanKhauResponseDto> dangKyTamTru(
+            @Parameter(description = "ID của nhân khẩu", example = "1")
             @PathVariable Long id,
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody DangKyTamTruTamVangRequestDto dto,
             Authentication auth) {
-
-        LocalDate tu  = parseDateRequired(body.get("tu"), "tu");
-        LocalDate den = parseDateOptional(body.get("den"));
-        String lyDo   = body.get("lyDo") != null ? body.get("lyDo").toString() : null;
-
-        if (den != null && den.isBefore(tu)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Ngày kết thúc phải >= ngày bắt đầu");
-        }
-        return nhanKhauService.dangKyTamTru(id, tu, den, lyDo, auth);
+        return ResponseEntity.ok(nhanKhauService.dangKyTamTru(id, dto, auth));
     }
 
     @DeleteMapping("/{id}/tamtru")
-    public NhanKhau huyTamTru(@PathVariable Long id, Authentication auth) {
-        return nhanKhauService.huyTamTru(id, auth);
+    @Operation(summary = "Huỷ thông tin tạm trú", description = "Huỷ thông tin tạm trú theo ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Xóa thành công"),
+            @ApiResponse(responseCode = "400", description = "Không tìm thấy nhân khẩu"),
+            @ApiResponse(responseCode = "403", description = "Không có quyền thực hiện thao tác")
+    })
+    public ResponseEntity<Void> huyTamTru(
+            @Parameter(description = "ID của nhân khẩu", example = "1")
+            @PathVariable Long id,
+            Authentication auth) {
+         nhanKhauService.huyTamTru(id, auth);
+         return ResponseEntity.noContent().build();
     }
 
     // --- TẠM VẮNG ---
     @PutMapping("/{id}/tamvang")
-    public NhanKhau dangKyTamVang(
+    @Operation(summary = "Cập nhật thông tin tạm vắng", description = "Cập nhập thông tin tạm vắng theo ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ hoặc không tìm thấy nhân khẩu"),
+            @ApiResponse(responseCode = "403", description = "Không có quyền thực hiện thao tác")
+    })
+    public ResponseEntity<NhanKhauResponseDto> dangKyTamVang(
+            @Parameter(description = "ID của nhân khẩu", example = "1")
             @PathVariable Long id,
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody DangKyTamTruTamVangRequestDto dto,
             Authentication auth) {
 
-        LocalDate tu  = parseDateRequired(body.get("tu"), "tu");
-        LocalDate den = parseDateOptional(body.get("den"));
-        String lyDo   = body.get("lyDo") != null ? body.get("lyDo").toString() : null;
-
-        if (den != null && den.isBefore(tu)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Ngày kết thúc phải >= ngày bắt đầu");
-        }
-        return nhanKhauService.dangKyTamVang(id, tu, den, lyDo, auth);
+        return ResponseEntity.ok(nhanKhauService.dangKyTamVang(id, dto, auth));
     }
 
     @DeleteMapping("/{id}/tamvang")
-    public NhanKhau huyTamVang(@PathVariable Long id, Authentication auth) {
-        return nhanKhauService.huyTamVang(id, auth);
+    @Operation(summary = "Huỷ thông tin tạm vắng", description = "Huỷ thông tin tạm vắng theo ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Xóa thành công"),
+            @ApiResponse(responseCode = "400", description = "Không tìm thấy nhân khẩu"),
+            @ApiResponse(responseCode = "403", description = "Không có quyền thực hiện thao tác")
+    })
+    public ResponseEntity<Void> huyTamVang(@PathVariable Long id, Authentication auth) {
+        nhanKhauService.huyTamVang(id, auth);
+        return ResponseEntity.noContent().build();
     }
 
     // --- KHAI TỬ ---
@@ -189,25 +201,4 @@ public class NhanKhauController {
         return ResponseEntity.ok(nhanKhauService.statsByAge(underAge, retireAge));
     }
 
-
-    // ===== Helpers =====
-    private LocalDate parseDateRequired(Object v, String fieldName) {
-        if (v == null) {
-            throw new ResponseStatusException(BAD_REQUEST, "Thiếu trường ngày bắt buộc: " + fieldName + " (yyyy-MM-dd)");
-        }
-        try {
-            return (v instanceof LocalDate d) ? d : LocalDate.parse(v.toString());
-        } catch (DateTimeParseException e) {
-            throw new ResponseStatusException(BAD_REQUEST, "Sai định dạng ngày cho '" + fieldName + "'. Dùng yyyy-MM-dd");
-        }
-    }
-
-    private LocalDate parseDateOptional(Object v) {
-        if (v == null) return null;
-        try {
-            return (v instanceof LocalDate d) ? d : LocalDate.parse(v.toString());
-        } catch (DateTimeParseException e) {
-            throw new ResponseStatusException(BAD_REQUEST, "Sai định dạng ngày cho 'den'. Dùng yyyy-MM-dd");
-        }
-    }
 }

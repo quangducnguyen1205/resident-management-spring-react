@@ -1,5 +1,6 @@
 package com.example.QuanLyDanCu.entity;
 
+import com.example.QuanLyDanCu.enums.LoaiThuPhi;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -17,7 +18,11 @@ public class DotThuPhi {
     private Long id;
 
     private String tenDot;
-    private String loai;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "loai", length = 20)
+    private LoaiThuPhi loai;
+    
     private LocalDate ngayBatDau;
     private LocalDate ngayKetThuc;
     

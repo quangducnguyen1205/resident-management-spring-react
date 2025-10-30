@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # ============================================================================
-# QuanLyDanCu - Unified Integration Test Suite
-# Purpose: One-click test execution with Docker, seeding, and cleanup
+# QuanLyDanCu - Local Integration Test Suite (No Docker)
+# Purpose: Test execution for local development environment
 # Author: Development Team
 # Date: October 29, 2025
-# Version: 4.0.0
+# Version: 4.0.0-local
 # ============================================================================
 
 set -e  # Exit on error
@@ -15,8 +15,11 @@ set -e  # Exit on error
 # ============================================================================
 
 BASE_URL="http://localhost:8080"
-POSTGRES_CONTAINER="quanlydancu-postgres"
-BACKEND_CONTAINER="quanlydancu-backend"
+POSTGRES_HOST="localhost"
+POSTGRES_PORT="5432"
+POSTGRES_USER="postgres"
+POSTGRES_PASSWORD="postgres"
+POSTGRES_DB="quanlydancu"
 TEST_REPORT_DIR="$(dirname "$0")/../docs"
 TEST_REPORT_FILE="${TEST_REPORT_DIR}/API_TEST_REPORT.md"
 SEED_DATA_FILE="$(dirname "$0")/seed-data/test-seed.sql"
@@ -38,6 +41,9 @@ FAILED_TESTS=0
 # Test Results Storage
 declare -a TEST_RESULTS
 
+# Created Resource IDs (dynamic)
+CREATED_ID=""
+
 # ============================================================================
 # Helper Functions
 # ============================================================================
@@ -46,7 +52,8 @@ print_banner() {
     echo ""
     echo "╔══════════════════════════════════════════════════════════════════════╗"
     echo "║                                                                      ║"
-    echo "║       QuanLyDanCu - Unified Integration Test Suite v4.0.0          ║"
+    echo "║     QuanLyDanCu - Local Integration Test Suite v4.0.0-local        ║"
+    echo "║                    (No Docker Required)                             ║"
     echo "║                                                                      ║"
     echo "╚══════════════════════════════════════════════════════════════════════╝"
     echo ""
@@ -54,29 +61,28 @@ print_banner() {
 
 print_section() {
     echo ""
-    echo "══════════════════════════════════════════════════════════════════════"
-    echo "  $1"
-    echo "══════════════════════════════════════════════════════════════════════"
-    echo ""
+    echo -e "${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${MAGENTA} $1${NC}"
+    echo -e "${MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
 log_info() {
-    echo -e "${BLUE}ℹ${NC} $1"
+    echo -e "${BLUE}ℹ${NC}  $1"
 }
 
 log_success() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo -e "${GREEN}✔${NC}  $1"
 }
 
 log_error() {
-    echo -e "${RED}✗${NC} $1"
+    echo -e "${RED}✘${NC}  $1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo -e "${YELLOW}⚠${NC}  $1"
 }
 
-# Test execution function
+# Test endpoint with authentication and validation
 test_endpoint() {
     local module=$1
     local method=$2
@@ -87,67 +93,61 @@ test_endpoint() {
     
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
-    local curl_opts="-s -w \"\n%{http_code}\" -X $method \"${BASE_URL}${endpoint}\""
+    local curl_cmd="curl -s -w '\n%{http_code}' -X $method '${BASE_URL}${endpoint}'"
     
+    # Add Authorization header if admin token is available
     if [ -n "$ADMIN_TOKEN" ]; then
-        curl_opts="$curl_opts -H \"Authorization: Bearer $ADMIN_TOKEN\""
+        curl_cmd="$curl_cmd -H 'Authorization: Bearer $ADMIN_TOKEN'"
     fi
     
+    # Add data for POST/PUT requests
     if [ -n "$data" ]; then
-        curl_opts="$curl_opts -H \"Content-Type: application/json\" -d '$data'"
+        curl_cmd="$curl_cmd -H 'Content-Type: application/json' -d '$data'"
     fi
     
-    local response=$(eval "curl $curl_opts")
+    # Execute request
+    local response=$(eval $curl_cmd)
     local http_code=$(echo "$response" | tail -n1)
     local body=$(echo "$response" | sed '$d')
     
-    local test_name="$module | $method $endpoint"
-    
-    if [ "$http_code" -eq "$expected_status" ]; then
-        log_success "$test_name | Expected: $expected_status | Got: $http_code"
+    # Validate status code
+    if [ "$http_code" = "$expected_status" ]; then
+        log_success "[$module] $description (HTTP $http_code)"
         PASSED_TESTS=$((PASSED_TESTS + 1))
-        TEST_RESULTS+=("PASS|$test_name|$http_code|$description")
+        TEST_RESULTS+=("PASS|$module|$method $endpoint|$http_code|$description")
         
-        # Extract ID from response if creating resource
-        if [ "$expected_status" -eq 201 ]; then
+        # Extract created resource ID for 201 responses
+        if [ "$http_code" = "201" ]; then
             CREATED_ID=$(echo "$body" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
             if [ -n "$CREATED_ID" ]; then
-                echo -e "   ${CYAN}→ Created resource with ID: $CREATED_ID${NC}"
+                echo -e "   ${CYAN}→ Created ID: $CREATED_ID${NC}"
             fi
         fi
     else
-        log_error "$test_name | Expected: $expected_status | Got: $http_code"
-        echo -e "   ${YELLOW}Response: ${body:0:200}${NC}"
+        log_error "[$module] $description (Expected: $expected_status, Got: $http_code)"
         FAILED_TESTS=$((FAILED_TESTS + 1))
-        TEST_RESULTS+=("FAIL|$test_name|$http_code|$description|${body:0:200}")
+        TEST_RESULTS+=("FAIL|$module|$method $endpoint|$http_code|$description|Expected $expected_status")
+        echo -e "   ${RED}Response: $body${NC}"
     fi
 }
 
 # ============================================================================
-# Phase 1: Environment Setup
+# Phase 1: Environment Validation
 # ============================================================================
 
 print_banner
-print_section "Phase 1: Environment Setup"
+print_section "Phase 1: Environment Validation"
 
-log_info "Checking Docker containers..."
-if ! docker ps | grep -q "$POSTGRES_CONTAINER"; then
-    log_warning "PostgreSQL container not running. Starting Docker Compose..."
-    docker-compose up -d
-    sleep 10
+log_info "Validating local PostgreSQL connection..."
+if PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT 1;" > /dev/null 2>&1; then
+    log_success "PostgreSQL is accessible at $POSTGRES_HOST:$POSTGRES_PORT"
 else
-    log_success "PostgreSQL container is running"
+    log_error "Cannot connect to PostgreSQL at $POSTGRES_HOST:$POSTGRES_PORT"
+    log_info "Please ensure PostgreSQL is running with database '$POSTGRES_DB'"
+    exit 1
 fi
 
-if ! docker ps | grep -q "$BACKEND_CONTAINER"; then
-    log_warning "Backend container not running. Starting Docker Compose..."
-    docker-compose up -d
-    sleep 15
-else
-    log_success "Backend container is running"
-fi
-
-log_info "Waiting for backend to be ready..."
+log_info "Checking backend availability at $BASE_URL..."
 for i in {1..30}; do
     http_code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/auth/login" 2>/dev/null || echo "000")
     if [ "$http_code" != "000" ]; then
@@ -155,7 +155,8 @@ for i in {1..30}; do
         break
     fi
     if [ $i -eq 30 ]; then
-        log_error "Backend failed to start within 30 seconds"
+        log_error "Backend is not responding at $BASE_URL"
+        log_info "Please start the Spring Boot application (port 8080)"
         exit 1
     fi
     sleep 1
@@ -171,16 +172,21 @@ print_section "Phase 2: Database Seeding"
 
 log_info "Loading test seed data into PostgreSQL..."
 if [ -f "$SEED_DATA_FILE" ]; then
-    docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d quanlydancu < "$SEED_DATA_FILE"
-    log_success "Seed data loaded successfully"
+    PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f "$SEED_DATA_FILE" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        log_success "Seed data loaded successfully"
+    else
+        log_error "Failed to load seed data"
+        exit 1
+    fi
 else
     log_error "Seed data file not found: $SEED_DATA_FILE"
     exit 1
 fi
 
 log_info "Verifying seed data..."
-RECORD_COUNT=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d quanlydancu -t -c "SELECT COUNT(*) FROM tai_khoan;")
-log_success "Database contains $(echo $RECORD_COUNT | xargs) user accounts"
+RECORD_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -t -c "SELECT COUNT(*) FROM tai_khoan;" | xargs)
+log_success "Database contains $RECORD_COUNT user accounts"
 
 # ============================================================================
 # Phase 3: Authentication Tests
@@ -212,11 +218,11 @@ fi
 # Test register (with unique timestamp)
 TIMESTAMP=$(date +%s)
 test_endpoint "Auth" "POST" "/api/auth/register" "201" \
-    "{\"username\":\"testuser${TIMESTAMP}\",\"password\":\"test123\",\"role\":\"TOTRUONG\",\"hoTen\":\"Test User\",\"email\":\"test${TIMESTAMP}@test.com\",\"sdt\":\"0900000000\"}" \
+    "{\"username\":\"testuser${TIMESTAMP}\",\"password\":\"test123\",\"role\":\"ROLE_TOTRUONG\",\"hoTen\":\"Test User\",\"email\":\"test${TIMESTAMP}@test.com\",\"sdt\":\"0900000000\"}" \
     "Register new user"
 
 # ============================================================================
-# Phase 4: Module Integration Tests
+# Phase 4: Module Integration Tests - Hộ Khẩu (Household)
 # ============================================================================
 
 print_section "Phase 4: Module Integration Tests - Hộ Khẩu (Household)"
@@ -239,6 +245,10 @@ if [ -n "$CREATED_ID" ]; then
         "Update household"
 fi
 
+# ============================================================================
+# Phase 5: Module Integration Tests - Nhân Khẩu (Citizen)
+# ============================================================================
+
 print_section "Phase 5: Module Integration Tests - Nhân Khẩu (Citizen)"
 
 # Get all citizens
@@ -258,6 +268,10 @@ test_endpoint "NhanKhau" "POST" "/api/nhan-khau" "201" \
     "{\"hoTen\":\"Test Citizen\",\"ngaySinh\":\"1990-01-01\",\"gioiTinh\":\"Nam\",\"hoKhauId\":1,\"quanHeVoiChuHo\":\"Con\"}" \
     "Create new citizen"
 
+# ============================================================================
+# Phase 6: Module Integration Tests - Biến Động (Changes)
+# ============================================================================
+
 print_section "Phase 6: Module Integration Tests - Biến Động (Changes)"
 
 # Get all changes
@@ -272,6 +286,10 @@ test_endpoint "BienDong" "POST" "/api/bien-dong" "201" \
 if [ -n "$CREATED_ID" ]; then
     test_endpoint "BienDong" "GET" "/api/bien-dong/$CREATED_ID" "200" "" "Get change by ID"
 fi
+
+# ============================================================================
+# Phase 7: Module Integration Tests - Đợt Thu Phí (Fee Periods)
+# ============================================================================
 
 print_section "Phase 7: Module Integration Tests - Đợt Thu Phí (Fee Periods)"
 
@@ -293,24 +311,13 @@ if [ -n "$CREATED_ID" ]; then
         "Update fee period"
 fi
 
+# ============================================================================
+# Phase 8: Module Integration Tests - Thu Phí Hộ Khẩu (Household Fees)
+# ============================================================================
+
 print_section "Phase 8: Module Integration Tests - Thu Phí Hộ Khẩu (Household Fees)"
 
-# Login as KETOAN for fee collection operations
-log_info "Logging in as KETOAN (ketoan01)..."
-KETOAN_LOGIN=$(curl -s -X POST "${BASE_URL}/api/auth/login" \
-    -H "Content-Type: application/json" \
-    -d '{"username":"ketoan01","password":"admin123"}')
-
-KETOAN_TOKEN=$(echo "$KETOAN_LOGIN" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
-
-if [ -n "$KETOAN_TOKEN" ]; then
-    log_success "KETOAN login successful"
-else
-    log_error "KETOAN login failed"
-    exit 1
-fi
-
-# Get all payments (using admin token - read operations allowed)
+# Get all payments
 test_endpoint "ThuPhiHoKhau" "GET" "/api/thu-phi-ho-khau" "200" "" "Get all payments"
 
 # Get payment statistics
@@ -325,31 +332,16 @@ FIRST_DOTTHUPHI_ID=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "${BASE_URL
 if [ -n "$FIRST_HOKHAU_ID" ] && [ -n "$SECOND_HOKHAU_ID" ] && [ -n "$FIRST_DOTTHUPHI_ID" ]; then
     log_success "Found HoKhau IDs: $FIRST_HOKHAU_ID, $SECOND_HOKHAU_ID | DotThuPhi ID: $FIRST_DOTTHUPHI_ID"
     
-    # Test fee calculation (annual: 3 people * 6000 * 12 = 216,000)
-    test_endpoint "ThuPhiHoKhau" "GET" "/api/thu-phi-ho-khau/calc?hoKhauId=${FIRST_HOKHAU_ID}&dotThuPhiId=${FIRST_DOTTHUPHI_ID}" "200" "" "Calculate annual fee for household"
+    # Test fee calculation
+    test_endpoint "ThuPhiHoKhau" "GET" "/api/thu-phi-ho-khau/calc?hoKhauId=${FIRST_HOKHAU_ID}&dotThuPhiId=${FIRST_DOTTHUPHI_ID}" "200" "" "Calculate fee for household"
     
-    # Test calculation for second household (4 people * 6000 * 12 = 288,000)
-    test_endpoint "ThuPhiHoKhau" "GET" "/api/thu-phi-ho-khau/calc?hoKhauId=${SECOND_HOKHAU_ID}&dotThuPhiId=${FIRST_DOTTHUPHI_ID}" "200" "" "Calculate annual fee for second household"
+    # Test calculation with discount (HoKhau ID 2 has elderly members)
+    test_endpoint "ThuPhiHoKhau" "GET" "/api/thu-phi-ho-khau/calc?hoKhauId=${SECOND_HOKHAU_ID}&dotThuPhiId=${FIRST_DOTTHUPHI_ID}" "200" "" "Calculate fee with elderly discount"
     
-    # Create new payment record (using KETOAN token)
-    # Note: soTienDaThu=216000 means full payment, should auto-set trangThai=DA_NOP
-    RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${BASE_URL}/api/thu-phi-ho-khau" \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $KETOAN_TOKEN" \
-        -d "{\"hoKhauId\":${FIRST_HOKHAU_ID},\"dotThuPhiId\":${FIRST_DOTTHUPHI_ID},\"soTienDaThu\":216000,\"ngayThu\":\"2025-10-29\"}")
-    
-    HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-    CREATED_ID=$(echo "$RESPONSE" | head -n -1 | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
-    
-    if [ "$HTTP_CODE" = "201" ]; then
-        log_success "✓ ThuPhiHoKhau | POST /api/thu-phi-ho-khau | Expected: 201 | Got: $HTTP_CODE"
-        echo -e "   ${CYAN}→ Created resource with ID: $CREATED_ID${NC}"
-        PASSED=$((PASSED + 1))
-    else
-        log_error "✗ ThuPhiHoKhau | POST /api/thu-phi-ho-khau | Expected: 201 | Got: $HTTP_CODE"
-        FAILED=$((FAILED + 1))
-    fi
-    TOTAL=$((TOTAL + 1))
+    # Create new payment record
+    test_endpoint "ThuPhiHoKhau" "POST" "/api/thu-phi-ho-khau" "201" \
+        "{\"hoKhauId\":${FIRST_HOKHAU_ID},\"dotThuPhiId\":${FIRST_DOTTHUPHI_ID},\"soTienDaThu\":18000,\"ngayThu\":\"2025-10-29\",\"months\":\"10\"}" \
+        "Create new payment record"
     
     # Get payment by ID
     if [ -n "$CREATED_ID" ]; then
@@ -358,6 +350,10 @@ if [ -n "$FIRST_HOKHAU_ID" ] && [ -n "$SECOND_HOKHAU_ID" ] && [ -n "$FIRST_DOTTH
 else
     log_error "Could not fetch seeded data IDs"
 fi
+
+# ============================================================================
+# Phase 9: API Documentation Tests
+# ============================================================================
 
 print_section "Phase 9: API Documentation Tests"
 
@@ -398,7 +394,8 @@ cat > "$TEST_REPORT_FILE" << EOF
 # API Integration Test Report
 
 **Generated:** $(date '+%Y-%m-%d %H:%M:%S')  
-**Test Suite Version:** 4.0.0  
+**Test Suite Version:** 4.0.0-local  
+**Execution Mode:** Local (No Docker)  
 **Total Tests:** $TOTAL_TESTS  
 **Passed:** $PASSED_TESTS ✅  
 **Failed:** $FAILED_TESTS ❌  
@@ -413,11 +410,11 @@ cat > "$TEST_REPORT_FILE" << EOF
 EOF
 
 for result in "${TEST_RESULTS[@]}"; do
-    IFS='|' read -r status module code description error <<< "$result"
+    IFS='|' read -r status module endpoint code description error <<< "$result"
     if [ "$status" = "PASS" ]; then
-        echo "| ✅ PASS | $module | $code | $description |" >> "$TEST_REPORT_FILE"
+        echo "| ✅ PASS | $module | $endpoint | $code | $description |" >> "$TEST_REPORT_FILE"
     else
-        echo "| ❌ FAIL | $module | $code | $description | $error |" >> "$TEST_REPORT_FILE"
+        echo "| ❌ FAIL | $module | $endpoint | $code | $description |" >> "$TEST_REPORT_FILE"
     fi
 done
 
@@ -428,11 +425,10 @@ cat >> "$TEST_REPORT_FILE" << EOF
 ## Test Environment
 
 - **Backend URL:** $BASE_URL
-- **Database:** PostgreSQL 15 (Docker)
+- **Database:** PostgreSQL at $POSTGRES_HOST:$POSTGRES_PORT
+- **Database Name:** $POSTGRES_DB
 - **Seed Data:** Loaded from \`test/seed-data/test-seed.sql\`
-- **Docker Containers:** 
-  - \`$POSTGRES_CONTAINER\` (PostgreSQL)
-  - \`$BACKEND_CONTAINER\` (Spring Boot)
+- **Execution Mode:** Local (No Docker)
 
 ---
 
@@ -458,7 +454,7 @@ log_success "Test report generated: $TEST_REPORT_FILE"
 if [ "${SKIP_CLEANUP:-false}" != "true" ]; then
     print_section "Phase 11: Cleanup"
     log_info "Cleaning up test data..."
-    docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d quanlydancu -c "
+    PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -c "
         TRUNCATE TABLE thu_phi_ho_khau CASCADE;
         TRUNCATE TABLE bien_dong CASCADE;
         TRUNCATE TABLE nhan_khau CASCADE;

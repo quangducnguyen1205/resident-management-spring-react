@@ -1,5 +1,6 @@
 package com.example.QuanLyDanCu.dto.response;
 
+import com.example.QuanLyDanCu.enums.LoaiThuPhi;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -17,8 +18,8 @@ public class DotThuPhiResponseDto {
     @Schema(description = "Tên đợt thu", example = "Thu phí quản lý tháng 1/2025")
     private String tenDot;
 
-    @Schema(description = "Loại phí", example = "QUAN_LY")
-    private String loai;
+    @Schema(description = "Loại phí: BAT_BUOC hoặc TU_NGUYEN", example = "BAT_BUOC")
+    private LoaiThuPhi loai;
 
     @Schema(description = "Ngày bắt đầu")
     private LocalDate ngayBatDau;

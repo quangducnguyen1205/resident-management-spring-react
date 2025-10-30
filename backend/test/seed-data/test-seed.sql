@@ -28,16 +28,16 @@ ALTER SEQUENCE thu_phi_ho_khau_id_seq RESTART WITH 1;
 -- ============================================================================
 
 INSERT INTO tai_khoan (ten_dang_nhap, mat_khau, vai_tro, ho_ten, email, ngay_tao, trang_thai) VALUES
--- Admin account
-('admin', '$2a$10$XQxPpz5bGvEj.vGKZvzJp.7K8xQZvZ5Qp8k8L6jM4J4q8QxQxQxQx', 'ROLE_ADMIN', 'Nguyễn Quản Trị', 'admin@quanlydancu.vn', NOW(), 'ACTIVE'),
+-- Admin account (password: admin123)
+('admin', '$2a$10$WANbEy0NfxVIFGJUn2RYIOe1grhQOqMPmqE.96SrePqg5RhITH4xO', 'ADMIN', 'Nguyễn Quản Trị', 'admin@quanlydancu.vn', NOW(), 'ACTIVE'),
 
--- Neighborhood leaders (Tổ trưởng)
-('totruong01', '$2a$10$XQxPpz5bGvEj.vGKZvzJp.7K8xQZvZ5Qp8k8L6jM4J4q8QxQxQxQx', 'ROLE_TOTRUONG', 'Trần Văn Tổ', 'totruong01@quanlydancu.vn', NOW(), 'ACTIVE'),
-('totruong02', '$2a$10$XQxPpz5bGvEj.vGKZvzJp.7K8xQZvZ5Qp8k8L6jM4J4q8QxQxQxQx', 'ROLE_TOTRUONG', 'Lê Thị Lan', 'totruong02@quanlydancu.vn', NOW(), 'ACTIVE'),
+-- Neighborhood leaders (Tổ trưởng) (password: admin123)
+('totruong01', '$2a$10$WANbEy0NfxVIFGJUn2RYIOe1grhQOqMPmqE.96SrePqg5RhITH4xO', 'TOTRUONG', 'Trần Văn Tổ', 'totruong01@quanlydancu.vn', NOW(), 'ACTIVE'),
+('totruong02', '$2a$10$WANbEy0NfxVIFGJUn2RYIOe1grhQOqMPmqE.96SrePqg5RhITH4xO', 'TOTRUONG', 'Lê Thị Lan', 'totruong02@quanlydancu.vn', NOW(), 'ACTIVE'),
 
--- Fee collectors (Kế toán)
-('ketoan01', '$2a$10$XQxPpz5bGvEj.vGKZvzJp.7K8xQZvZ5Qp8k8L6jM4J4q8QxQxQxQx', 'ROLE_KETOAN', 'Phạm Văn Toán', 'ketoan01@quanlydancu.vn', NOW(), 'ACTIVE'),
-('ketoan02', '$2a$10$XQxPpz5bGvEj.vGKZvzJp.7K8xQZvZ5Qp8k8L6jM4J4q8QxQxQxQx', 'ROLE_KETOAN', 'Hoàng Thị Hoa', 'ketoan02@quanlydancu.vn', NOW(), 'ACTIVE');
+-- Fee collectors (Kế toán) (password: admin123)
+('ketoan01', '$2a$10$WANbEy0NfxVIFGJUn2RYIOe1grhQOqMPmqE.96SrePqg5RhITH4xO', 'KETOAN', 'Phạm Văn Toán', 'ketoan01@quanlydancu.vn', NOW(), 'ACTIVE'),
+('ketoan02', '$2a$10$WANbEy0NfxVIFGJUn2RYIOe1grhQOqMPmqE.96SrePqg5RhITH4xO', 'KETOAN', 'Hoàng Thị Hoa', 'ketoan02@quanlydancu.vn', NOW(), 'ACTIVE');
 
 -- ============================================================================
 -- 2. HO_KHAU (Households)
@@ -130,80 +130,79 @@ INSERT INTO nhan_khau (ho_ten, ngay_sinh, gioi_tinh, cmnd_cccd, nghe_nghiep, qua
 -- 4. DOT_THU_PHI (Fee Collection Periods)
 -- Based on business rules: 6,000 VND per person per month
 -- Column names: ten_dot, loai, ngay_bat_dau, ngay_ket_thuc, dinh_muc, created_by, created_at, updated_at
+-- Loại phí: BAT_BUOC (bắt buộc) hoặc TU_NGUYEN (tự nguyện)
 -- ============================================================================
 
 INSERT INTO dot_thu_phi (ten_dot, loai, ngay_bat_dau, ngay_ket_thuc, dinh_muc, created_by, created_at, updated_at) VALUES
--- January 2025 - Sanitation Fee
-('Phí vệ sinh tháng 1/2025', 'VE_SINH', '2025-01-01', '2025-01-31', 6000.00, 1, NOW(), NOW()),
+-- January 2025 - Sanitation Fee (Mandatory)
+('Phí vệ sinh tháng 1/2025', 'BAT_BUOC', '2025-01-01', '2025-01-31', 6000.00, 1, NOW(), NOW()),
 
--- February 2025 - Sanitation Fee
-('Phí vệ sinh tháng 2/2025', 'VE_SINH', '2025-02-01', '2025-02-28', 6000.00, 1, NOW(), NOW()),
+-- February 2025 - Sanitation Fee (Mandatory)
+('Phí vệ sinh tháng 2/2025', 'BAT_BUOC', '2025-02-01', '2025-02-28', 6000.00, 1, NOW(), NOW()),
 
--- March 2025 - Sanitation Fee
-('Phí vệ sinh tháng 3/2025', 'VE_SINH', '2025-03-01', '2025-03-31', 6000.00, 1, NOW(), NOW()),
+-- March 2025 - Sanitation Fee (Mandatory)
+('Phí vệ sinh tháng 3/2025', 'BAT_BUOC', '2025-03-01', '2025-03-31', 6000.00, 1, NOW(), NOW()),
 
--- Q1 2025 - Management Fee
-('Phí quản lý Q1/2025', 'QUAN_LY', '2025-01-01', '2025-03-31', 50000.00, 1, NOW(), NOW()),
+-- Q1 2025 - Management Fee (Mandatory)
+('Phí quản lý Q1/2025', 'BAT_BUOC', '2025-01-01', '2025-03-31', 50000.00, 1, NOW(), NOW()),
 
--- Q2 2025 - Management Fee
-('Phí quản lý Q2/2025', 'QUAN_LY', '2025-04-01', '2025-06-30', 50000.00, 1, NOW(), NOW()),
+-- Q2 2025 - Management Fee (Mandatory)
+('Phí quản lý Q2/2025', 'BAT_BUOC', '2025-04-01', '2025-06-30', 50000.00, 1, NOW(), NOW()),
 
--- Special contribution
-('Đóng góp xây nhà văn hóa', 'DONG_GOP', '2025-01-01', '2025-12-31', 100000.00, 1, NOW(), NOW());
+-- Special contribution (Voluntary)
+('Đóng góp xây nhà văn hóa', 'TU_NGUYEN', '2025-01-01', '2025-12-31', 100000.00, 1, NOW(), NOW());
 
 -- ============================================================================
 -- 5. THU_PHI_HO_KHAU (Household Fee Payments)
--- Based on business rules: amount = num_of_people * 6000 * months
--- Column names: ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at
+-- Based on NEW business rules: Annual sanitation fee = 6000 * 12 * people_count
+-- Exclude temporarily absent people (tam_vang_den IS NOT NULL AND tam_vang_den >= CURRENT_DATE)
+-- Column names: ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at
+-- trang_thai: CHUA_NOP (chưa nộp đủ) hoặc DA_NOP (đã nộp đủ)
 -- ============================================================================
 
--- HK001: 3 members, paid Jan-Feb (no discount)
-INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at) VALUES
-(1, 1, 18000.00, '2025-01-15', '1', 4, 'Đã thanh toán đủ tháng 1', NOW()),
-(1, 2, 18000.00, '2025-02-18', '2', 4, 'Đã thanh toán đủ tháng 2', NOW());
+-- HK001: 3 members, full payment (3 * 6000 * 12 = 216,000)
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(1, 1, 3, 216000.00, 216000.00, 'DA_NOP', 'Cả năm 2025', '2025-01-15', 4, 'Đã thanh toán đủ phí vệ sinh năm 2025', NOW());
 
--- HK002: 4 members, paid Jan with discount (4 * 6000 * 0.8 = 19,200)
-INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at) VALUES
-(2, 1, 19200.00, '2025-01-20', '1', 4, 'Đã giảm 20% (có người cao tuổi)', NOW());
+-- HK002: 4 members, full payment (4 * 6000 * 12 = 288,000)
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(2, 1, 4, 288000.00, 288000.00, 'DA_NOP', 'Cả năm 2025', '2025-01-20', 4, 'Đã thanh toán đủ phí vệ sinh năm 2025', NOW());
 
--- HK003: 3 members, paid Jan with discount (3 * 6000 * 0.8 = 14,400)
-INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at) VALUES
-(3, 1, 14400.00, '2025-01-22', '1', 4, 'Đã giảm 20% (có sinh viên)', NOW()),
-(3, 2, 14400.00, '2025-02-20', '2', 5, 'Đã giảm 20% (có sinh viên)', NOW());
+-- HK003: 3 members, full payment (3 * 6000 * 12 = 216,000)
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(3, 1, 3, 216000.00, 216000.00, 'DA_NOP', 'Cả năm 2025', '2025-01-22', 5, 'Đã thanh toán đủ phí vệ sinh năm 2025', NOW());
 
--- HK004: 5 members, paid Jan-Feb with discount (5 * 6000 * 0.8 = 24,000)
-INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at) VALUES
-(4, 1, 24000.00, '2025-01-25', '1', 5, 'Đã giảm 20% (có người cao tuổi và sinh viên)', NOW()),
-(4, 2, 24000.00, '2025-02-22', '2', 5, 'Đã giảm 20% (có người cao tuổi và sinh viên)', NOW());
+-- HK004: 5 members, full payment (5 * 6000 * 12 = 360,000)
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(4, 1, 5, 360000.00, 360000.00, 'DA_NOP', 'Cả năm 2025', '2025-01-25', 5, 'Đã thanh toán đủ phí vệ sinh năm 2025', NOW());
 
--- HK005: 7 members, paid Jan-Feb with discount (7 * 6000 * 0.8 = 33,600)
-INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at) VALUES
-(5, 1, 33600.00, '2025-01-28', '1', 5, 'Đã giảm 20% (có người cao tuổi và học sinh)', NOW()),
-(5, 2, 33600.00, '2025-02-25', '2', 4, 'Đã giảm 20% (có người cao tuổi và học sinh)', NOW());
+-- HK005: 7 members, full payment (7 * 6000 * 12 = 504,000)
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(5, 1, 7, 504000.00, 504000.00, 'DA_NOP', 'Cả năm 2025', '2025-01-28', 5, 'Đã thanh toán đủ phí vệ sinh năm 2025', NOW());
 
--- HK006: 1 member, paid Jan-Feb (no discount)
-INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at) VALUES
-(6, 1, 6000.00, '2025-01-30', '1', 4, 'Đã thanh toán đủ tháng 1', NOW()),
-(6, 2, 6000.00, '2025-02-28', '2', 4, 'Đã thanh toán đủ tháng 2', NOW());
+-- HK006: 1 member, full payment (1 * 6000 * 12 = 72,000)
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(6, 1, 1, 72000.00, 72000.00, 'DA_NOP', 'Cả năm 2025', '2025-01-30', 4, 'Đã thanh toán đủ phí vệ sinh năm 2025', NOW());
 
--- HK007: 2 members, paid Jan only (unpaid Feb)
-INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at) VALUES
-(7, 1, 12000.00, '2025-01-18', '1', 5, 'Đã thanh toán đủ tháng 1', NOW());
+-- HK007: 2 members, partial payment (2 * 6000 * 12 = 144,000, paid only 100,000)
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(7, 1, 2, 144000.00, 100000.00, 'CHUA_NOP', 'Cả năm 2025', '2025-01-18', 5, 'Chưa thanh toán đủ, còn thiếu 44,000 VND', NOW());
 
--- HK008: 4 members, not paid yet (new household)
--- (No payment records for HK008 - will be used for testing unpaid households)
+-- HK008: 4 members, not paid yet (4 * 6000 * 12 = 288,000, paid 0)
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(8, 1, 4, 288000.00, 0.00, 'CHUA_NOP', 'Cả năm 2025', NULL, NULL, 'Chưa thanh toán', NOW());
 
--- Management fee payments (Q1 2025)
-INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at) VALUES
-(1, 4, 150000.00, '2025-01-15', '1,2,3', 4, 'Phí quản lý Q1 - 3 tháng', NOW()),
-(2, 4, 150000.00, '2025-01-20', '1,2,3', 4, 'Phí quản lý Q1 - 3 tháng', NOW()),
-(3, 4, 150000.00, '2025-01-22', '1,2,3', 4, 'Phí quản lý Q1 - 3 tháng', NOW());
+-- Management fee payments (Q1 2025) - using old schema for other fee types
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(1, 4, 3, 150000.00, 150000.00, 'DA_NOP', 'Quý 1/2025', '2025-01-15', 4, 'Phí quản lý Q1', NOW()),
+(2, 4, 4, 150000.00, 150000.00, 'DA_NOP', 'Quý 1/2025', '2025-01-20', 4, 'Phí quản lý Q1', NOW()),
+(3, 4, 3, 150000.00, 150000.00, 'DA_NOP', 'Quý 1/2025', '2025-01-22', 4, 'Phí quản lý Q1', NOW());
 
 -- Voluntary contribution
-INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_tien_da_thu, ngay_thu, months, collected_by, ghi_chu, created_at) VALUES
-(1, 6, 200000.00, '2025-01-15', '', 4, 'Đóng góp tự nguyện', NOW()),
-(2, 6, 150000.00, '2025-01-20', '', 4, 'Đóng góp tự nguyện', NOW()),
-(4, 6, 300000.00, '2025-01-25', '', 5, 'Đóng góp tự nguyện', NOW());
+INSERT INTO thu_phi_ho_khau (ho_khau_id, dot_thu_phi_id, so_nguoi, tong_phi, so_tien_da_thu, trang_thai, period_description, ngay_thu, collected_by, ghi_chu, created_at) VALUES
+(1, 6, 3, 200000.00, 200000.00, 'DA_NOP', 'Năm 2025', '2025-01-15', 4, 'Đóng góp tự nguyện', NOW()),
+(2, 6, 4, 150000.00, 150000.00, 'DA_NOP', 'Năm 2025', '2025-01-20', 4, 'Đóng góp tự nguyện', NOW()),
+(4, 6, 5, 300000.00, 300000.00, 'DA_NOP', 'Năm 2025', '2025-01-25', 5, 'Đóng góp tự nguyện', NOW());
 
 -- ============================================================================
 -- 6. BIEN_DONG (Population Changes)

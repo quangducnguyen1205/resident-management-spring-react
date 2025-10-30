@@ -30,7 +30,7 @@ public class HoKhauController {
             @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
     })
     public ResponseEntity<List<HoKhauResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAllDto());
+        return ResponseEntity.ok(service.getAll());
     }
 
     @GetMapping("/{id}")
@@ -40,7 +40,7 @@ public class HoKhauController {
             @ApiResponse(responseCode = "404", description = "Không tìm thấy hộ khẩu")
     })
     public ResponseEntity<HoKhauResponseDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getByIdDto(id));
+        return ResponseEntity.ok(service.getById(id));
     }
 
     @PostMapping
@@ -53,7 +53,7 @@ public class HoKhauController {
     public ResponseEntity<HoKhauResponseDto> create(
             @Valid @RequestBody HoKhauRequestDto dto, 
             Authentication auth) {
-        HoKhauResponseDto created = service.createDto(dto, auth);
+        HoKhauResponseDto created = service.create(dto, auth);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -69,7 +69,7 @@ public class HoKhauController {
             @PathVariable Long id, 
             @Valid @RequestBody HoKhauRequestDto dto, 
             Authentication auth) {
-        HoKhauResponseDto updated = service.updateDto(id, dto, auth);
+        HoKhauResponseDto updated = service.update(id, dto, auth);
         return ResponseEntity.ok(updated);
     }
 

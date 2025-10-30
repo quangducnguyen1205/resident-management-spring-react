@@ -26,7 +26,7 @@ REST API cho hệ thống quản lý dân cư với Spring Boot.
 
 ```bash
 # Khởi động PostgreSQL
-docker-compose -f docker-compose.backend.yml up postgres -d
+docker-compose up db -d
 
 # Chạy backend từ IntelliJ IDEA hoặc terminal
 ./mvnw spring-boot:run
@@ -36,7 +36,7 @@ docker-compose -f docker-compose.backend.yml up postgres -d
 
 ```bash
 # Khởi động cả backend và database
-docker-compose -f docker-compose.backend.yml --profile full up -d
+docker-compose up -d
 ```
 
 ### Cách 3: Cài đặt thủ công

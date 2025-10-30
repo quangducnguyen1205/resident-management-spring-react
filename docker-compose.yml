@@ -3,7 +3,7 @@ services:
     image: postgres:15
     container_name: quanlydancu-postgres
     environment:
-      POSTGRES_DB: QuanLyDanCu
+      POSTGRES_DB: quanlydancu
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123456
     ports:
@@ -26,7 +26,7 @@ services:
       dockerfile: Dockerfile
     container_name: quanlydancu-backend
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/QuanLyDanCu
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/quanlydancu
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 123456
     ports:

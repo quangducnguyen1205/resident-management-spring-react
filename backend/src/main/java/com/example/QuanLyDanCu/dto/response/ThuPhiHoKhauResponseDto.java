@@ -1,5 +1,6 @@
 package com.example.QuanLyDanCu.dto.response;
 
+import com.example.QuanLyDanCu.enums.TrangThaiThuPhi;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -26,17 +27,26 @@ public class ThuPhiHoKhauResponseDto {
     @Schema(description = "ID đợt thu phí", example = "1")
     private Long dotThuPhiId;
 
-    @Schema(description = "Tên đợt thu", example = "Thu phí tháng 1/2025")
+    @Schema(description = "Tên đợt thu", example = "Phí vệ sinh tháng 1/2025")
     private String tenDot;
 
-    @Schema(description = "Số tiền đã thu (VND)", example = "50000")
+    @Schema(description = "Số người trong hộ", example = "3")
+    private Integer soNguoi;
+
+    @Schema(description = "Tổng phí phải nộp (VND)", example = "216000")
+    private BigDecimal tongPhi;
+
+    @Schema(description = "Số tiền đã thu (VND)", example = "216000")
     private BigDecimal soTienDaThu;
 
-    @Schema(description = "Ngày thu")
-    private LocalDate ngayThu;
+    @Schema(description = "Trạng thái", example = "DA_NOP")
+    private TrangThaiThuPhi trangThai;
 
-    @Schema(description = "Các tháng thu", example = "1,2,3")
-    private String months;
+    @Schema(description = "Mô tả kỳ thu", example = "Cả năm 2025")
+    private String periodDescription;
+
+    @Schema(description = "Ngày thu", example = "2025-01-15")
+    private LocalDate ngayThu;
 
     @Schema(description = "Ghi chú", example = "Đã thanh toán đủ")
     private String ghiChu;

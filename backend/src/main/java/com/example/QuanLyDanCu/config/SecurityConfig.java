@@ -32,8 +32,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/api/hokhau/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_TOTRUONG","ROLE_KETOAN")
-                        .requestMatchers("/api/dot-thu-phi/**", "/api/thu-phi-ho-khau/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_TOTRUONG","ROLE_KETOAN")
+                        .requestMatchers("/api/hokhau/**").hasAnyAuthority("ADMIN", "TOTRUONG","KETOAN")
+                        .requestMatchers("/api/dot-thu-phi/**", "/api/thu-phi-ho-khau/**").hasAnyAuthority("ADMIN", "TOTRUONG","KETOAN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

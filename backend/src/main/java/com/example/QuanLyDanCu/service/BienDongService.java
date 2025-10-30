@@ -41,7 +41,7 @@ public class BienDongService {
     // Tạo mới biến động (DTO)
     public BienDongResponseDto createDto(BienDongRequestDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new RuntimeException("Bạn không có quyền tạo biến động!");
         }
 
@@ -65,7 +65,7 @@ public class BienDongService {
     // Cập nhật biến động (DTO)
     public BienDongResponseDto updateDto(Long id, BienDongRequestDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new RuntimeException("Bạn không có quyền sửa biến động!");
         }
 
@@ -124,7 +124,7 @@ public class BienDongService {
     public void delete(Long id, Authentication auth) {
         // Kiểm tra quyền người dùng
         String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_TOTRUONG")) {
+        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new RuntimeException("Bạn không có quyền xóa biến động!");
         }
 
