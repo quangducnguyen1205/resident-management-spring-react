@@ -1,5 +1,8 @@
 package com.example.QuanLyDanCu.service;
 
+import com.example.QuanLyDanCu.dto.request.LoginRequestDto;
+import com.example.QuanLyDanCu.dto.request.RegisterRequestDto;
+import com.example.QuanLyDanCu.dto.response.LoginResponseDto;
 import com.example.QuanLyDanCu.entity.TaiKhoan;
 import com.example.QuanLyDanCu.repository.TaiKhoanRepository;
 import com.example.QuanLyDanCu.security.JwtUtil;
@@ -16,17 +19,40 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-    public String register(TaiKhoan tk) {
-        tk.setMatKhau(encoder.encode(tk.getMatKhau()));
-        tk.setNgayTao(LocalDateTime.now());
+    // New DTO-based register method
+    public String register(RegisterRequestDto dto) {
+        // Check if username already exists
+        if (repo.findByTenDangNhap(dto.getUsername()).isPresent()) {
+            throw new RuntimeException("Tên đăng nhập đã tồn tại!");
+        }
+
+        TaiKhoan tk = TaiKhoan.builder()
+                .tenDangNhap(dto.getUsername())
+                .matKhau(encoder.encode(dto.getPassword()))
+                .vaiTro(dto.getRole())
+                .hoTen(dto.getHoTen())
+                .email(dto.getEmail())
+                .ngayTao(LocalDateTime.now())
+                .build();
+        
         repo.save(tk);
         return "Đăng ký thành công!";
     }
 
-    public String login(String username, String password) {
-        Optional<TaiKhoan> acc = repo.findByTenDangNhap(username);
-        if (acc.isEmpty() || !encoder.matches(password, acc.get().getMatKhau()))
+    // New DTO-based login method
+    public LoginResponseDto login(LoginRequestDto dto) {
+        Optional<TaiKhoan> acc = repo.findByTenDangNhap(dto.getUsername());
+        if (acc.isEmpty() || !encoder.matches(dto.getPassword(), acc.get().getMatKhau())) {
             throw new RuntimeException("Sai tên đăng nhập hoặc mật khẩu!");
-        return jwtUtil.generateToken(username, acc.get().getVaiTro());
+        }
+        
+        TaiKhoan user = acc.get();
+        String token = jwtUtil.generateToken(user.getTenDangNhap(), user.getVaiTro());
+        
+        return LoginResponseDto.builder()
+                .token(token)
+                .username(user.getTenDangNhap())
+                .role(user.getVaiTro())
+                .build();
     }
 }

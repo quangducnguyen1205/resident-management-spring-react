@@ -30,7 +30,10 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/hokhau/**").hasAnyAuthority("ADMIN", "TOTRUONG","KETOAN")
+                        // Swagger UI endpoints
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api/hokhau/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_TOTRUONG","ROLE_KETOAN")
+                        .requestMatchers("/api/dot-thu-phi/**", "/api/thu-phi-ho-khau/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_TOTRUONG","ROLE_KETOAN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

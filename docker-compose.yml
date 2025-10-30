@@ -38,6 +38,19 @@ services:
     networks:
       - app-network
 
+  adminer:
+    image: adminer:4
+    container_name: adminer-prod
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - "8000:8080"
+    depends_on:
+      - db
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge

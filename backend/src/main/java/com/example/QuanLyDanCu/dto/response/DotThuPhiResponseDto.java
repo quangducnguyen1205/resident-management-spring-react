@@ -1,0 +1,40 @@
+package com.example.QuanLyDanCu.dto.response;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Schema(description = "Response DTO for DotThuPhi entity")
+public class DotThuPhiResponseDto {
+
+    @Schema(description = "ID đợt thu phí", example = "1")
+    private Long id;
+
+    @Schema(description = "Tên đợt thu", example = "Thu phí quản lý tháng 1/2025")
+    private String tenDot;
+
+    @Schema(description = "Loại phí", example = "QUAN_LY")
+    private String loai;
+
+    @Schema(description = "Ngày bắt đầu")
+    private LocalDate ngayBatDau;
+
+    @Schema(description = "Ngày kết thúc")
+    private LocalDate ngayKetThuc;
+
+    @Schema(description = "Định mức (VND)", example = "50000")
+    private BigDecimal dinhMuc;
+
+    @Schema(description = "ID người tạo")
+    private Long createdBy;
+
+    @Schema(description = "Thời gian tạo")
+    private LocalDateTime createdAt;
+
+    @Schema(description = "Thời gian cập nhật")
+    private LocalDateTime updatedAt;
+}
