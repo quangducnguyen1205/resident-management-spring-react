@@ -2,6 +2,7 @@ package com.example.QuanLyDanCu.controller;
 
 import com.example.QuanLyDanCu.dto.request.DangKyTamTruTamVangRequestDto;
 import com.example.QuanLyDanCu.dto.request.NhanKhauRequestDto;
+import com.example.QuanLyDanCu.dto.request.NhanKhauUpdateDto;
 import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
 import com.example.QuanLyDanCu.entity.NhanKhau;
 import com.example.QuanLyDanCu.service.NhanKhauService;
@@ -64,7 +65,7 @@ public class NhanKhauController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cập nhật thông tin nhân khẩu", description = "Cập nhật thông tin của nhân khẩu theo ID")
+    @Operation(summary = "Cập nhật thông tin nhân khẩu (partial update)", description = "Cập nhật thông tin của nhân khẩu theo ID - chỉ cập nhật các trường được cung cấp")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
         @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ hoặc không tìm thấy nhân khẩu"),
@@ -73,7 +74,7 @@ public class NhanKhauController {
     public ResponseEntity<NhanKhauResponseDto> update(
             @Parameter(description = "ID của nhân khẩu", example = "1")
             @PathVariable Long id,
-            @Valid @RequestBody NhanKhauRequestDto dto,
+            @RequestBody NhanKhauUpdateDto dto,
             Authentication auth) {
         return ResponseEntity.ok(nhanKhauService.update(id, dto, auth));
     }

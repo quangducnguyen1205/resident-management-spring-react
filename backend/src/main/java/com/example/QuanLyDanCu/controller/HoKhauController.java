@@ -1,6 +1,7 @@
 package com.example.QuanLyDanCu.controller;
 
 import com.example.QuanLyDanCu.dto.request.HoKhauRequestDto;
+import com.example.QuanLyDanCu.dto.request.HoKhauUpdateDto;
 import com.example.QuanLyDanCu.dto.response.HoKhauResponseDto;
 import com.example.QuanLyDanCu.service.HoKhauService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,7 +59,7 @@ public class HoKhauController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cập nhật hộ khẩu")
+    @Operation(summary = "Cập nhật hộ khẩu (partial update)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
             @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
@@ -67,7 +68,7 @@ public class HoKhauController {
     })
     public ResponseEntity<HoKhauResponseDto> update(
             @PathVariable Long id, 
-            @Valid @RequestBody HoKhauRequestDto dto, 
+            @RequestBody HoKhauUpdateDto dto, 
             Authentication auth) {
         HoKhauResponseDto updated = service.update(id, dto, auth);
         return ResponseEntity.ok(updated);

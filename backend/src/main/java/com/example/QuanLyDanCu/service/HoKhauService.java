@@ -1,6 +1,7 @@
 package com.example.QuanLyDanCu.service;
 
 import com.example.QuanLyDanCu.dto.request.HoKhauRequestDto;
+import com.example.QuanLyDanCu.dto.request.HoKhauUpdateDto;
 import com.example.QuanLyDanCu.dto.response.HoKhauResponseDto;
 import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
 import com.example.QuanLyDanCu.entity.HoKhau;
@@ -78,9 +79,9 @@ public class HoKhauService {
         return toResponseDto(saved);
     }
 
-    // Cập nhật hộ khẩu (DTO)
+    // Cập nhật hộ khẩu (DTO) - PARTIAL UPDATE SUPPORT
     @Transactional
-    public HoKhauResponseDto update(Long id, HoKhauRequestDto dto, Authentication auth) {
+    public HoKhauResponseDto update(Long id, HoKhauUpdateDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
         if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new AccessDeniedException("Bạn không có quyền sửa hộ khẩu!");
@@ -94,7 +95,7 @@ public class HoKhauService {
         
         boolean changed = false;
 
-        // Cập nhật tên chủ hộ
+        // Cập nhật tên chủ hộ (only if provided)
         if (dto.getTenChuHo() != null && !Objects.equals(existing.getTenChuHo(), dto.getTenChuHo())) {
             if (dto.getNoiDungThayDoiChuHo() == null || dto.getNoiDungThayDoiChuHo().trim().isEmpty()) {
                 throw new RuntimeException("Bạn phải nhập nội dung thay đổi chủ hộ!");
@@ -105,13 +106,13 @@ public class HoKhauService {
             changed = true;
         }
 
-        // Cập nhật địa chỉ
+        // Cập nhật địa chỉ (only if provided)
         if (dto.getDiaChi() != null && !Objects.equals(existing.getDiaChi(), dto.getDiaChi())) {
             existing.setDiaChi(dto.getDiaChi());
             changed = true;
         }
 
-        // Cập nhật số hộ khẩu
+        // Cập nhật số hộ khẩu (only if provided)
         if (dto.getSoHoKhau() != null && !Objects.equals(existing.getSoHoKhau(), dto.getSoHoKhau())) {
             existing.setSoHoKhau(dto.getSoHoKhau());
             changed = true;

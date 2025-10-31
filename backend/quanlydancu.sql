@@ -46,8 +46,6 @@ CREATE TABLE nhan_khau (
     ngay_cap DATE,
     noi_cap VARCHAR(255),
     quan_he_chu_ho VARCHAR(50),
-    ngay_chuyen_di DATE,
-    noi_chuyen_di VARCHAR(255),
     ghi_chu VARCHAR(255),
     tam_vang_tu DATE,
     tam_vang_den DATE,
@@ -108,7 +106,7 @@ CREATE TABLE thu_phi_ho_khau (
     so_nguoi INT,
     tong_phi DECIMAL(15,2),
     so_tien_da_thu DECIMAL(15,2),
-    trang_thai VARCHAR(20) CHECK (trang_thai IN ('CHUA_NOP', 'DA_NOP')),
+    trang_thai VARCHAR(20) CHECK (trang_thai IN ('CHUA_NOP', 'DA_NOP', 'KHONG_AP_DUNG')),
     period_description VARCHAR(100),
     ngay_thu DATE,
     ghi_chu VARCHAR(500),
@@ -119,9 +117,9 @@ CREATE TABLE thu_phi_ho_khau (
     CONSTRAINT fk_thuphi_collected_by FOREIGN KEY (collected_by) REFERENCES tai_khoan(id)
 );
 
-COMMENT ON COLUMN thu_phi_ho_khau.so_nguoi IS 'Số người trong hộ (không bao gồm người tạm vắng dài hạn)';
-COMMENT ON COLUMN thu_phi_ho_khau.tong_phi IS 'Tổng phí phải nộp (6000 * 12 * so_nguoi)';
-COMMENT ON COLUMN thu_phi_ho_khau.trang_thai IS 'Trạng thái: CHUA_NOP (chưa nộp đủ) hoặc DA_NOP (đã nộp đủ)';
+COMMENT ON COLUMN thu_phi_ho_khau.so_nguoi IS 'Số người trong hộ (không bao gồm người tạm vắng dài hạn). Với phí TU_NGUYEN luôn = 0';
+COMMENT ON COLUMN thu_phi_ho_khau.tong_phi IS 'Tổng phí phải nộp. Phí BAT_BUOC: dinh_muc * 12 * so_nguoi. Phí TU_NGUYEN: luôn = 0';
+COMMENT ON COLUMN thu_phi_ho_khau.trang_thai IS 'Trạng thái: CHUA_NOP (chưa nộp đủ), DA_NOP (đã nộp đủ), KHONG_AP_DUNG (phí tự nguyện)';
 COMMENT ON COLUMN thu_phi_ho_khau.period_description IS 'Mô tả kỳ thu phí (vd: "Cả năm 2025")';
 
 

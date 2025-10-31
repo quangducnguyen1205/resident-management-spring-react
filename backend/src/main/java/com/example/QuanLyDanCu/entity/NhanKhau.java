@@ -46,15 +46,9 @@ public class NhanKhau {
     @Column(name = "noi_cap")
     private String noiCap;
 
-    // ===== Quan hệ/hộ khẩu & di chuyển =====
+    // ===== Quan hệ/hộ khẩu =====
     @Column(name = "quan_he_chu_ho")
     private String quanHeChuHo;
-
-    @Column(name = "ngay_chuyen_di")
-    private LocalDate ngayChuyenDi;
-
-    @Column(name = "noi_chuyen_di")
-    private String noiChuyenDi;
 
     // ===== Ghi chú, tạm vắng/tạm trú =====
     @Column(name = "ghi_chu")

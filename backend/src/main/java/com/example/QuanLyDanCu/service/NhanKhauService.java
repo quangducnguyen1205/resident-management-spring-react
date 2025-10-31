@@ -2,6 +2,7 @@ package com.example.QuanLyDanCu.service;
 
 import com.example.QuanLyDanCu.dto.request.DangKyTamTruTamVangRequestDto;
 import com.example.QuanLyDanCu.dto.request.NhanKhauRequestDto;
+import com.example.QuanLyDanCu.dto.request.NhanKhauUpdateDto;
 import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
 import com.example.QuanLyDanCu.entity.NhanKhau;
 import com.example.QuanLyDanCu.entity.TaiKhoan;
@@ -72,8 +73,6 @@ public class NhanKhauService {
                 .ngayCap(dto.getNgayCap())
                 .noiCap(dto.getNoiCap())
                 .quanHeChuHo(dto.getQuanHeChuHo())
-                .ngayChuyenDi(dto.getNgayChuyenDi())
-                .noiChuyenDi(dto.getNoiChuyenDi())
                 .ghiChu(dto.getGhiChu())
                 .hoKhauId(dto.getHoKhauId())
                 .createdAt(LocalDateTime.now())
@@ -93,9 +92,9 @@ public class NhanKhauService {
         return toResponseDTO(saved);
     }
 
-    // Cập nhật nhân khẩu (DTO)
+    // Cập nhật nhân khẩu (DTO) - PARTIAL UPDATE SUPPORT
     @Transactional
-    public NhanKhauResponseDto update(Long id, NhanKhauRequestDto dto, Authentication auth) {
+    public NhanKhauResponseDto update(Long id, NhanKhauUpdateDto dto, Authentication auth) {
         String role = auth.getAuthorities().iterator().next().getAuthority();
         if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
             throw new AccessDeniedException("Bạn không có quyền sửa nhân khẩu!");
@@ -148,14 +147,6 @@ public class NhanKhauService {
         }
         if (dto.getQuanHeChuHo() != null && !Objects.equals(existing.getQuanHeChuHo(), dto.getQuanHeChuHo())) {
             existing.setQuanHeChuHo(dto.getQuanHeChuHo());
-            changed = true;
-        }
-        if (dto.getNgayChuyenDi() != null && !Objects.equals(existing.getNgayChuyenDi(), dto.getNgayChuyenDi())) {
-            existing.setNgayChuyenDi(dto.getNgayChuyenDi());
-            changed = true;
-        }
-        if (dto.getNoiChuyenDi() != null && !Objects.equals(existing.getNoiChuyenDi(), dto.getNoiChuyenDi())) {
-            existing.setNoiChuyenDi(dto.getNoiChuyenDi());
             changed = true;
         }
         if (dto.getGhiChu() != null && !Objects.equals(existing.getGhiChu(), dto.getGhiChu())) {
@@ -474,8 +465,6 @@ public class NhanKhauService {
                 .ngayCap(nk.getNgayCap())
                 .noiCap(nk.getNoiCap())
                 .quanHeChuHo(nk.getQuanHeChuHo())
-                .ngayChuyenDi(nk.getNgayChuyenDi())
-                .noiChuyenDi(nk.getNoiChuyenDi())
                 .ghiChu(nk.getGhiChu())
                 .tamVangTu(nk.getTamVangTu())
                 .tamVangDen(nk.getTamVangDen())

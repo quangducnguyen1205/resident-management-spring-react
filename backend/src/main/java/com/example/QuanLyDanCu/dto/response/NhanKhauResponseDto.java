@@ -49,12 +49,6 @@ public class NhanKhauResponseDto {
     @Schema(description = "Quan hệ với chủ hộ", example = "Chủ hộ")
     private String quanHeChuHo;
 
-    @Schema(description = "Ngày chuyển đi", example = "2023-06-20")
-    private LocalDate ngayChuyenDi;
-
-    @Schema(description = "Nơi chuyển đi", example = "123 Đường ABC, Quận 1, TP.HCM")
-    private String noiChuyenDi;
-
     @Schema(description = "Ghi chú", example = "Người thân cần chăm sóc đặc biệt")
     private String ghiChu;
 
