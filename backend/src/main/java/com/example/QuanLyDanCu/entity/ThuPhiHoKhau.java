@@ -23,19 +23,36 @@ public class ThuPhiHoKhau {
     @JoinColumn(name = "dot_thu_phi_id", nullable = false)
     private DotThuPhi dotThuPhi;
 
-    // Số người trong hộ (tính tự động, không bao gồm người tạm vắng)
+    /**
+     * Số người trong hộ (tính tự động, không bao gồm người tạm vắng)
+     * - Phí BAT_BUOC: Tính theo số người thực tế trong hộ
+     * - Phí TU_NGUYEN: Luôn = 0 (không tính theo số người)
+     */
     @Column(name = "so_nguoi")
     private Integer soNguoi;
 
-    // Tổng phí phải nộp (tính tự động: 6000 * 12 * soNguoi)
+    /**
+     * Tổng phí phải nộp (tính tự động)
+     * - Phí BAT_BUOC: dinh_muc * 12 * soNguoi (ví dụ: 6000 * 12 * 3 = 216,000 VND)
+     * - Phí TU_NGUYEN: Luôn = 0 (không bắt buộc, người dân tự nguyện đóng góp)
+     */
     @Column(name = "tong_phi", precision = 15, scale = 2)
     private BigDecimal tongPhi;
 
-    // Số tiền đã thu
+    /**
+     * Số tiền đã thu (người dân đã nộp)
+     * - Phí BAT_BUOC: So sánh với tongPhi để xác định trạng thái
+     * - Phí TU_NGUYEN: Ghi nhận số tiền đóng góp thực tế (không yêu cầu đủ tongPhi)
+     */
     @Column(name = "so_tien_da_thu", precision = 15, scale = 2)
     private BigDecimal soTienDaThu;
 
-    // Trạng thái: CHUA_NOP hoặc DA_NOP (tự động set khi soTienDaThu >= tongPhi)
+    /**
+     * Trạng thái thu phí (tự động set)
+     * - CHUA_NOP: Phí BAT_BUOC chưa nộp đủ (soTienDaThu < tongPhi)
+     * - DA_NOP: Phí BAT_BUOC đã nộp đủ (soTienDaThu >= tongPhi)
+     * - KHONG_AP_DUNG: Phí TU_NGUYEN (không áp dụng logic nộp đủ/thiếu)
+     */
     @Enumerated(EnumType.STRING)
     @Column(name = "trang_thai", length = 20)
     private TrangThaiThuPhi trangThai;

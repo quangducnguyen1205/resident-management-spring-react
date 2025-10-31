@@ -1,6 +1,7 @@
 package com.example.QuanLyDanCu.controller;
 
 import com.example.QuanLyDanCu.dto.request.DotThuPhiRequestDto;
+import com.example.QuanLyDanCu.dto.request.DotThuPhiUpdateDto;
 import com.example.QuanLyDanCu.dto.response.DotThuPhiResponseDto;
 import com.example.QuanLyDanCu.service.DotThuPhiService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,7 +62,7 @@ public class DotThuPhiController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cập nhật đợt thu phí", description = "Cập nhật thông tin đợt thu phí (yêu cầu quyền ADMIN hoặc TOTRUONG)")
+    @Operation(summary = "Cập nhật đợt thu phí (partial update)", description = "Cập nhật thông tin đợt thu phí - chỉ cập nhật các trường được cung cấp (yêu cầu quyền ADMIN hoặc TOTRUONG)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cập nhật thành công",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = DotThuPhiResponseDto.class))),
@@ -69,7 +70,7 @@ public class DotThuPhiController {
             @ApiResponse(responseCode = "403", description = "Không có quyền truy cập", content = @Content),
             @ApiResponse(responseCode = "404", description = "Không tìm thấy đợt thu phí", content = @Content)
     })
-    public ResponseEntity<DotThuPhiResponseDto> update(@PathVariable Long id, @Valid @RequestBody DotThuPhiRequestDto dto, Authentication auth) {
+    public ResponseEntity<DotThuPhiResponseDto> update(@PathVariable Long id, @RequestBody DotThuPhiUpdateDto dto, Authentication auth) {
         return ResponseEntity.ok(service.update(id, dto, auth));
     }
 

@@ -7,6 +7,7 @@ import com.example.QuanLyDanCu.entity.HoKhau;
 import com.example.QuanLyDanCu.entity.NhanKhau;
 import com.example.QuanLyDanCu.entity.TaiKhoan;
 import com.example.QuanLyDanCu.entity.ThuPhiHoKhau;
+import com.example.QuanLyDanCu.enums.LoaiThuPhi;
 import com.example.QuanLyDanCu.enums.TrangThaiThuPhi;
 import com.example.QuanLyDanCu.repository.DotThuPhiRepository;
 import com.example.QuanLyDanCu.repository.HoKhauRepository;
@@ -28,6 +29,40 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Service quản lý thu phí hộ khẩu.
+ * 
+ * <h2>Phân loại phí:</h2>
+ * 
+ * <h3>1. Phí BẮT BUỘC (BAT_BUOC):</h3>
+ * <ul>
+ *   <li><b>định_mức:</b> Phải > 0 (ví dụ: 6,000 VND/người/tháng)</li>
+ *   <li><b>so_nguoi:</b> Tính tự động theo số người trong hộ (không bao gồm tạm vắng)</li>
+ *   <li><b>tong_phi:</b> Tính tự động = định_mức × 12 × so_nguoi</li>
+ *   <li><b>trang_thai:</b> CHUA_NOP (thiếu) hoặc DA_NOP (đủ) dựa trên so_tien_da_thu</li>
+ *   <li><b>Tự động recalculate:</b> ✅ Khi thêm/xóa nhân khẩu</li>
+ * </ul>
+ * 
+ * <h3>2. Phí TỰ NGUYỆN (TU_NGUYEN):</h3>
+ * <ul>
+ *   <li><b>định_mức:</b> Mặc định = 0 (người dân tự quyết định số tiền đóng góp)</li>
+ *   <li><b>so_nguoi:</b> Luôn = 0 (không tính theo số người)</li>
+ *   <li><b>tong_phi:</b> Luôn = 0 (không yêu cầu số tiền cố định)</li>
+ *   <li><b>trang_thai:</b> KHONG_AP_DUNG (không áp dụng logic nộp đủ/thiếu)</li>
+ *   <li><b>so_tien_da_thu:</b> Ghi nhận số tiền thực tế người dân đã đóng góp</li>
+ *   <li><b>Tự động recalculate:</b> ❌ KHÔNG recalculate (phí tự nguyện không phụ thuộc số người)</li>
+ * </ul>
+ * 
+ * <h2>Logic tự động:</h2>
+ * <ul>
+ *   <li><b>Tạo hộ khẩu mới:</b> Tự động tạo ThuPhiHoKhau cho đợt phí hiện tại</li>
+ *   <li><b>Thêm/xóa nhân khẩu:</b> Tự động recalculate CHỈ cho phí BAT_BUOC</li>
+ *   <li><b>Cập nhật trạng thái:</b> Tự động khi thu tiền (so_tien_da_thu >= tong_phi)</li>
+ * </ul>
+ * 
+ * @see LoaiThuPhi
+ * @see TrangThaiThuPhi
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -97,9 +132,15 @@ public class ThuPhiHoKhauService {
     }
 
     /**
-     * Xác định trạng thái dựa trên số tiền đã thu
+     * Xác định trạng thái dựa trên số tiền đã thu và loại phí
      */
-    private TrangThaiThuPhi determineStatus(BigDecimal soTienDaThu, BigDecimal tongPhi) {
+    private TrangThaiThuPhi determineStatus(BigDecimal soTienDaThu, BigDecimal tongPhi, LoaiThuPhi loaiPhi) {
+        // For voluntary fees, status is always KHONG_AP_DUNG
+        if (loaiPhi == LoaiThuPhi.TU_NGUYEN) {
+            return TrangThaiThuPhi.KHONG_AP_DUNG;
+        }
+        
+        // For mandatory fees
         if (soTienDaThu == null || soTienDaThu.compareTo(BigDecimal.ZERO) == 0) {
             return TrangThaiThuPhi.CHUA_NOP;
         }
@@ -120,10 +161,19 @@ public class ThuPhiHoKhauService {
 
         TaiKhoan user = getCurrentUser(auth);
 
-        // Tính số người và tổng phí tự động
-        int soNguoi = countActiveMembersInHousehold(dto.getHoKhauId());
-        BigDecimal tongPhi = calculateAnnualFee(soNguoi, dotThuPhi.getDinhMuc());
-        TrangThaiThuPhi trangThai = determineStatus(dto.getSoTienDaThu(), tongPhi);
+        // For voluntary fees, skip automatic calculation
+        int soNguoi;
+        BigDecimal tongPhi;
+        if (dotThuPhi.getLoai() == LoaiThuPhi.TU_NGUYEN) {
+            soNguoi = 0;  // Not applicable for voluntary fees
+            tongPhi = BigDecimal.ZERO;
+        } else {
+            // Tính số người và tổng phí tự động cho phí bắt buộc
+            soNguoi = countActiveMembersInHousehold(dto.getHoKhauId());
+            tongPhi = calculateAnnualFee(soNguoi, dotThuPhi.getDinhMuc());
+        }
+        
+        TrangThaiThuPhi trangThai = determineStatus(dto.getSoTienDaThu(), tongPhi, dotThuPhi.getLoai());
 
         // Tự động tạo period description
         String periodDescription = "Cả năm " + LocalDate.now().getYear();
@@ -184,7 +234,8 @@ public class ThuPhiHoKhauService {
         }
 
         // Tự động cập nhật trạng thái
-        TrangThaiThuPhi trangThai = determineStatus(existing.getSoTienDaThu(), existing.getTongPhi());
+        TrangThaiThuPhi trangThai = determineStatus(existing.getSoTienDaThu(), existing.getTongPhi(), 
+                                                     existing.getDotThuPhi().getLoai());
         existing.setTrangThai(trangThai);
 
         if (dto.getNgayThu() != null) {
@@ -309,7 +360,7 @@ public class ThuPhiHoKhauService {
      */
     @Transactional
     public void recalculateForHousehold(Long hoKhauId) {
-        log.info("Starting fee recalculation for household: {}", hoKhauId);
+        log.info("🔄 Starting fee recalculation for household: {}", hoKhauId);
         
         // Verify household exists
         hoKhauRepo.findById(hoKhauId)
@@ -317,18 +368,21 @@ public class ThuPhiHoKhauService {
         
         // Count current eligible members (excluding tam_vang)
         int activeMemberCount = countActiveMembersInHousehold(hoKhauId);
-        log.debug("Household {} has {} active members (excluding temporarily absent)", 
+        log.info("📊 Household {} has {} active members (excluding temporarily absent)", 
                   hoKhauId, activeMemberCount);
         
         // Find all ThuPhiHoKhau records for this household
         List<ThuPhiHoKhau> feeRecords = repo.findByHoKhauId(hoKhauId);
         
         if (feeRecords.isEmpty()) {
-            log.info("No fee records found for household {}. Skipping recalculation.", hoKhauId);
+            log.info("⚠️  No fee records found for household {}. Skipping recalculation.", hoKhauId);
             return;
         }
         
+        log.info("📋 Found {} fee record(s) to recalculate for household {}", feeRecords.size(), hoKhauId);
+        
         // Recalculate each fee record
+        int updatedCount = 0;
         for (ThuPhiHoKhau record : feeRecords) {
             BigDecimal oldTongPhi = record.getTongPhi();
             int oldSoNguoi = record.getSoNguoi() != null ? record.getSoNguoi() : 0;
@@ -337,7 +391,20 @@ public class ThuPhiHoKhauService {
             DotThuPhi dotThuPhi = record.getDotThuPhi();
             BigDecimal dinhMuc = dotThuPhi.getDinhMuc();
             
-            // Calculate new total fee
+            // Skip recalculation for voluntary fees
+            if (dotThuPhi.getLoai() == LoaiThuPhi.TU_NGUYEN) {
+                log.debug("⏭️  Skipping recalculation for voluntary fee record ID {} (household {})", 
+                          record.getId(), hoKhauId);
+                // Ensure status is KHONG_AP_DUNG for voluntary fees
+                if (record.getTrangThai() != TrangThaiThuPhi.KHONG_AP_DUNG) {
+                    record.setTrangThai(TrangThaiThuPhi.KHONG_AP_DUNG);
+                    repo.save(record);
+                    log.info("💾 Updated status to KHONG_AP_DUNG for voluntary fee record ID {}", record.getId());
+                }
+                continue;
+            }
+            
+            // Calculate new total fee for mandatory fees
             BigDecimal newTongPhi = calculateAnnualFee(activeMemberCount, dinhMuc);
             
             // Update record
@@ -345,18 +412,23 @@ public class ThuPhiHoKhauService {
             record.setTongPhi(newTongPhi);
             
             // Recalculate status based on new total
-            TrangThaiThuPhi newStatus = determineStatus(record.getSoTienDaThu(), newTongPhi);
+            TrangThaiThuPhi newStatus = determineStatus(record.getSoTienDaThu(), newTongPhi, dotThuPhi.getLoai());
             record.setTrangThai(newStatus);
             
-            repo.save(record);
+            log.info("💾 Saving fee record ID {} before update: soNguoi={}, tongPhi={}, status={}", 
+                     record.getId(), oldSoNguoi, oldTongPhi, record.getTrangThai());
             
-            log.info("Updated fee record ID {} for household {}: soNguoi {} → {}, tongPhi {} → {}, status: {}", 
-                     record.getId(), hoKhauId, oldSoNguoi, activeMemberCount, 
+            ThuPhiHoKhau saved = repo.save(record);
+            
+            log.info("✅ Updated fee record ID {} for household {}: soNguoi {} → {}, tongPhi {} → {}, status: {}", 
+                     saved.getId(), hoKhauId, oldSoNguoi, activeMemberCount, 
                      oldTongPhi, newTongPhi, newStatus);
+            
+            updatedCount++;
         }
         
-        log.info("Completed fee recalculation for household {}. Updated {} record(s).", 
-                 hoKhauId, feeRecords.size());
+        log.info("✅ Completed fee recalculation for household {}. Updated {} mandatory fee record(s).", 
+                 hoKhauId, updatedCount);
     }
 
     /**
@@ -367,7 +439,7 @@ public class ThuPhiHoKhauService {
      */
     @Transactional
     public void createInitialFeeRecord(Long hoKhauId) {
-        log.info("Creating initial fee record for new household: {}", hoKhauId);
+        log.info("🆕 Creating initial fee record for new household: {}", hoKhauId);
         
         // Verify household exists
         HoKhau hoKhau = hoKhauRepo.findById(hoKhauId)
@@ -376,18 +448,35 @@ public class ThuPhiHoKhauService {
         // Find the most recent active fee period
         List<DotThuPhi> dotThuPhiList = dotThuPhiRepo.findAll();
         if (dotThuPhiList.isEmpty()) {
-            log.warn("No fee periods (DotThuPhi) found. Cannot create initial fee record for household {}", hoKhauId);
+            log.warn("⚠️  No fee periods (DotThuPhi) found. Cannot create initial fee record for household {}", hoKhauId);
             return;
         }
+        
+        log.info("📋 Found {} fee period(s). Using first one for initial fee record.", dotThuPhiList.size());
         
         // Use the first fee period (or most recent if sorted by ngayBatDau desc)
         DotThuPhi dotThuPhi = dotThuPhiList.get(0);
         
-        // Count active members
-        int activeMemberCount = countActiveMembersInHousehold(hoKhauId);
+        // Determine calculation based on fee type
+        int activeMemberCount;
+        BigDecimal tongPhi;
+        TrangThaiThuPhi trangThai;
         
-        // Calculate total fee
-        BigDecimal tongPhi = calculateAnnualFee(activeMemberCount, dotThuPhi.getDinhMuc());
+        if (dotThuPhi.getLoai() == LoaiThuPhi.TU_NGUYEN) {
+            // Voluntary fees: no auto-calculation
+            activeMemberCount = 0;
+            tongPhi = BigDecimal.ZERO;
+            trangThai = TrangThaiThuPhi.KHONG_AP_DUNG;
+            log.info("🎁 Creating initial fee record for VOLUNTARY fee period '{}' - skipping calculation", 
+                     dotThuPhi.getTenDot());
+        } else {
+            // Mandatory fees: calculate based on members
+            activeMemberCount = countActiveMembersInHousehold(hoKhauId);
+            tongPhi = calculateAnnualFee(activeMemberCount, dotThuPhi.getDinhMuc());
+            trangThai = TrangThaiThuPhi.CHUA_NOP;
+            log.info("📊 Creating initial fee record for MANDATORY fee period '{}': {} members → {} VND", 
+                     dotThuPhi.getTenDot(), activeMemberCount, tongPhi);
+        }
         
         // Create new fee record with zero payment
         ThuPhiHoKhau newRecord = ThuPhiHoKhau.builder()
@@ -396,7 +485,7 @@ public class ThuPhiHoKhauService {
                 .soNguoi(activeMemberCount)
                 .tongPhi(tongPhi)
                 .soTienDaThu(BigDecimal.ZERO)
-                .trangThai(TrangThaiThuPhi.CHUA_NOP)
+                .trangThai(trangThai)
                 .periodDescription("Cả năm " + LocalDate.now().getYear())
                 .ngayThu(null)
                 .ghiChu("Tự động tạo khi tạo hộ khẩu mới")
@@ -404,10 +493,11 @@ public class ThuPhiHoKhauService {
                 .createdAt(LocalDateTime.now())
                 .build();
         
+        log.info("💾 Saving initial fee record to database...");
         ThuPhiHoKhau saved = repo.save(newRecord);
         
-        log.info("Created initial fee record ID {} for household {}: soNguoi={}, tongPhi={}", 
-                 saved.getId(), hoKhauId, activeMemberCount, tongPhi);
+        log.info("✅ Created initial fee record ID {} for household {}: soNguoi={}, tongPhi={}, status={}", 
+                 saved.getId(), hoKhauId, activeMemberCount, tongPhi, trangThai);
     }
 
     /**

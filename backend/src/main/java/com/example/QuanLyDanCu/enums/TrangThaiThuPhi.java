@@ -4,8 +4,9 @@ package com.example.QuanLyDanCu.enums;
  * Enum định nghĩa trạng thái thu phí hộ khẩu
  */
 public enum TrangThaiThuPhi {
-    CHUA_NOP,   // Chưa nộp (hoặc nộp chưa đủ)
-    DA_NOP;     // Đã nộp đủ
+    CHUA_NOP,        // Chưa nộp (hoặc nộp chưa đủ) - For mandatory fees
+    DA_NOP,          // Đã nộp đủ - For mandatory fees  
+    KHONG_AP_DUNG;   // Không áp dụng - For voluntary fees (no fixed amount required)
 
     /**
      * Kiểm tra xem giá trị có hợp lệ không
@@ -29,6 +30,8 @@ public enum TrangThaiThuPhi {
                 return "Chưa nộp đủ";
             case DA_NOP:
                 return "Đã nộp đủ";
+            case KHONG_AP_DUNG:
+                return "Không áp dụng (Phí tự nguyện)";
             default:
                 return this.name();
         }
