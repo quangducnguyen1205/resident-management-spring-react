@@ -1,0 +1,212 @@
+POST
+/api/nhan-khau
+Tạo mới nhân khẩu
+
+{
+  "hoTen": "Nguyễn Văn A",
+  "ngaySinh": "1990-05-15",
+  "gioiTinh": "Nam",
+  "danToc": "Kinh",
+  "quocTich": "Việt Nam",
+  "ngheNghiep": "Kỹ sư",
+  "cmndCccd": "001234567890",
+  "ngayCap": "2020-01-15",
+  "noiCap": "Công an TP. Hà Nội",
+  "quanHeChuHo": "Chủ hộ",
+  "ghiChu": "Người thân cần chăm sóc đặc biệt",
+  "hoKhauId": 1
+}
+
+
+Lấy danh sách tất cả nhân khẩu
+[
+  {
+    "id": 1,
+    "hoTen": "Thái",
+    "ngaySinh": "1999-12-31",
+    "gioiTinh": "Nam",
+    "danToc": "Kinh",
+    "quocTich": "Việt Nam",
+    "ngheNghiep": "Không",
+    "cmndCccd": "012345678910",
+    "ngayCap": "1998-12-31",
+    "noiCap": "Sao Hoả",
+    "quanHeChuHo": "Anh/Chị/Em",
+    "ghiChu": "",
+    "tamVangTu": null,
+    "tamVangDen": null,
+    "tamTruTu": null,
+    "tamTruDen": null,
+    "hoKhauId": 1,
+    "createdBy": 3,
+    "updatedBy": 3,
+    "createdAt": "2025-11-11T18:57:04.511242",
+    "updatedAt": "2025-11-11T18:57:04.511242"
+  },
+  {
+    "id": 2,
+    "hoTen": "Nguyễn Văn A",
+    "ngaySinh": "1990-05-15",
+    "gioiTinh": "Nam",
+    "danToc": "Kinh",
+    "quocTich": "Việt Nam",
+    "ngheNghiep": "Kỹ sư",
+    "cmndCccd": "001234567890",
+    "ngayCap": "1980-01-15",
+    "noiCap": "Công an TP. Hà Nội",
+    "quanHeChuHo": "Chủ hộ",
+    "ghiChu": "Người thân cần chăm sóc đặc biệt",
+    "tamVangTu": null,
+    "tamVangDen": null,
+    "tamTruTu": null,
+    "tamTruDen": null,
+    "hoKhauId": 1,
+    "createdBy": 3,
+    "updatedBy": 3,
+    "createdAt": "2025-11-11T19:02:40.401629",
+    "updatedAt": "2025-11-11T19:02:40.401629"
+  },
+  {
+    "id": 3,
+    "hoTen": "Nguyễn Văn A",
+    "ngaySinh": "1990-05-15",
+    "gioiTinh": "Nam",
+    "danToc": "Kinh",
+    "quocTich": "Việt Nam",
+    "ngheNghiep": "Kỹ sư",
+    "cmndCccd": "001234567890",
+    "ngayCap": "2020-01-15",
+    "noiCap": "Công an TP. Hà Nội",
+    "quanHeChuHo": "Chủ hộ",
+    "ghiChu": "Người thân cần chăm sóc đặc biệt",
+    "tamVangTu": null,
+    "tamVangDen": null,
+    "tamTruTu": null,
+    "tamTruDen": null,
+    "hoKhauId": 1,
+    "createdBy": 3,
+    "updatedBy": 3,
+    "createdAt": "2025-11-11T20:58:29.364723",
+    "updatedAt": "2025-11-11T20:58:29.364723"
+  },
+  {
+    "id": 4,
+    "hoTen": "Nguyễn Văn A",
+    "ngaySinh": "1990-05-15",
+    "gioiTinh": "Nam",
+    "danToc": "Kinh",
+    "quocTich": "Việt Nam",
+    "ngheNghiep": "Kỹ sư",
+    "cmndCccd": "001234567890",
+    "ngayCap": "2020-01-15",
+    "noiCap": "Công an TP. Hà Nội",
+    "quanHeChuHo": "Chủ hộ",
+    "ghiChu": "Người thân cần chăm sóc đặc biệt",
+    "tamVangTu": null,
+    "tamVangDen": null,
+    "tamTruTu": null,
+    "tamTruDen": null,
+    "hoKhauId": 1,
+    "createdBy": 3,
+    "updatedBy": 3,
+    "createdAt": "2025-11-11T20:58:47.608789",
+    "updatedAt": "2025-11-11T20:58:47.608789"
+  },
+  {
+    "id": 5,
+    "hoTen": "Nguyễn Văn A",
+    "ngaySinh": "1990-05-15",
+    "gioiTinh": "Nam",
+    "danToc": "Kinh",
+    "quocTich": "Việt Nam",
+    "ngheNghiep": "Kỹ sư",
+    "cmndCccd": "001234567890",
+    "ngayCap": "2020-01-15",
+    "noiCap": "Công an TP. Hà Nội",
+    "quanHeChuHo": "Chủ hộ",
+    "ghiChu": "Người thân cần chăm sóc đặc biệt",
+    "tamVangTu": null,
+    "tamVangDen": null,
+    "tamTruTu": null,
+    "tamTruDen": null,
+    "hoKhauId": 1,
+    "createdBy": 3,
+    "updatedBy": 3,
+    "createdAt": "2025-11-11T20:58:49.498633",
+    "updatedAt": "2025-11-11T20:58:49.498633"
+  }
+]
+
+Lưu ý:
+Có thể tạo nhân khẩu trùng số căn cước công dân
+Ngày cấp căn cước có thể trước ngày sinh của nhân khẩu 
+
+GET
+/api/nhan-khau/stats/age
+Thống kê theo độ tuổi
+underAge
+integer($int32)
+(query)
+Độ tuổi thiếu nhi (mặc định 16)
+
+retireAge
+integer($int32)
+(query)
+Độ tuổi về hưu (mặc định 60)
+
+
+
+{
+  "underAge": 70,
+  "retireAge": 60,
+  "cutoffChildBirthdayAfter": "1955-11-11",
+  "cutoffRetireBirthdayAfter": "1965-11-11",
+  "total": 2,
+  "buckets": {
+    "thieuNhi": {
+      "total": 2,
+      "label": "Thiếu nhi (< 70)",
+      "byGender": {
+        "Nam": 2
+      }
+    },
+    "diLam": {
+      "total": 0,
+      "label": "Người đi làm (70–59)",// 70 lớn hơn 59
+      "byGender": {}
+    },
+    "veHuu": {
+      "total": 0,
+      "label": "Người về hưu (≥ 60)",
+      "byGender": {}
+    }
+  }
+}
+
+Lưu ý:
+UnderAge có thể lớn hơn RetireAge
+
+
+POST
+/api/dot-thu-phi
+Tạo đợt thu phí mới
+
+{
+  "tenDot": "Thu phí quản lý tháng 5/2025",
+  "loai": "BAT_BUOC",
+  "ngayBatDau": "2025-01-01",
+  "ngayKetThuc": "2024-01-31",
+  "dinhMuc": 50000
+}
+
+return 201 
+
+Lưu ý:
+Ngày kết thúc trước ngày bắt đầu
+Tên đợt không trùng với thời gian 
+
+Hiện tại đang có hiện tượng
+Chủ hộ khẩu ảo : người đứng tên không phải là một trong các nhân khẩu đang có trong hệ Thống
+quản lý nhân khẩu
+
+Tên và Địa chỉ có thể trùng nhau nhưng ID HoKhau khác nhau

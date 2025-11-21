@@ -38,6 +38,23 @@ services:
     networks:
       - app-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - ENV_FILE=.env.docker
+    container_name: quanlydancu-frontend
+    environment:
+      VITE_API_URL: http://backend:8080/api
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
   adminer:
     image: adminer:4
     container_name: adminer-prod
