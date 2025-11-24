@@ -24,6 +24,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.time.Period;
 
 @Service
 @RequiredArgsConstructor
@@ -54,13 +56,12 @@ public class NhanKhauService {
     // Thêm nhân khẩu mới (DTO)
     @Transactional
     public NhanKhauResponseDto create(NhanKhauRequestDto dto, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền thêm nhân khẩu!");
-        }
 
         TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
+
+        // CCCD validation based on age
+        validateCccdByAge(dto.getNgaySinh(), dto.getCmndCccd(), dto.getNgayCap(), dto.getNoiCap());
 
         NhanKhau nk = NhanKhau.builder()
                 .hoTen(dto.getHoTen())
@@ -95,10 +96,6 @@ public class NhanKhauService {
     // Cập nhật nhân khẩu (DTO) - PARTIAL UPDATE SUPPORT
     @Transactional
     public NhanKhauResponseDto update(Long id, NhanKhauUpdateDto dto, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền sửa nhân khẩu!");
-        }
 
         NhanKhau existing = nhanKhauRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
@@ -107,6 +104,15 @@ public class NhanKhauService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
 
         boolean changed = false;
+
+        // CCCD validation if ngaySinh is being updated
+        LocalDate finalNgaySinh = dto.getNgaySinh() != null ? dto.getNgaySinh() : existing.getNgaySinh();
+        String finalCmndCccd = dto.getCmndCccd() != null ? dto.getCmndCccd() : existing.getCmndCccd();
+        LocalDate finalNgayCap = dto.getNgayCap() != null ? dto.getNgayCap() : existing.getNgayCap();
+        String finalNoiCap = dto.getNoiCap() != null ? dto.getNoiCap() : existing.getNoiCap();
+        
+        // Validate CCCD based on age
+        validateCccdByAge(finalNgaySinh, finalCmndCccd, finalNgayCap, finalNoiCap);
 
         // Cập nhật các trường thông tin cá nhân
         if (dto.getHoTen() != null && !Objects.equals(existing.getHoTen(), dto.getHoTen())) {
@@ -179,10 +185,6 @@ public class NhanKhauService {
     // Xóa nhân khẩu
     @Transactional
     public void delete(Long id, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền xóa nhân khẩu!");
-        }
 
         NhanKhau nk = nhanKhauRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
@@ -198,7 +200,6 @@ public class NhanKhauService {
 
     // --- TẠM TRÚ ---
     public NhanKhauResponseDto dangKyTamTru(Long id, DangKyTamTruTamVangRequestDto dto, Authentication auth) {
-        checkRole(auth);
         if (!dto.getNgayBatDau().isBefore(dto.getNgayKetThuc()))
             throw new IllegalArgumentException("Ngày bắt đầu phải bé hơn ngày kết thúc");
 
@@ -230,8 +231,6 @@ public class NhanKhauService {
     }
 
     public void huyTamTru(Long id, Authentication auth) {
-        checkRole(auth);
-
         NhanKhau existing = nhanKhauRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
         TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
@@ -258,8 +257,6 @@ public class NhanKhauService {
 
     // --- TẠM VẮNG ---
     public NhanKhauResponseDto dangKyTamVang(Long id, DangKyTamTruTamVangRequestDto dto, Authentication auth) {
-        checkRole(auth);
-
         if (!dto.getNgayBatDau().isBefore(dto.getNgayKetThuc()))
             throw new IllegalArgumentException("Ngày bắt đầu phải bé hơn ngày kết thúc");
 
@@ -298,8 +295,6 @@ public class NhanKhauService {
     }
 
     public void huyTamVang(Long id, Authentication auth) {
-        checkRole(auth);
-
         NhanKhau existing = nhanKhauRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
         TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
@@ -331,8 +326,6 @@ public class NhanKhauService {
 
     // --- KHAI TỬ ---
     public NhanKhau khaiTu(Long id, String lyDo, Authentication auth) {
-        checkRole(auth);
-
         NhanKhau nk = nhanKhauRepo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu"));
         TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
@@ -444,15 +437,84 @@ public class NhanKhauService {
     }
 
     // --- helper ---
-    private void checkRole(Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền thực hiện thao tác này!");
+
+    /**
+     * Validate CCCD fields based on age
+     * - If age < 14: all CCCD fields must be null/empty
+     * - If age >= 14: all CCCD fields required, ngayCap must be >= ngaySinh + 14 years and <= today
+     */
+    private void validateCccdByAge(LocalDate ngaySinh, String cmndCccd, LocalDate ngayCap, String noiCap) {
+        if (ngaySinh == null) {
+            throw new IllegalArgumentException("Ngày sinh không được để trống");
+        }
+
+        LocalDate today = LocalDate.now();
+        int age = java.time.Period.between(ngaySinh, today).getYears();
+        
+        boolean hasCccdData = (cmndCccd != null && !cmndCccd.trim().isEmpty()) ||
+                              (ngayCap != null) ||
+                              (noiCap != null && !noiCap.trim().isEmpty());
+
+        if (age < 14) {
+            // Under 14: CCCD fields must be empty
+            if (hasCccdData) {
+                throw new IllegalArgumentException(
+                    "Người dưới 14 tuổi không được cấp CMND/CCCD. " +
+                    "Vui lòng để trống các trường: CMND/CCCD, Ngày cấp, Nơi cấp"
+                );
+            }
+        } else {
+            // Age >= 14: All CCCD fields required
+            if (cmndCccd == null || cmndCccd.trim().isEmpty()) {
+                throw new IllegalArgumentException("Người từ 14 tuổi trở lên phải có CMND/CCCD");
+            }
+            if (ngayCap == null) {
+                throw new IllegalArgumentException("Người từ 14 tuổi trở lên phải có ngày cấp CMND/CCCD");
+            }
+            if (noiCap == null || noiCap.trim().isEmpty()) {
+                throw new IllegalArgumentException("Người từ 14 tuổi trở lên phải có nơi cấp CMND/CCCD");
+            }
+            
+            // Validate CMND/CCCD format (9-12 digits)
+            if (!cmndCccd.matches("\\d{9,12}")) {
+                throw new IllegalArgumentException("CMND/CCCD phải có 9-12 chữ số");
+            }
+            
+            // Validate ngayCap >= ngaySinh + 14 years
+            LocalDate minIssuanceDate = ngaySinh.plusYears(14);
+            if (ngayCap.isBefore(minIssuanceDate)) {
+                throw new IllegalArgumentException(
+                    "Ngày cấp CMND/CCCD phải sau ngày sinh ít nhất 14 năm (từ " + 
+                    minIssuanceDate + " trở đi)"
+                );
+            }
+            
+            // Validate ngayCap <= today
+            if (ngayCap.isAfter(today)) {
+                throw new IllegalArgumentException("Ngày cấp CMND/CCCD không được là ngày trong tương lai");
+            }
         }
     }
 
     // Mapper: Entity -> Response DTO
     private NhanKhauResponseDto toResponseDTO(NhanKhau nk) {
+        // Compute current status based on tam_vang/tam_tru dates
+        LocalDate now = LocalDate.now();
+        String trangThaiHienTai = "THUONG_TRU"; // default
+        
+        // Check tam_vang first (higher priority)
+        if (nk.getTamVangTu() != null && 
+            !now.isBefore(nk.getTamVangTu()) && 
+            (nk.getTamVangDen() == null || !now.isAfter(nk.getTamVangDen()))) {
+            trangThaiHienTai = "TAM_VANG";
+        } 
+        // Check tam_tru second
+        else if (nk.getTamTruTu() != null && 
+                 !now.isBefore(nk.getTamTruTu()) && 
+                 (nk.getTamTruDen() == null || !now.isAfter(nk.getTamTruDen()))) {
+            trangThaiHienTai = "TAM_TRU";
+        }
+        
         return NhanKhauResponseDto.builder()
                 .id(nk.getId())
                 .hoTen(nk.getHoTen())
@@ -470,6 +532,7 @@ public class NhanKhauService {
                 .tamVangDen(nk.getTamVangDen())
                 .tamTruTu(nk.getTamTruTu())
                 .tamTruDen(nk.getTamTruDen())
+                .trangThaiHienTai(trangThaiHienTai)
                 .hoKhauId(nk.getHoKhauId())
                 .createdBy(nk.getCreatedBy())
                 .updatedBy(nk.getUpdatedBy())

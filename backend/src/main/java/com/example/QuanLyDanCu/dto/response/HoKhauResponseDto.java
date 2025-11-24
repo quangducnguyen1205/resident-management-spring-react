@@ -44,6 +44,9 @@ public class HoKhauResponseDto {
     @Schema(description = "Thời gian cập nhật")
     private LocalDateTime updatedAt;
 
+    @Schema(description = "Số thành viên trong hộ khẩu", example = "4")
+    private Integer soThanhVien;
+
     @Schema(description = "Danh sách nhân khẩu thuộc hộ khẩu")
     private List<NhanKhauResponseDto> listNhanKhau;
 }

@@ -47,6 +47,35 @@ build/
 # VS Code
 .vscode/
 
-# Docker Local Overrides
-**/docker-compose.override.yml
-**/Dockerfile.local
+# ===== DOCKER (PRIVATE FOR MY MACHINE ONLY) =====
+# All Docker-related files are excluded from Git
+# These files exist only on the project owner's local machine
+
+# Docker Compose files
+**/docker-compose.yml
+**/docker-compose.*.yml
+docker-compose.yml
+docker-compose.*.yml
+docker-compose.override.yml
+docker-compose.prod.yml
+
+# Dockerfiles
+**/Dockerfile
+**/*.dockerfile
+Dockerfile
+*.dockerfile
+Dockerfile.local
+
+# Docker ignore files
+**/.dockerignore
+.dockerignore
+
+# Docker directories
+**/docker/
+docker/
+
+# Docker environment files
+**/.env.docker
+**/.env.production
+.env.docker
+.env.production

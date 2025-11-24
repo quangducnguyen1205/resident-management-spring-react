@@ -78,4 +78,7 @@ public class NhanKhauResponseDto {
 
     @Schema(description = "Thời gian cập nhật", example = "2024-01-15T14:30:00")
     private LocalDateTime updatedAt;
+
+    @Schema(description = "Trạng thái hiện tại (computed)", example = "THUONG_TRU", allowableValues = {"THUONG_TRU", "TAM_VANG", "TAM_TRU"})
+    private String trangThaiHienTai;
 }

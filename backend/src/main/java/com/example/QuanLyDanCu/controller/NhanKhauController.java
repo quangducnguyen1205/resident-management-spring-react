@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +31,7 @@ public class NhanKhauController {
     private final NhanKhauService nhanKhauService;
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
     @Operation(summary = "Lấy danh sách tất cả nhân khẩu", description = "Trả về danh sách đầy đủ thông tin nhân khẩu")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
@@ -39,6 +41,7 @@ public class NhanKhauController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
     @Operation(summary = "Lấy thông tin nhân khẩu theo ID", description = "Trả về thông tin chi tiết của một nhân khẩu")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lấy thông tin thành công"),
@@ -51,6 +54,7 @@ public class NhanKhauController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     @Operation(summary = "Tạo mới nhân khẩu", description = "Thêm một nhân khẩu mới vào hệ thống")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Tạo nhân khẩu thành công"),
@@ -65,6 +69,7 @@ public class NhanKhauController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     @Operation(summary = "Cập nhật thông tin nhân khẩu (partial update)", description = "Cập nhật thông tin của nhân khẩu theo ID - chỉ cập nhật các trường được cung cấp")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
@@ -80,6 +85,7 @@ public class NhanKhauController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     @Operation(summary = "Xóa nhân khẩu", description = "Xóa nhân khẩu khỏi hệ thống")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Xóa thành công"),
@@ -96,6 +102,7 @@ public class NhanKhauController {
 
     // --- TẠM TRÚ ---
     @PutMapping("/{id}/tamtru")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     @Operation(summary = "Cập nhật thông tin tạm trú", description = "Cập nhập thông tin tạm trú theo ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
@@ -111,6 +118,7 @@ public class NhanKhauController {
     }
 
     @DeleteMapping("/{id}/tamtru")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     @Operation(summary = "Huỷ thông tin tạm trú", description = "Huỷ thông tin tạm trú theo ID")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Xóa thành công"),
@@ -127,6 +135,7 @@ public class NhanKhauController {
 
     // --- TẠM VẮNG ---
     @PutMapping("/{id}/tamvang")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     @Operation(summary = "Cập nhật thông tin tạm vắng", description = "Cập nhập thông tin tạm vắng theo ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
@@ -149,6 +158,7 @@ public class NhanKhauController {
             @ApiResponse(responseCode = "400", description = "Không tìm thấy nhân khẩu"),
             @ApiResponse(responseCode = "403", description = "Không có quyền thực hiện thao tác")
     })
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     public ResponseEntity<Void> huyTamVang(@PathVariable Long id, Authentication auth) {
         nhanKhauService.huyTamVang(id, auth);
         return ResponseEntity.noContent().build();
@@ -156,6 +166,7 @@ public class NhanKhauController {
 
     // --- KHAI TỬ ---
     @PutMapping("/{id}/khaitu")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     public NhanKhau khaiTu(
             @PathVariable Long id,
             @RequestBody Map<String, Object> body,
@@ -167,6 +178,7 @@ public class NhanKhauController {
 
     // Search theo tên
     @GetMapping("/search")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
     @Operation(summary = "Tìm kiếm nhân khẩu theo tên", description = "Tìm kiếm nhân khẩu có tên chứa từ khóa")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Tìm kiếm thành công")
@@ -179,6 +191,7 @@ public class NhanKhauController {
 
     // Thống kê giới tính
     @GetMapping("/stats/gender")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
     @Operation(summary = "Thống kê theo giới tính", description = "Thống kê số lượng nhân khẩu theo giới tính")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Thống kê thành công")
@@ -189,6 +202,7 @@ public class NhanKhauController {
 
     // Thống kê theo tuổi (thiếu nhi/đi làm/về hưu)
     @GetMapping("/stats/age")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
     @Operation(summary = "Thống kê theo độ tuổi", description = "Thống kê nhân khẩu theo nhóm tuổi: thiếu nhi, người đi làm, người về hưu")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Thống kê thành công")

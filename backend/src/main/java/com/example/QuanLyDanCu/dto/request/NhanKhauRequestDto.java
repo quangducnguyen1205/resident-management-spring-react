@@ -3,7 +3,7 @@ package com.example.QuanLyDanCu.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.PastOrPresent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,7 +24,7 @@ public class NhanKhauRequestDto {
 
     @Schema(description = "Ngày sinh (yyyy-MM-dd)", example = "1990-05-15")
     @NotNull(message = "Ngày sinh không được để trống")
-    @Past(message = "Ngày sinh phải là ngày trong quá khứ")
+    @PastOrPresent(message = "Ngày sinh không được là ngày trong tương lai")
     private LocalDate ngaySinh;
 
     @Schema(description = "Giới tính", example = "Nam", allowableValues = {"Nam", "Nữ", "Khác"})

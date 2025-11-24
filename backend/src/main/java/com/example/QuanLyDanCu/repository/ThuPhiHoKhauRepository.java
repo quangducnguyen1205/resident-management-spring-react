@@ -10,4 +10,10 @@ import java.util.List;
 public interface ThuPhiHoKhauRepository extends JpaRepository<ThuPhiHoKhau, Long> {
     List<ThuPhiHoKhau> findByHoKhauId(Long hoKhauId);
     List<ThuPhiHoKhau> findByDotThuPhiId(Long dotThuPhiId);
+    
+    /**
+     * Find all payment records for a specific household and fee period.
+     * Used to calculate total paid amount when multiple partial payments exist.
+     */
+    List<ThuPhiHoKhau> findByHoKhauIdAndDotThuPhiId(Long hoKhauId, Long dotThuPhiId);
 }

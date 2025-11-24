@@ -132,32 +132,131 @@ public class ThuPhiHoKhauService {
     }
 
     /**
-     * Xác định trạng thái dựa trên số tiền đã thu và loại phí
+     * Calculate total amount paid across ALL payment records for the same household and fee period.
+     * This handles the case where a household makes multiple partial payments.
+     * 
+     * @param hoKhauId The household ID
+     * @param dotThuPhiId The fee period ID
+     * @return Sum of soTienDaThu across all related records
      */
-    private TrangThaiThuPhi determineStatus(BigDecimal soTienDaThu, BigDecimal tongPhi, LoaiThuPhi loaiPhi) {
+    private BigDecimal calculateTotalPaid(Long hoKhauId, Long dotThuPhiId) {
+        List<ThuPhiHoKhau> allPayments = repo.findByHoKhauIdAndDotThuPhiId(hoKhauId, dotThuPhiId);
+        return allPayments.stream()
+                .map(payment -> payment.getSoTienDaThu() != null ? payment.getSoTienDaThu() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Xác định trạng thái dựa trên TỔNG số tiền đã thu (từ tất cả các khoản thanh toán) và loại phí.
+     * 
+     * IMPORTANT: totalPaid is the SUM of all soTienDaThu for the same hoKhauId + dotThuPhiId,
+     * not just a single payment record.
+     * 
+     * @param totalPaid Total amount paid across all payment records
+     * @param tongPhi Required total fee
+     * @param loaiPhi Fee type (mandatory or voluntary)
+     * @return Status based on whether total paid meets or exceeds required fee
+     */
+    private TrangThaiThuPhi determineStatus(BigDecimal totalPaid, BigDecimal tongPhi, LoaiThuPhi loaiPhi) {
         // For voluntary fees, status is always KHONG_AP_DUNG
         if (loaiPhi == LoaiThuPhi.TU_NGUYEN) {
             return TrangThaiThuPhi.KHONG_AP_DUNG;
         }
         
-        // For mandatory fees
-        if (soTienDaThu == null || soTienDaThu.compareTo(BigDecimal.ZERO) == 0) {
+        // For mandatory fees, compare TOTAL paid vs required fee
+        if (totalPaid == null || totalPaid.compareTo(BigDecimal.ZERO) == 0) {
             return TrangThaiThuPhi.CHUA_NOP;
         }
-        return soTienDaThu.compareTo(tongPhi) >= 0 ? 
+        return totalPaid.compareTo(tongPhi) >= 0 ? 
                 TrangThaiThuPhi.DA_NOP : TrangThaiThuPhi.CHUA_NOP;
+    }
+
+    /**
+     * Validate that payment date falls within the fee period date range.
+     * 
+     * @param ngayThu Payment date
+     * @param dotThuPhi Fee period with start and end dates
+     * @throws RuntimeException if ngayThu is outside the valid range
+     */
+    private void validatePaymentDate(LocalDate ngayThu, DotThuPhi dotThuPhi) {
+        if (ngayThu == null) {
+            return; // Allow null payment date (optional field)
+        }
+        
+        LocalDate ngayBatDau = dotThuPhi.getNgayBatDau();
+        LocalDate ngayKetThuc = dotThuPhi.getNgayKetThuc();
+        
+        if (ngayBatDau != null && ngayThu.isBefore(ngayBatDau)) {
+            throw new RuntimeException(
+                String.format("Đợt thu phí '%s' chưa bắt đầu. Ngày thu phải từ %s trở đi.",
+                    dotThuPhi.getTenDot(), 
+                    ngayBatDau.toString())
+            );
+        }
+        
+        if (ngayKetThuc != null && ngayThu.isAfter(ngayKetThuc)) {
+            throw new RuntimeException(
+                String.format("Đợt thu phí '%s' đã kết thúc vào %s. Không thể ghi nhận thanh toán sau ngày này.",
+                    dotThuPhi.getTenDot(),
+                    ngayKetThuc.toString())
+            );
+        }
+        
+        log.info("Payment date validation passed: ngayThu={} is within period range [{}, {}]",
+                ngayThu, ngayBatDau, ngayKetThuc);
+    }
+
+    /**
+     * Update status for ALL payment records of the same household and fee period.
+     * This ensures consistent status across multiple partial payments.
+     * 
+     * When a household pays 100,000 + 1,100,000 for a 1,200,000 fee,
+     * BOTH records should show DA_NOP status.
+     * 
+     * @param hoKhauId The household ID
+     * @param dotThuPhiId The fee period ID
+     */
+    @Transactional
+    private void updateAllRelatedRecordsStatus(Long hoKhauId, Long dotThuPhiId) {
+        // Find all payment records for this household + fee period
+        List<ThuPhiHoKhau> allPayments = repo.findByHoKhauIdAndDotThuPhiId(hoKhauId, dotThuPhiId);
+        
+        if (allPayments.isEmpty()) {
+            return;
+        }
+        
+        // Calculate total paid across all payments
+        BigDecimal totalPaid = calculateTotalPaid(hoKhauId, dotThuPhiId);
+        
+        // Get required fee from any record (they all have same tongPhi for same period)
+        ThuPhiHoKhau firstRecord = allPayments.get(0);
+        BigDecimal tongPhi = firstRecord.getTongPhi();
+        LoaiThuPhi loaiPhi = firstRecord.getDotThuPhi().getLoai();
+        
+        // Determine status based on total paid
+        TrangThaiThuPhi newStatus = determineStatus(totalPaid, tongPhi, loaiPhi);
+        
+        // Update status for ALL related records
+        for (ThuPhiHoKhau payment : allPayments) {
+            payment.setTrangThai(newStatus);
+            repo.save(payment);
+        }
+        
+        log.info("Updated status for {} payment records (hoKhauId={}, dotThuPhiId={}): totalPaid={}, tongPhi={}, status={}",
+                allPayments.size(), hoKhauId, dotThuPhiId, totalPaid, tongPhi, newStatus);
     }
 
     // Thêm thu phí mới
     @Transactional
     public ThuPhiHoKhauResponseDto create(ThuPhiHoKhauRequestDto dto, Authentication auth) {
-        checkPermission(auth);
-
         HoKhau hoKhau = hoKhauRepo.findById(dto.getHoKhauId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu id = " + dto.getHoKhauId()));
 
         DotThuPhi dotThuPhi = dotThuPhiRepo.findById(dto.getDotThuPhiId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt thu phí id = " + dto.getDotThuPhiId()));
+
+        // VALIDATE: Ensure payment date falls within fee period range
+        validatePaymentDate(dto.getNgayThu(), dotThuPhi);
 
         TaiKhoan user = getCurrentUser(auth);
 
@@ -173,7 +272,8 @@ public class ThuPhiHoKhauService {
             tongPhi = calculateAnnualFee(soNguoi, dotThuPhi.getDinhMuc());
         }
         
-        TrangThaiThuPhi trangThai = determineStatus(dto.getSoTienDaThu(), tongPhi, dotThuPhi.getLoai());
+        // Initial status will be recalculated after save
+        TrangThaiThuPhi trangThai = TrangThaiThuPhi.CHUA_NOP;
 
         // Tự động tạo period description
         String periodDescription = "Cả năm " + LocalDate.now().getYear();
@@ -193,16 +293,32 @@ public class ThuPhiHoKhauService {
                 .build();
 
         ThuPhiHoKhau saved = repo.save(entity);
+        
+        // CRITICAL: Update status for ALL records with same hoKhauId + dotThuPhiId
+        // This handles multiple partial payments correctly
+        updateAllRelatedRecordsStatus(dto.getHoKhauId(), dto.getDotThuPhiId());
+        
+        // Reload to get updated status
+        saved = repo.findById(saved.getId())
+                .orElseThrow(() -> new RuntimeException("Failed to reload saved record"));
+        
         return toResponseDto(saved);
     }
 
     // Cập nhật thu phí
     @Transactional
     public ThuPhiHoKhauResponseDto update(Long id, ThuPhiHoKhauRequestDto dto, Authentication auth) {
-        checkPermission(auth);
-
         ThuPhiHoKhau existing = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy thu phí id = " + id));
+
+        // Track which household and period we're updating
+        Long hoKhauId = existing.getHoKhau().getId();
+        Long dotThuPhiId = existing.getDotThuPhi().getId();
+
+        // VALIDATE: If ngayThu is being updated, ensure it's within period range
+        if (dto.getNgayThu() != null) {
+            validatePaymentDate(dto.getNgayThu(), existing.getDotThuPhi());
+        }
 
         // Nếu thay đổi hộ khẩu, cần tính lại số người và tổng phí
         boolean hoKhauChanged = false;
@@ -210,6 +326,7 @@ public class ThuPhiHoKhauService {
             HoKhau hoKhau = hoKhauRepo.findById(dto.getHoKhauId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu id = " + dto.getHoKhauId()));
             existing.setHoKhau(hoKhau);
+            hoKhauId = dto.getHoKhauId(); // Update tracked ID
             hoKhauChanged = true;
         }
 
@@ -217,6 +334,7 @@ public class ThuPhiHoKhauService {
             DotThuPhi dotThuPhi = dotThuPhiRepo.findById(dto.getDotThuPhiId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt thu phí id = " + dto.getDotThuPhiId()));
             existing.setDotThuPhi(dotThuPhi);
+            dotThuPhiId = dto.getDotThuPhiId(); // Update tracked ID
         }
 
         // Nếu thay đổi hộ khẩu, tính lại số người và tổng phí
@@ -233,10 +351,7 @@ public class ThuPhiHoKhauService {
             existing.setSoTienDaThu(dto.getSoTienDaThu());
         }
 
-        // Tự động cập nhật trạng thái
-        TrangThaiThuPhi trangThai = determineStatus(existing.getSoTienDaThu(), existing.getTongPhi(), 
-                                                     existing.getDotThuPhi().getLoai());
-        existing.setTrangThai(trangThai);
+        // Don't set status here - it will be recalculated for all related records
 
         if (dto.getNgayThu() != null) {
             existing.setNgayThu(dto.getNgayThu());
@@ -246,14 +361,21 @@ public class ThuPhiHoKhauService {
         }
 
         ThuPhiHoKhau updated = repo.save(existing);
+        
+        // CRITICAL: Update status for ALL records with same hoKhauId + dotThuPhiId
+        // This handles multiple partial payments correctly
+        updateAllRelatedRecordsStatus(hoKhauId, dotThuPhiId);
+        
+        // Reload to get updated status
+        updated = repo.findById(updated.getId())
+                .orElseThrow(() -> new RuntimeException("Failed to reload updated record"));
+        
         return toResponseDto(updated);
     }
 
     // Xóa thu phí
     @Transactional
     public void delete(Long id, Authentication auth) {
-        checkPermission(auth);
-
         if (!repo.existsById(id)) {
             throw new RuntimeException("Không tìm thấy thu phí id = " + id);
         }
@@ -261,12 +383,6 @@ public class ThuPhiHoKhauService {
     }
 
     // Helper methods
-    private void checkPermission(Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("KETOAN")) {
-            throw new AccessDeniedException("Chỉ kế toán mới có quyền thực hiện thao tác này!");
-        }
-    }
 
     private TaiKhoan getCurrentUser(Authentication auth) {
         return taiKhoanRepo.findByTenDangNhap(auth.getName())

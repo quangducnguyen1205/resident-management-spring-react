@@ -36,8 +36,9 @@ public class DotThuPhiRequestDto {
     private BigDecimal dinhMuc;
     
     /**
-     * Validation logic: If loai == BAT_BUOC, dinhMuc must be positive.
-     * If loai == TU_NGUYEN, dinhMuc defaults to 0.
-     * This is validated in the service layer.
+     * Validation logic: 
+     * 1. ngayKetThuc must be >= ngayBatDau (validated in service)
+     * 2. If loai == BAT_BUOC, dinhMuc must be positive.
+     * 3. If loai == TU_NGUYEN, dinhMuc defaults to 0.
      */
 }
