@@ -53,11 +53,6 @@ public class HoKhauService {
     // Thêm hộ khẩu mới (DTO)
     @Transactional
     public HoKhauResponseDto create(HoKhauRequestDto dto, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền thêm hộ khẩu!");
-        }
-
         TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
 
@@ -82,11 +77,6 @@ public class HoKhauService {
     // Cập nhật hộ khẩu (DTO) - PARTIAL UPDATE SUPPORT
     @Transactional
     public HoKhauResponseDto update(Long id, HoKhauUpdateDto dto, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền sửa hộ khẩu!");
-        }
-
         HoKhau existing = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu id = " + id));
 
@@ -140,6 +130,7 @@ public class HoKhauService {
         List<NhanKhauResponseDto> listNhanKhauDto;
 
         listNhanKhauDto = nhanKhauService.getAllByHoKhauId(hk.getId());
+        
         return HoKhauResponseDto.builder()
                 .id(hk.getId())
                 .soHoKhau(hk.getSoHoKhau())
@@ -150,8 +141,9 @@ public class HoKhauService {
                 .ngayThayDoiChuHo(hk.getNgayThayDoiChuHo())
                 .createdBy(hk.getCreatedBy())
                 .updatedBy(hk.getUpdatedBy())
-                                .createdAt(hk.getCreatedAt())
+                .createdAt(hk.getCreatedAt())
                 .updatedAt(hk.getUpdatedAt())
+                .soThanhVien(listNhanKhauDto != null ? listNhanKhauDto.size() : 0)
                 .listNhanKhau(listNhanKhauDto)
                 .build();
     }
@@ -159,11 +151,6 @@ public class HoKhauService {
     // Xóa hộ khẩu
     @Transactional
     public void delete(Long id, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền xóa hộ khẩu!");
-        }
-
         HoKhau hk = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu id = " + id));
         

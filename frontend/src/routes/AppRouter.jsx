@@ -118,8 +118,9 @@ const AppRouter = () => {
             {/* Fee Period routes */}
             <Route path="/fee-period">
               <Route index element={<FeePeriodList />} />
-              <Route path=":id" element={<FeePeriodDetail />} />
+              {/* CRITICAL: 'new' must come BEFORE ':id' */}
               <Route path="new" element={<FeePeriodDetail />} />
+              <Route path=":id" element={<FeePeriodDetail />} />
             </Route>
 
             {/* Fee Collection routes */}

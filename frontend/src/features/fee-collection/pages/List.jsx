@@ -36,7 +36,10 @@ const FeeCollectionList = () => {
   const [toast, setToast] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Check if user has accountant role (Kế toán)
+  // KETOAN and ADMIN can modify fee collections, TOTRUONG can only view
+  const canModifyFeeCollection = user?.role === 'ADMIN' || user?.role === 'KETOAN';
+
+  // Check if user has accountant role (Kế toán) - keeping for backward compatibility
   const hasAccountantRole = user?.role === 'KETOAN';
 
   const {
@@ -79,10 +82,21 @@ const FeeCollectionList = () => {
   ];
 
   const fetchCollections = async () => {
-    await handleApi(
+    const result = await handleApi(
       () => feeCollectionApi.getAll(),
       'Không thể tải danh sách thu phí'
     );
+    // Sort by newest first (ngayThu descending) if data exists
+    if (result && Array.isArray(result)) {
+      return result.sort((a, b) => {
+        // Sort by ngayThu if available, otherwise by id (assuming higher id = newer)
+        if (a.ngayThu && b.ngayThu) {
+          return new Date(b.ngayThu) - new Date(a.ngayThu);
+        }
+        return (b.id || 0) - (a.id || 0);
+      });
+    }
+    return result;
   };
 
   useEffect(() => {
@@ -163,18 +177,21 @@ const FeeCollectionList = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-800">💰 Quản lý thu phí hộ khẩu</h1>
               <p className="text-sm text-gray-600 mt-1">
-                Tổng số: <span className="font-semibold text-blue-600">{collections.length}</span> khoản thu phí
+                Hiển thị các khoản thu gần đây theo hộ khẩu · 
+                <span className="font-semibold text-blue-600">{collections.length}</span> khoản thu phí
               </p>
             </div>
-            <button
-              onClick={handleAdd}
-              className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition shadow-md hover:shadow-lg"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Thu phí mới
-            </button>
+            {canModifyFeeCollection && (
+              <button
+                onClick={handleAdd}
+                className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition shadow-md hover:shadow-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Thu phí mới
+              </button>
+            )}
           </div>
 
           {/* Search bar */}
@@ -214,6 +231,8 @@ const FeeCollectionList = () => {
             onDelete={handleDelete}
             onView={handleView}
             basePath="/fee-collection"
+            canEdit={canModifyFeeCollection}
+            canDelete={canModifyFeeCollection}
           />
         </div>
       </div>

@@ -1,0 +1,310 @@
+package com.example.QuanLyDanCu.config;
+
+import com.example.QuanLyDanCu.entity.*;
+import com.example.QuanLyDanCu.repository.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+/**
+ * Seed sample data for development environment
+ * Only runs when profile "dev" is active
+ */
+@Component
+@Profile("dev")
+@RequiredArgsConstructor
+@Slf4j
+public class DataSeeder implements CommandLineRunner {
+
+    private final TaiKhoanRepository taiKhoanRepo;
+    private final HoKhauRepository hoKhauRepo;
+    private final NhanKhauRepository nhanKhauRepo;
+    private final DotThuPhiRepository dotThuPhiRepo;
+    private final ThuPhiHoKhauRepository thuPhiHoKhauRepo;
+    private final PasswordEncoder passwordEncoder;
+
+    @Override
+    public void run(String... args) throws Exception {
+        // Check if data already exists
+        if (taiKhauRepo.count() > 0) {
+            log.info("Database already has data, skipping seed...");
+            return;
+        }
+
+        log.info("Seeding development database...");
+
+        // Create admin account
+        TaiKhoan admin = TaiKhoan.builder()
+                .tenDangNhap("admin")
+                .matKhau(passwordEncoder.encode("admin123"))
+                .vaiTro("ADMIN")
+                .hoTen("Quản trị viên")
+                .email("admin@example.com")
+                .dienThoai("0900000001")
+                .createdAt(LocalDateTime.now())
+                .build();
+        taiKhoanRepo.save(admin);
+        log.info("Created admin account: admin/admin123");
+
+        // Create TOTRUONG account
+        TaiKhoan toTruong = TaiKhoan.builder()
+                .tenDangNhap("totruong")
+                .matKhau(passwordEncoder.encode("totruong123"))
+                .vaiTro("TOTRUONG")
+                .hoTen("Nguyễn Văn A")
+                .email("totruong@example.com")
+                .dienThoai("0900000002")
+                .createdAt(LocalDateTime.now())
+                .build();
+        taiKhoanRepo.save(toTruong);
+        log.info("Created TOTRUONG account: totruong/totruong123");
+
+        // Create KETOAN account
+        TaiKhoan keToan = TaiKhoan.builder()
+                .tenDangNhap("ketoan")
+                .matKhau(passwordEncoder.encode("ketoan123"))
+                .vaiTro("KETOAN")
+                .hoTen("Trần Thị B")
+                .email("ketoan@example.com")
+                .dienThoai("0900000003")
+                .createdAt(LocalDateTime.now())
+                .build();
+        taiKhoanRepo.save(keToan);
+        log.info("Created KETOAN account: ketoan/ketoan123");
+
+        // Create households
+        HoKhau hoKhau1 = HoKhau.builder()
+                .maHoKhau("HK001")
+                .diaChiThuongTru("123 Đường ABC, Phường 1, Quận 1, TP.HCM")
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        hoKhauRepo.save(hoKhau1);
+
+        HoKhau hoKhau2 = HoKhau.builder()
+                .maHoKhau("HK002")
+                .diaChiThuongTru("456 Đường XYZ, Phường 2, Quận 2, TP.HCM")
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        hoKhauRepo.save(hoKhau2);
+
+        HoKhau hoKhau3 = HoKhau.builder()
+                .maHoKhau("HK003")
+                .diaChiThuongTru("789 Đường DEF, Phường 3, Quận 3, TP.HCM")
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        hoKhauRepo.save(hoKhau3);
+        log.info("Created 3 households");
+
+        // Create citizens for household 1
+        NhanKhau chuHo1 = NhanKhau.builder()
+                .hoTen("Nguyễn Văn Nam")
+                .ngaySinh(LocalDate.of(1980, 5, 15))
+                .gioiTinh("Nam")
+                .danToc("Kinh")
+                .quocTich("Việt Nam")
+                .ngheNghiep("Kỹ sư")
+                .cmndCccd("001234567890")
+                .ngayCap(LocalDate.of(1994, 6, 1))
+                .noiCap("CA TP.HCM")
+                .quanHeChuHo("Chủ hộ")
+                .hoKhauId(hoKhau1.getId())
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        nhanKhauRepo.save(chuHo1);
+
+        NhanKhau voNk1 = NhanKhau.builder()
+                .hoTen("Trần Thị Lan")
+                .ngaySinh(LocalDate.of(1982, 8, 20))
+                .gioiTinh("Nữ")
+                .danToc("Kinh")
+                .quocTich("Việt Nam")
+                .ngheNghiep("Giáo viên")
+                .cmndCccd("001234567891")
+                .ngayCap(LocalDate.of(1996, 9, 1))
+                .noiCap("CA TP.HCM")
+                .quanHeChuHo("Vợ")
+                .hoKhauId(hoKhau1.getId())
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        nhanKhauRepo.save(voNk1);
+
+        NhanKhau conNk1 = NhanKhau.builder()
+                .hoTen("Nguyễn Văn Minh")
+                .ngaySinh(LocalDate.of(2010, 3, 12))
+                .gioiTinh("Nam")
+                .danToc("Kinh")
+                .quocTich("Việt Nam")
+                .ngheNghiep("Học sinh")
+                .quanHeChuHo("Con")
+                .hoKhauId(hoKhau1.getId())
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        nhanKhauRepo.save(conNk1);
+
+        // Create citizens for household 2 (with tam_vang)
+        NhanKhau chuHo2 = NhanKhau.builder()
+                .hoTen("Lê Hoàng Phúc")
+                .ngaySinh(LocalDate.of(1975, 12, 1))
+                .gioiTinh("Nam")
+                .danToc("Kinh")
+                .quocTich("Việt Nam")
+                .ngheNghiep("Bác sĩ")
+                .cmndCccd("002345678901")
+                .ngayCap(LocalDate.of(1989, 12, 15))
+                .noiCap("CA TP.HCM")
+                .quanHeChuHo("Chủ hộ")
+                .tamVangTu(LocalDate.now().minusMonths(1))
+                .tamVangDen(LocalDate.now().plusMonths(2))
+                .hoKhauId(hoKhau2.getId())
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        nhanKhauRepo.save(chuHo2);
+
+        NhanKhau voNk2 = NhanKhau.builder()
+                .hoTen("Phạm Thị Hương")
+                .ngaySinh(LocalDate.of(1978, 7, 15))
+                .gioiTinh("Nữ")
+                .danToc("Kinh")
+                .quocTich("Việt Nam")
+                .ngheNghiep("Y tá")
+                .cmndCccd("002345678902")
+                .ngayCap(LocalDate.of(1992, 8, 1))
+                .noiCap("CA TP.HCM")
+                .quanHeChuHo("Vợ")
+                .hoKhauId(hoKhau2.getId())
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        nhanKhauRepo.save(voNk2);
+
+        // Create citizens for household 3 (with tam_tru)
+        NhanKhau chuHo3 = NhanKhau.builder()
+                .hoTen("Hoàng Văn Đức")
+                .ngaySinh(LocalDate.of(1990, 4, 5))
+                .gioiTinh("Nam")
+                .danToc("Kinh")
+                .quocTich("Việt Nam")
+                .ngheNghiep("Lập trình viên")
+                .cmndCccd("003456789012")
+                .ngayCap(LocalDate.of(2004, 5, 1))
+                .noiCap("CA Hà Nội")
+                .quanHeChuHo("Chủ hộ")
+                .tamTruTu(LocalDate.now().minusMonths(2))
+                .tamTruDen(LocalDate.now().plusMonths(10))
+                .hoKhauId(hoKhau3.getId())
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        nhanKhauRepo.save(chuHo3);
+
+        log.info("Created 7 citizens across 3 households");
+
+        // Create fee periods
+        DotThuPhi dotThang1 = DotThuPhi.builder()
+                .tenDot("Phí quản lý tháng 01/2024")
+                .loai("ĐỊNH KỲ")
+                .ngayBatDau(LocalDate.of(2024, 1, 1))
+                .ngayKetThuc(LocalDate.of(2024, 1, 31))
+                .dinhMuc(new BigDecimal("50000"))
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        dotThuPhiRepo.save(dotThang1);
+
+        DotThuPhi dotThang2 = DotThuPhi.builder()
+                .tenDot("Phí quản lý tháng 02/2024")
+                .loai("ĐỊNH KỲ")
+                .ngayBatDau(LocalDate.of(2024, 2, 1))
+                .ngayKetThuc(LocalDate.of(2024, 2, 29))
+                .dinhMuc(new BigDecimal("50000"))
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        dotThuPhiRepo.save(dotThang2);
+
+        DotThuPhi dotTet = DotThuPhi.builder()
+                .tenDot("Quỹ Tết 2024")
+                .loai("ĐỘT XUẤT")
+                .ngayBatDau(LocalDate.of(2024, 1, 20))
+                .ngayKetThuc(LocalDate.of(2024, 2, 10))
+                .dinhMuc(new BigDecimal("200000"))
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        dotThuPhiRepo.save(dotTet);
+
+        log.info("Created 3 fee periods");
+
+        // Create fee collections for month 1
+        ThuPhiHoKhau thuPhi1_1 = ThuPhiHoKhau.builder()
+                .hoKhauId(hoKhau1.getId())
+                .dotThuPhiId(dotThang1.getId())
+                .soNhanKhau(3)
+                .soTien(new BigDecimal("150000"))
+                .daThanhToan(true)
+                .ngayThanhToan(LocalDate.of(2024, 1, 5))
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        thuPhiHoKhauRepo.save(thuPhi1_1);
+
+        ThuPhiHoKhau thuPhi2_1 = ThuPhiHoKhau.builder()
+                .hoKhauId(hoKhau2.getId())
+                .dotThuPhiId(dotThang1.getId())
+                .soNhanKhau(2)
+                .soTien(new BigDecimal("100000"))
+                .daThanhToan(false)
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        thuPhiHoKhauRepo.save(thuPhi2_1);
+
+        ThuPhiHoKhau thuPhi3_1 = ThuPhiHoKhau.builder()
+                .hoKhauId(hoKhau3.getId())
+                .dotThuPhiId(dotThang1.getId())
+                .soNhanKhau(1)
+                .soTien(new BigDecimal("50000"))
+                .daThanhToan(true)
+                .ngayThanhToan(LocalDate.of(2024, 1, 8))
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        thuPhiHoKhauRepo.save(thuPhi3_1);
+
+        // Create fee collections for Tet
+        ThuPhiHoKhau thuPhiTet1 = ThuPhiHoKhau.builder()
+                .hoKhauId(hoKhau1.getId())
+                .dotThuPhiId(dotTet.getId())
+                .soNhanKhau(3)
+                .soTien(new BigDecimal("600000"))
+                .daThanhToan(true)
+                .ngayThanhToan(LocalDate.of(2024, 1, 25))
+                .createdBy(admin.getId())
+                .createdAt(LocalDateTime.now())
+                .build();
+        thuPhiHoKhauRepo.save(thuPhiTet1);
+
+        log.info("Created 4 fee collections");
+        log.info("Seeding completed successfully!");
+        log.info("========================================");
+        log.info("Test Accounts:");
+        log.info("  Admin:    admin/admin123");
+        log.info("  Tổ trưởng: totruong/totruong123");
+        log.info("  Kế toán:   ketoan/ketoan123");
+        log.info("========================================");
+    }
+}

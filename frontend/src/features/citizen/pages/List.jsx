@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../../components/Table/DataTable';
 import CitizenSearch from '../components/CitizenSearch';
-import CitizenStats from '../components/CitizenStats';
 import useApiHandler from '../../../hooks/useApiHandler';
 import citizenApi from '../../../api/citizenApi';
 import Loader from '../../../components/Loader';
 import ErrorMessage from '../../../components/ErrorMessage';
+import { useAuth } from '../../auth/contexts/AuthContext';
 
 const CitizenList = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ gender: null, age: null });
+  const { user } = useAuth();
   const [selectedCitizen, setSelectedCitizen] = useState(null);
   const [showModal, setShowModal] = useState(null); // 'tamvang', 'tamtru', 'khaitu'
   const [filters, setFilters] = useState({
@@ -18,12 +18,51 @@ const CitizenList = () => {
     gioiTinh: ''
   });
   
+  // TOTRUONG and ADMIN can modify citizens, KETOAN can only view
+  const canModifyCitizen = user?.role === 'ADMIN' || user?.role === 'TOTRUONG';
+  
   const {
     data,
     loading,
     error,
     handleApi
   } = useApiHandler({});
+
+  // Compute status based on database fields
+  const computeStatus = (citizen) => {
+    const today = new Date();
+    
+    // Check for Tạm vắng
+    if (citizen.tamVangTu) {
+      const tamVangTu = new Date(citizen.tamVangTu);
+      const tamVangDen = citizen.tamVangDen ? new Date(citizen.tamVangDen) : null;
+      
+      if (!tamVangDen || today <= tamVangDen) {
+        return { label: 'Tạm vắng', color: 'bg-yellow-100 text-yellow-800' };
+      }
+    }
+    
+    // Check for Tạm trú
+    if (citizen.tamTruTu) {
+      const tamTruTu = new Date(citizen.tamTruTu);
+      const tamTruDen = citizen.tamTruDen ? new Date(citizen.tamTruDen) : null;
+      
+      if (!tamTruDen || today <= tamTruDen) {
+        return { label: 'Tạm trú', color: 'bg-green-100 text-green-800' };
+      }
+    }
+    
+    // Check for Khai tử
+    if (citizen.ghiChu) {
+      const ghiChuLower = citizen.ghiChu.toLowerCase();
+      if (ghiChuLower.includes('khai tử') || ghiChuLower.includes('đã chết')) {
+        return { label: 'Đã khai tử', color: 'bg-red-100 text-red-800' };
+      }
+    }
+    
+    // Default to Thường trú
+    return { label: 'Thường trú', color: 'bg-gray-100 text-gray-800' };
+  };
 
   const columns = [
     { key: 'id', title: 'ID' },
@@ -38,19 +77,14 @@ const CitizenList = () => {
     {
       key: 'trangThai',
       title: 'Trạng thái',
-      render: (value) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          value === 'THUONG_TRU' ? 'bg-green-100 text-green-800' : 
-          value === 'TAM_TRU' ? 'bg-blue-100 text-blue-800' : 
-          value === 'TAM_VANG' ? 'bg-yellow-100 text-yellow-800' : 
-          'bg-gray-100 text-gray-800'
-        }`}>
-          {value === 'THUONG_TRU' ? 'Thường trú' : 
-           value === 'TAM_TRU' ? 'Tạm trú' : 
-           value === 'TAM_VANG' ? 'Tạm vắng' : 
-           value}
-        </span>
-      )
+      render: (_, row) => {
+        const status = computeStatus(row);
+        return (
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.color}`}>
+            {status.label}
+          </span>
+        );
+      }
     },
     {
       key: 'actions',
@@ -99,132 +133,8 @@ const CitizenList = () => {
     );
   };
 
-  const fetchStats = async () => {
-    try {
-      console.log('Fetching stats...');
-      const [genderData, ageData] = await Promise.all([
-        citizenApi.getGenderStats(),
-        citizenApi.getAgeStats()
-      ]);
-      
-      console.log('Gender stats response:', genderData);
-      console.log('Age stats response:', ageData);
-      
-      // Extract data từ response
-      let rawGenderStats = genderData?.data || genderData;
-      let rawAgeStats = ageData?.data || ageData;
-      
-      console.log('Raw gender stats:', rawGenderStats);
-      console.log('Raw age stats:', rawAgeStats);
-      
-      // Parse Gender Stats từ backend format:
-      // { total: 2, byGender: { "Nam": 2, "Nữ": 0 } }
-      let genderStats = [];
-      if (rawGenderStats?.byGender) {
-        console.log('Parsing backend gender format...');
-        genderStats = Object.entries(rawGenderStats.byGender).map(([name, value]) => ({
-          name,
-          value
-        }));
-        console.log('Parsed gender stats:', genderStats);
-      } else if (Array.isArray(rawGenderStats)) {
-        genderStats = rawGenderStats;
-      }
-      
-      // Parse Age Stats từ backend format:
-      // { buckets: { thieuNhi: { total, label, byGender }, diLam: {...}, veHuu: {...} } }
-      let ageStats = [];
-      if (rawAgeStats?.buckets) {
-        console.log('Parsing backend age format...');
-        ageStats = Object.entries(rawAgeStats.buckets).map(([key, bucket]) => ({
-          range: bucket.label || key,
-          count: bucket.total || 0,
-          byGender: bucket.byGender || {}
-        }));
-        console.log('Parsed age stats:', ageStats);
-      } else if (Array.isArray(rawAgeStats)) {
-        ageStats = rawAgeStats;
-      }
-      
-      console.log('Final gender stats:', genderStats);
-      console.log('Final age stats:', ageStats);
-      
-      setStats({
-        gender: genderStats,
-        age: ageStats
-      });
-    } catch (err) {
-      console.error('Không thể tải thống kê từ API:', err);
-      console.error('Error details:', err.response?.data);
-      
-      // Fallback: Tính stats từ dữ liệu citizens có sẵn
-      console.log('Calculating stats from citizen data...');
-      calculateStatsFromData();
-    }
-  };
-
-  // Hàm tính stats từ dữ liệu citizens
-  const calculateStatsFromData = () => {
-    const citizens = Array.isArray(data) ? data : (data?.data || []);
-    
-    if (citizens.length === 0) {
-      console.log('No citizens data to calculate stats');
-      setStats({ gender: null, age: null });
-      return;
-    }
-
-    // Tính stats theo giới tính
-    const genderCount = citizens.reduce((acc, citizen) => {
-      const gender = citizen.gioiTinh || 'Không xác định';
-      acc[gender] = (acc[gender] || 0) + 1;
-      return acc;
-    }, {});
-
-    const genderStats = Object.entries(genderCount).map(([name, value]) => ({
-      name,
-      value
-    }));
-
-    // Tính stats theo độ tuổi
-    const ageRanges = [
-      { range: '0-18', min: 0, max: 18, count: 0 },
-      { range: '19-30', min: 19, max: 30, count: 0 },
-      { range: '31-50', min: 31, max: 50, count: 0 },
-      { range: '51-65', min: 51, max: 65, count: 0 },
-      { range: '65+', min: 65, max: 200, count: 0 }
-    ];
-
-    citizens.forEach(citizen => {
-      if (citizen.ngaySinh) {
-        const birthDate = new Date(citizen.ngaySinh);
-        const age = new Date().getFullYear() - birthDate.getFullYear();
-        
-        const range = ageRanges.find(r => age >= r.min && age <= r.max);
-        if (range) {
-          range.count++;
-        }
-      }
-    });
-
-    console.log('Calculated gender stats:', genderStats);
-    console.log('Calculated age stats:', ageRanges);
-
-    setStats({
-      gender: genderStats,
-      age: ageRanges
-    });
-  };
-
-  // Effect để tính lại stats khi data thay đổi (fallback)
-  useEffect(() => {
-    if (data && (!stats.gender || !stats.age)) {
-      calculateStatsFromData();
-    }
-  }, [data]);
-
   useEffect(() => {
     fetchCitizens();
-    fetchStats();
   }, []);
 
   const handleAdd = () => navigate('/citizen/new');
@@ -312,7 +222,6 @@ const CitizenList = () => {
       setShowModal(null);
       setSelectedCitizen(null);
       await fetchCitizens();
-      await fetchStats(); // Refresh stats after update
     } catch (err) {
       alert('Không thể thực hiện: ' + (err.response?.data?.message || err.message));
     }
@@ -324,9 +233,9 @@ const CitizenList = () => {
   // Transform data - API có thể trả về array hoặc object
   const citizens = Array.isArray(data) ? data : (data?.data || []);
   
-  // Apply filters
+  // Apply filters - use backend's trangThaiHienTai field
   const filteredCitizens = citizens.filter(citizen => {
-    if (filters.trangThai && citizen.trangThai !== filters.trangThai) return false;
+    if (filters.trangThai && citizen.trangThaiHienTai !== filters.trangThai) return false;
     if (filters.gioiTinh && citizen.gioiTinh !== filters.gioiTinh) return false;
     return true;
   });
@@ -352,15 +261,17 @@ const CitizenList = () => {
           </h1>
           <p className="text-gray-600 mt-1">Tổng số: {filteredCitizens.length} nhân khẩu</p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium shadow-md"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Thêm nhân khẩu
-        </button>
+        {canModifyCitizen && (
+          <button
+            onClick={handleAdd}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium shadow-md"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Thêm nhân khẩu
+          </button>
+        )}
       </div>
 
       {/* Search */}
@@ -413,13 +324,6 @@ const CitizenList = () => {
         </div>
       </div>
 
-      {/* Statistics section */}
-      {stats.gender && stats.age && (
-        <div className="mb-6">
-          <CitizenStats genderStats={stats.gender} ageStats={stats.age} />
-        </div>
-      )}
-
       {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <DataTable
@@ -429,6 +333,8 @@ const CitizenList = () => {
           onEdit={handleEdit}
           onDelete={handleDelete}
           basePath="/citizen"
+          canEdit={canModifyCitizen}
+          canDelete={canModifyCitizen}
         />
       </div>
 

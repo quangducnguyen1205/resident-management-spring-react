@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,7 @@ public class ThuPhiHoKhauController {
     private final ThuPhiHoKhauService service;
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
     @Operation(summary = "Lấy danh sách tất cả thu phí", description = "Trả về danh sách tất cả các bản ghi thu phí hộ khẩu")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công",
@@ -39,6 +41,7 @@ public class ThuPhiHoKhauController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
     @Operation(summary = "Thống kê thu phí", description = "Thống kê tổng quan về thu phí hộ khẩu")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lấy thống kê thành công")
@@ -48,6 +51,7 @@ public class ThuPhiHoKhauController {
     }
 
     @GetMapping("/calc")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
     @Operation(summary = "Tính phí cho hộ khẩu", description = "Tính tổng phí hàng năm cho một hộ khẩu trong đợt thu phí cụ thể. Công thức: 6000 * 12 * số_người (loại trừ người tạm vắng dài hạn)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tính phí thành công"),
@@ -62,6 +66,7 @@ public class ThuPhiHoKhauController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
     @Operation(summary = "Lấy thu phí theo ID", description = "Trả về thông tin chi tiết của một bản ghi thu phí")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tìm thấy thu phí",
@@ -73,6 +78,7 @@ public class ThuPhiHoKhauController {
     }
 
     @GetMapping("/ho-khau/{hoKhauId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
     @Operation(summary = "Lấy danh sách thu phí theo hộ khẩu", description = "Trả về danh sách các bản ghi thu phí của một hộ khẩu")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công",
@@ -83,6 +89,7 @@ public class ThuPhiHoKhauController {
     }
 
     @GetMapping("/dot-thu-phi/{dotThuPhiId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
     @Operation(summary = "Lấy danh sách thu phí theo đợt thu", description = "Trả về danh sách các bản ghi thu phí của một đợt thu phí")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công",
@@ -93,12 +100,13 @@ public class ThuPhiHoKhauController {
     }
 
     @PostMapping
-    @Operation(summary = "Tạo bản ghi thu phí mới", description = "Tạo một bản ghi thu phí hộ khẩu mới (yêu cầu quyền KETOAN). Số người và tổng phí được tính tự động.")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
+    @Operation(summary = "Tạo bản ghi thu phí mới", description = "Tạo một bản ghi thu phí hộ khẩu mới (yêu cầu quyền ADMIN hoặc KETOAN). Số người và tổng phí được tính tự động.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Tạo thu phí thành công",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class))),
             @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Không có quyền truy cập (chỉ KETOAN)", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Không có quyền truy cập (chỉ ADMIN hoặc KETOAN)", content = @Content)
     })
     public ResponseEntity<ThuPhiHoKhauResponseDto> create(@Valid @RequestBody ThuPhiHoKhauRequestDto dto, Authentication auth) {
         ThuPhiHoKhauResponseDto created = service.create(dto, auth);
@@ -106,12 +114,13 @@ public class ThuPhiHoKhauController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cập nhật thu phí", description = "Cập nhật thông tin thu phí hộ khẩu (yêu cầu quyền KETOAN)")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
+    @Operation(summary = "Cập nhật thu phí", description = "Cập nhật thông tin thu phí hộ khẩu (yêu cầu quyền ADMIN hoặc KETOAN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cập nhật thành công",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class))),
             @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Không có quyền truy cập (chỉ KETOAN)", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Không có quyền truy cập (chỉ ADMIN hoặc KETOAN)", content = @Content),
             @ApiResponse(responseCode = "404", description = "Không tìm thấy thu phí", content = @Content)
     })
     public ResponseEntity<ThuPhiHoKhauResponseDto> update(@PathVariable Long id, @Valid @RequestBody ThuPhiHoKhauRequestDto dto, Authentication auth) {
@@ -119,10 +128,11 @@ public class ThuPhiHoKhauController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Xóa thu phí", description = "Xóa một bản ghi thu phí (yêu cầu quyền KETOAN)")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
+    @Operation(summary = "Xóa thu phí", description = "Xóa một bản ghi thu phí (yêu cầu quyền ADMIN hoặc KETOAN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Xóa thành công", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Không có quyền truy cập (chỉ KETOAN)", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Không có quyền truy cập (chỉ ADMIN hoặc KETOAN)", content = @Content),
             @ApiResponse(responseCode = "404", description = "Không tìm thấy thu phí", content = @Content)
     })
     public ResponseEntity<String> delete(@PathVariable Long id, Authentication auth) {

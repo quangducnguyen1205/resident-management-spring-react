@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FeeCollectionForm } from '../components/FeeCollectionForm';
 import feeCollectionApi from '../../../api/feeCollectionApi';
@@ -14,7 +14,10 @@ const Toast = ({ message, type, onClose }) => {
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const bgColor = type === 'error' ? 'bg-red-100 border-red-400 text-red-800' : 'bg-green-100 border-green-400 text-green-800';
+  const bgColor =
+    type === 'error'
+      ? 'bg-red-100 border-red-400 text-red-800'
+      : 'bg-green-100 border-green-400 text-green-800';
   const icon = type === 'error' ? '❌' : '✅';
 
   return (
@@ -22,7 +25,9 @@ const Toast = ({ message, type, onClose }) => {
       <div className="flex items-start gap-3">
         <span className="text-xl">{icon}</span>
         <div>
-          <p className="font-semibold">{type === 'error' ? 'Lỗi' : 'Thành công'}</p>
+          <p className="font-semibold">
+            {type === 'error' ? 'Lỗi' : 'Thành công'}
+          </p>
           <p className="text-sm">{message}</p>
         </div>
       </div>
@@ -35,25 +40,28 @@ const FeeCollectionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+
   const [toast, setToast] = useState(null);
-  
-  // Check if user has accountant role (Kế toán)
+  const [submitting, setSubmitting] = useState(false);
+
+  // Kế toán mới được dùng
   const hasAccountantRole = user?.role === 'KETOAN';
-  
-  // Detect "new" mode từ pathname
+
+  // /fee-collection/new => chế độ tạo mới
   const isNew = location.pathname === '/fee-collection/new';
-  
+
   const {
     data: collection,
     loading,
     error,
-    handleApi
+    handleApi,
   } = useApiHandler(null);
 
+  // Chỉ dùng useApiHandler để FETCH dữ liệu khi EDIT
   const fetchCollection = async () => {
-    if (isNew) return;  // Khi tạo mới, không fetch
-    if (!id) return;    // Nếu không có id, return
-    
+    if (isNew) return;
+    if (!id) return;
+
     await handleApi(
       () => feeCollectionApi.getById(id),
       'Không thể tải thông tin thu phí'
@@ -64,49 +72,92 @@ const FeeCollectionDetail = () => {
     fetchCollection();
   }, [id, isNew]);
 
-  const handleSubmit = async (data) => {
-    try {
-      const result = await handleApi(
-        () => isNew ? feeCollectionApi.create(data) : feeCollectionApi.update(id, data),
-        'Không thể lưu thu phí'
-      );
+  // initialValues ổn định cho Form (tránh đổi reference lung tung)
+  const stableInitialValues = useMemo(() => {
+    if (isNew) return {};
+    return collection || {};
+  }, [isNew, collection]);
 
+  // SUBMIT: gọi API trực tiếp, KHÔNG dùng useApiHandler để tránh đụng vào loading/error toàn cục
+  const handleSubmit = async (data, setFormError) => {
+    if (submitting) return;
+
+    setSubmitting(true);
+
+    try {
+      let response;
+      if (isNew) {
+        response = await feeCollectionApi.create(data);
+      } else {
+        response = await feeCollectionApi.update(id, data);
+      }
+
+      // Nếu BE trả về lỗi dạng 2xx nhưng có flag fail (trường hợp hiếm)
+      // thì bạn có thể check ở đây (tùy contract API)
+      // Ví dụ: if (response.data?.error) { ... }
+
+      // Thành công: show toast + điều hướng sau 1.5s
       setToast({
         type: 'success',
-        message: isNew ? '✅ Thêm thu phí thành công!' : '✅ Cập nhật thu phí thành công!'
+        message: isNew
+          ? '✅ Thêm thu phí thành công!'
+          : '✅ Cập nhật thu phí thành công!',
       });
 
       setTimeout(() => {
         navigate('/fee-collection');
-      }, 2000);
+      }, 1500);
     } catch (err) {
       const status = err.response?.status;
-      const errorMessage = err.response?.data?.message || err.message;
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        'Không thể lưu thu phí';
 
-      // Handle authorization errors
-      if (status === 403 || errorMessage.includes('quyền') || errorMessage.includes('kế toán')) {
-        setToast({
-          type: 'error',
-          message: '❌ Bạn không có quyền truy cập! Chỉ kế toán viên mới có thể thực hiện thao tác này.'
+      // LỖI VALIDATION (400) => hiển thị ngay dưới field, KHÔNG reset form, KHÔNG chuyển trang
+      if (status === 400) {
+        // Ở đây mình giả định lỗi liên quan đến ngày thu
+        // Nếu sau này BE trả thêm lỗi field khác (vd: soTienDaThu)
+        // bạn có thể parse message và gọi setFormError tương ứng
+        setFormError('ngayThu', {
+          type: 'server',
+          message,
         });
-      } else if (status === 400) {
-        setToast({
-          type: 'error',
-          message: `❌ Thông tin không hợp lệ: ${errorMessage}`
-        });
-      } else {
-        setToast({
-          type: 'error',
-          message: `❌ Lỗi: ${errorMessage}`
-        });
+
+        // Scroll đến field + focus
+        setTimeout(() => {
+          const field = document.querySelector('input[name="ngayThu"]');
+          if (field) {
+            field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            field.focus();
+          }
+        }, 100);
+
+        setSubmitting(false);
+        return;
       }
+
+      // Các lỗi khác (401/403/500/network) => toast error, form vẫn giữ nguyên
+      setToast({
+        type: 'error',
+        message: `❌ ${message}`,
+      });
+
+      setSubmitting(false);
+      return;
     }
   };
 
-  if (loading) return <Loader />;
-  if (error) return <ErrorMessage message={error} onRetry={fetchCollection} />;
+  // Chỉ hiển thị Loader khi đang load dữ liệu ban đầu ở EDIT mode
+  const isFetchingDetail = !isNew && loading && !collection;
+  if (isFetchingDetail) return <Loader />;
 
-  // Check permission for fee-collection
+  // Lỗi fetch ở EDIT mode => show ErrorMessage
+  if (!isNew && error) {
+    return <ErrorMessage message={error} onRetry={fetchCollection} />;
+  }
+
+  // Không có quyền
   if (!hasAccountantRole) {
     return (
       <div className="space-y-4">
@@ -120,9 +171,12 @@ const FeeCollectionDetail = () => {
           <div className="flex items-center gap-3">
             <span className="text-3xl">🔒</span>
             <div>
-              <h3 className="text-lg font-bold text-red-800 mb-2">Không có quyền truy cập</h3>
+              <h3 className="text-lg font-bold text-red-800 mb-2">
+                Không có quyền truy cập
+              </h3>
               <p className="text-red-700">
-                Chỉ nhân viên <strong>Kế toán</strong> mới có quyền thực hiện các thao tác trên mục <strong>Thu Phí Hộ Khẩu</strong>.
+                Chỉ nhân viên <strong>Kế toán</strong> mới có quyền thực hiện
+                các thao tác trên mục <strong>Thu Phí Hộ Khẩu</strong>.
               </p>
               <p className="text-red-600 text-sm mt-2">
                 Vui lòng liên hệ quản trị viên nếu bạn cần cấp quyền truy cập.
@@ -136,8 +190,14 @@ const FeeCollectionDetail = () => {
 
   return (
     <>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <div className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">
@@ -153,8 +213,9 @@ const FeeCollectionDetail = () => {
 
         <div className="bg-white rounded-lg shadow-lg p-6">
           <FeeCollectionForm
-            initialValues={collection || {}}
+            initialValues={stableInitialValues}
             onSubmit={handleSubmit}
+            submitting={submitting}
           />
         </div>
       </div>

@@ -9,26 +9,37 @@ const useApiHandler = (initialState = null) => {
     try {
       setLoading(true);
       setError(null);
+
       const response = await apiCall();
       setData(response.data);
-      return response.data;
+
+      return { success: true, data: response.data };
+
     } catch (err) {
-      const message = err.response?.data?.message || err.message || errorMessage;
+      const status = err.response?.status;
+
+      let message;
+      if (typeof err.response?.data === 'string') {
+        message = err.response.data.replace(/^"|"$/g, "");
+      } else {
+        message = err.response?.data?.message || err.message || errorMessage;
+      }
+
+      // ⭐⭐ Validation error — DO NOT set global error ⭐⭐
+      if (status === 400) {
+        return { success: false, status: 400, message };
+      }
+
+      // ❗ Non-400 errors (server, network, 401…) → set global error
       setError(message);
-      throw new Error(message);
+
+      return { success: false, status, message };
     } finally {
       setLoading(false);
     }
   }, []);
 
-  return {
-    data,
-    loading,
-    error,
-    setData,
-    setError,
-    handleApi
-  };
+  return { data, loading, error, setData, setError, handleApi };
 };
 
 export default useApiHandler;

@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,7 @@ public class DotThuPhiController {
     private final DotThuPhiService service;
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
     @Operation(summary = "Lấy danh sách tất cả đợt thu phí", description = "Trả về danh sách tất cả các đợt thu phí trong hệ thống")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công",
@@ -38,6 +40,7 @@ public class DotThuPhiController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
     @Operation(summary = "Lấy đợt thu phí theo ID", description = "Trả về thông tin chi tiết của một đợt thu phí")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tìm thấy đợt thu phí",
@@ -49,7 +52,8 @@ public class DotThuPhiController {
     }
 
     @PostMapping
-    @Operation(summary = "Tạo đợt thu phí mới", description = "Tạo một đợt thu phí mới (yêu cầu quyền ADMIN hoặc TOTRUONG)")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
+    @Operation(summary = "Tạo đợt thu phí mới", description = "Tạo một đợt thu phí mới (yêu cầu quyền ADMIN hoặc KETOAN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Tạo đợt thu phí thành công",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = DotThuPhiResponseDto.class))),
@@ -62,7 +66,8 @@ public class DotThuPhiController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cập nhật đợt thu phí (partial update)", description = "Cập nhật thông tin đợt thu phí - chỉ cập nhật các trường được cung cấp (yêu cầu quyền ADMIN hoặc TOTRUONG)")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
+    @Operation(summary = "Cập nhật đợt thu phí (partial update)", description = "Cập nhật thông tin đợt thu phí - chỉ cập nhật các trường được cung cấp (yêu cầu quyền ADMIN hoặc KETOAN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cập nhật thành công",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = DotThuPhiResponseDto.class))),
@@ -75,7 +80,8 @@ public class DotThuPhiController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Xóa đợt thu phí", description = "Xóa một đợt thu phí (yêu cầu quyền ADMIN hoặc TOTRUONG)")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
+    @Operation(summary = "Xóa đợt thu phí", description = "Xóa một đợt thu phí (yêu cầu quyền ADMIN hoặc KETOAN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Xóa thành công", content = @Content),
             @ApiResponse(responseCode = "403", description = "Không có quyền truy cập", content = @Content),

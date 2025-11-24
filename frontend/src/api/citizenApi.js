@@ -12,9 +12,8 @@ const citizenApi = {
   search: (params) => axiosInstance.get('/nhan-khau/search', { params }),
 
   // Statistics endpoints
-  getStats: () => axiosInstance.get('/nhan-khau/stats'),
   getGenderStats: () => axiosInstance.get('/nhan-khau/stats/gender'),
-  getAgeStats: () => axiosInstance.get('/nhan-khau/stats/age'),
+  getAgeStats: (params) => axiosInstance.get('/nhan-khau/stats/age', { params }),
 
   // Tạm vắng (Temporary absence) endpoints
   updateTamVang: (id, data) => axiosInstance.put(`/nhan-khau/${id}/tamvang`, data),

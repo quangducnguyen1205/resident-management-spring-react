@@ -40,11 +40,6 @@ public class BienDongService {
 
     // Tạo mới biến động (DTO)
     public BienDongResponseDto createDto(BienDongRequestDto dto, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new RuntimeException("Bạn không có quyền tạo biến động!");
-        }
-
         TaiKhoan user = taiKhoanRepository.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
 
@@ -64,11 +59,6 @@ public class BienDongService {
 
     // Cập nhật biến động (DTO)
     public BienDongResponseDto updateDto(Long id, BienDongRequestDto dto, Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new RuntimeException("Bạn không có quyền sửa biến động!");
-        }
-
         BienDong existing = bienDongRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động với id = " + id));
 
@@ -122,12 +112,6 @@ public class BienDongService {
 
     // Xóa biến động
     public void delete(Long id, Authentication auth) {
-        // Kiểm tra quyền người dùng
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new RuntimeException("Bạn không có quyền xóa biến động!");
-        }
-
         // Lấy biến động từ cơ sở dữ liệu và xóa
         BienDong bienDong = bienDongRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy biến động với id = " + id));

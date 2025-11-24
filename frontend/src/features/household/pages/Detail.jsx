@@ -32,6 +32,8 @@ const HouseholdDetail = () => {
   const handleSubmit = async (data) => {
     try {
       const isNew = id === 'new';
+      
+      // Save household (create or update)
       await handleApi(
         () => isNew
           ? householdApi.create(data)
@@ -42,6 +44,7 @@ const HouseholdDetail = () => {
       // Show success message
       alert(`${isNew ? 'Tạo mới' : 'Cập nhật'} hộ khẩu thành công!`);
       
+      // CRITICAL: Only navigate - let List page fetch the array
       navigate('/household');
     } catch (err) {
       // Error is handled by handleApi

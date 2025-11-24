@@ -6,6 +6,9 @@ import householdApi from '../../../api/householdApi';
 import Loader from '../../../components/Loader';
 import ErrorMessage from '../../../components/ErrorMessage';
 import useApiHandler from '../../../hooks/useApiHandler';
+import TamVangModal from '../components/TamVangModal';
+import TamTruModal from '../components/TamTruModal';
+import KhaiTuModal from '../components/KhaiTuModal';
 
 const CitizenDetail = () => {
   const { id } = useParams();
@@ -13,6 +16,11 @@ const CitizenDetail = () => {
   const navigate = useNavigate();
   const [toast, setToast] = useState(null); // State cho thông báo
   const [householdOptions, setHouseholdOptions] = useState([]); // Danh sách hộ khẩu
+  
+  // Modal visibility state
+  const [showTamVang, setShowTamVang] = useState(false);
+  const [showTamTru, setShowTamTru] = useState(false);
+  const [showKhaiTu, setShowKhaiTu] = useState(false);
   
   // Detect "new" mode từ pathname
   const isNew = location.pathname === '/citizen/new';
@@ -169,15 +177,49 @@ const CitizenDetail = () => {
             </div>
           )}
         </div>
-        <button
-          onClick={() => navigate('/citizen')}
-          className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2 font-medium"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Quay lại danh sách
-        </button>
+        <div className="flex flex-wrap gap-3">
+          {/* Action buttons - Only show when viewing existing citizen */}
+          {!isNew && citizen && (
+            <>
+              <button
+                onClick={() => setShowTamVang(true)}
+                className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-2 font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Tạm vắng
+              </button>
+              <button
+                onClick={() => setShowTamTru(true)}
+                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Tạm trú
+              </button>
+              <button
+                onClick={() => setShowKhaiTu(true)}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Khai tử
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => navigate('/citizen')}
+            className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2 font-medium"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Quay lại danh sách
+          </button>
+        </div>
       </div>
       
       {/* Form card */}
@@ -188,6 +230,32 @@ const CitizenDetail = () => {
           householdOptions={householdOptions}
         />
       </div>
+
+      {/* Modals - Only render when citizen data is loaded */}
+      {!isNew && citizen && (
+        <>
+          <TamVangModal
+            isOpen={showTamVang}
+            onClose={() => setShowTamVang(false)}
+            citizen={citizen}
+            onSuccess={fetchCitizen}
+          />
+
+          <TamTruModal
+            isOpen={showTamTru}
+            onClose={() => setShowTamTru(false)}
+            citizen={citizen}
+            onSuccess={fetchCitizen}
+          />
+
+          <KhaiTuModal
+            isOpen={showKhaiTu}
+            onClose={() => setShowKhaiTu(false)}
+            citizen={citizen}
+            onSuccess={fetchCitizen}
+          />
+        </>
+      )}
     </div>
   );
 };

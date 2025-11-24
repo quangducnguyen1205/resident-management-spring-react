@@ -7,7 +7,9 @@ const DataTable = ({
   loading, 
   onEdit, 
   onDelete, 
-  basePath 
+  basePath,
+  canEdit = true,
+  canDelete = true
 }) => {
   const navigate = useNavigate();
 
@@ -38,23 +40,36 @@ const DataTable = ({
               ))}
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
-                  onClick={() => navigate(`${basePath}/${row.id}`)}
+                  onClick={() => {
+                    console.log('Detail button clicked for row:', row);
+                    // Strict validation: must be a valid finite number
+                    if (!row?.id || typeof row.id !== 'number' || !isFinite(row.id)) {
+                      console.error('Cannot navigate: row.id is invalid', { id: row?.id, row });
+                      alert('Lỗi: ID không hợp lệ');
+                      return;
+                    }
+                    navigate(`${basePath}/${row.id}`);
+                  }}
                   className="text-blue-600 hover:text-blue-900 mr-4"
                 >
                   Chi tiết
                 </button>
-                <button
-                  onClick={() => onEdit(row)}
-                  className="text-indigo-600 hover:text-indigo-900 mr-4"
-                >
-                  Sửa
-                </button>
-                <button
-                  onClick={() => onDelete(row)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  Xóa
-                </button>
+                {canEdit && (
+                  <button
+                    onClick={() => onEdit(row)}
+                    className="text-indigo-600 hover:text-indigo-900 mr-4"
+                  >
+                    Sửa
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={() => onDelete(row)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Xóa
+                  </button>
+                )}
               </td>
             </tr>
           ))}

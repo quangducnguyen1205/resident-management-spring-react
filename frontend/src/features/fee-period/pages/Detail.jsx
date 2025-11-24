@@ -9,6 +9,11 @@ import useApiHandler from '../../../hooks/useApiHandler';
 const FeePeriodDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // CRITICAL: When route is /fee-period/new, id is undefined (not 'new' string)
+  // So isNew must check !id
+  const isNew = !id;
+  
   const {
     data: period,
     loading,
@@ -17,7 +22,14 @@ const FeePeriodDetail = () => {
   } = useApiHandler(null);
 
   const fetchPeriod = async () => {
-    if (id === 'new') return;
+    console.log('FeePeriodDetail mounted with id:', id, 'isNew:', isNew);
+    
+    // If creating new, no need to fetch
+    if (isNew) {
+      return;
+    }
+    
+    console.log('Fetching fee period with ID:', id);
     await handleApi(
       () => feePeriodApi.getById(id),
       'Không thể tải thông tin đợt thu phí'
@@ -30,15 +42,22 @@ const FeePeriodDetail = () => {
 
   const handleSubmit = async (data) => {
     try {
-      await handleApi(
-        () => id === 'new' 
-          ? feePeriodApi.create(data) 
-          : feePeriodApi.update(id, data),
+      console.log('Submitting fee period data:', data, 'id:', id, 'isNew:', isNew);
+      
+      const apiCall = () =>
+        isNew ? feePeriodApi.create(data) : feePeriodApi.update(id, data);
+      
+      const result = await handleApi(
+        apiCall,
         'Không thể lưu đợt thu phí'
       );
+      
+      console.log('Backend response:', result);
+      alert(isNew ? 'Tạo đợt thu phí thành công!' : 'Cập nhật đợt thu phí thành công!');
       navigate('/fee-period');
     } catch (err) {
-      // Error handled by useApiHandler
+      console.error('Error saving fee period:', err);
+      alert('Lỗi: ' + (err.message || 'Không thể lưu đợt thu phí'));
     }
   };
 
@@ -49,7 +68,7 @@ const FeePeriodDetail = () => {
     <div className="container mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">
-          {id === 'new' ? 'Thêm đợt thu phí mới' : 'Chi tiết đợt thu phí'}
+          {isNew ? 'Thêm đợt thu phí mới' : 'Chi tiết đợt thu phí'}
         </h1>
         <button
           onClick={() => navigate('/fee-period')}

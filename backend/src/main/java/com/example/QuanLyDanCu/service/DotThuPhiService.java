@@ -43,7 +43,10 @@ public class DotThuPhiService {
     // Thêm đợt thu phí mới
     @Transactional
     public DotThuPhiResponseDto create(DotThuPhiRequestDto dto, Authentication auth) {
-        checkPermission(auth);
+        // Validate date range: ngayKetThuc must be >= ngayBatDau
+        if (dto.getNgayKetThuc().isBefore(dto.getNgayBatDau())) {
+            throw new IllegalArgumentException("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu");
+        }
         
         // Validate dinhMuc based on loai
         BigDecimal dinhMuc = dto.getDinhMuc();
@@ -77,8 +80,6 @@ public class DotThuPhiService {
     // Cập nhật đợt thu phí - PARTIAL UPDATE SUPPORT
     @Transactional
     public DotThuPhiResponseDto update(Long id, DotThuPhiUpdateDto dto, Authentication auth) {
-        checkPermission(auth);
-
         DotThuPhi existing = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt thu phí id = " + id));
 
@@ -132,8 +133,6 @@ public class DotThuPhiService {
     // Xóa đợt thu phí
     @Transactional
     public void delete(Long id, Authentication auth) {
-        checkPermission(auth);
-
         if (!repo.existsById(id)) {
             throw new RuntimeException("Không tìm thấy đợt thu phí id = " + id);
         }
@@ -141,13 +140,6 @@ public class DotThuPhiService {
     }
 
     // Helper methods
-    private void checkPermission(Authentication auth) {
-        String role = auth.getAuthorities().iterator().next().getAuthority();
-        if (!role.equals("ADMIN") && !role.equals("TOTRUONG")) {
-            throw new AccessDeniedException("Bạn không có quyền thực hiện thao tác này!");
-        }
-    }
-
     private TaiKhoan getCurrentUser(Authentication auth) {
         return taiKhoanRepo.findByTenDangNhap(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));

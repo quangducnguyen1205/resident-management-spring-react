@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class HoKhauController {
     private final HoKhauService service;
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
     @Operation(summary = "Lấy danh sách tất cả hộ khẩu")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
@@ -35,6 +37,7 @@ public class HoKhauController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
     @Operation(summary = "Lấy hộ khẩu theo ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tìm thấy hộ khẩu"),
@@ -45,6 +48,7 @@ public class HoKhauController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     @Operation(summary = "Tạo hộ khẩu mới")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Tạo thành công"),
@@ -59,6 +63,7 @@ public class HoKhauController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     @Operation(summary = "Cập nhật hộ khẩu (partial update)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
@@ -75,6 +80,7 @@ public class HoKhauController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
     @Operation(summary = "Xóa hộ khẩu")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Xóa thành công"),

@@ -31,6 +31,13 @@ import FeePeriodDetail from "./features/fee-period/pages/Detail";
 import FeeCollectionList from "./features/fee-collection/pages/List";
 import FeeCollectionDetail from "./features/fee-collection/pages/Detail";
 
+// Statistics pages
+import StatisticsOverview from "./features/statistics/pages/Overview";
+
+// Account pages
+import AccountList from "./features/accounts/pages/List";
+import CreateAccount from "./features/accounts/pages/Create";
+
 export default function App() {
   return (
     <Router>
@@ -63,6 +70,7 @@ export default function App() {
 
             {/* Fee Period routes - Flat structure */}
             <Route path="/fee-period" element={<FeePeriodList />} />
+            {/* IMPORTANT: /new must come BEFORE /:id to prevent 'new' being treated as an ID */}
             <Route path="/fee-period/new" element={<FeePeriodDetail />} />
             <Route path="/fee-period/:id" element={<FeePeriodDetail />} />
 
@@ -70,6 +78,13 @@ export default function App() {
             <Route path="/fee-collection" element={<FeeCollectionList />} />
             <Route path="/fee-collection/new" element={<FeeCollectionDetail />} />
             <Route path="/fee-collection/:id" element={<FeeCollectionDetail />} />
+
+            {/* Statistics routes */}
+            <Route path="/statistics" element={<StatisticsOverview />} />
+
+            {/* Account routes (ADMIN only) */}
+            <Route path="/tai-khoan" element={<AccountList />} />
+            <Route path="/tai-khoan/new" element={<CreateAccount />} />
           </Route>
         </Route>
 

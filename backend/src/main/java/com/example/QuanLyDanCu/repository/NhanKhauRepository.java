@@ -9,8 +9,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
-    // --- Search theo tên (contains, không phân biệt hoa-thường)
-    List<NhanKhau> findByHoTenContainingIgnoreCase(String keyword);
+    // --- Search theo tên hoặc CCCD (contains, không phân biệt hoa-thường)
+    @Query("SELECT n FROM NhanKhau n WHERE LOWER(n.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%')) OR n.cmndCccd LIKE CONCAT('%', :keyword, '%')")
+    List<NhanKhau> findByHoTenContainingIgnoreCase(@Param("keyword") String keyword);
 
     // --- Tìm nhân khẩu theo hộ khẩu
     List<NhanKhau> findByHoKhauId(Long hoKhauId);

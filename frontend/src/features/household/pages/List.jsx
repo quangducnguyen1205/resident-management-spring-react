@@ -6,15 +6,20 @@ import { HouseholdModal } from '../components/HouseholdModal';
 import Loader from '../../../components/Loader';
 import ErrorMessage from '../../../components/ErrorMessage';
 import useApiHandler from '../../../hooks/useApiHandler';
+import { useAuth } from '../../auth/contexts/AuthContext';
 
 const HouseholdList = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     data: households,
     loading,
     error,
     handleApi
   } = useApiHandler([]);
+  
+  // TOTRUONG and ADMIN can modify households, KETOAN can only view
+  const canModifyHousehold = user?.role === 'ADMIN' || user?.role === 'TOTRUONG';
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedHousehold, setSelectedHousehold] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -74,6 +79,8 @@ const HouseholdList = () => {
   const handleModalSave = async (data) => {
     try {
       const isNew = !selectedHousehold;
+      
+      // Save household (create or update)
       await handleApi(
         () => isNew
           ? householdApi.create(data)
@@ -84,6 +91,7 @@ const HouseholdList = () => {
       // Show success message
       alert(`${isNew ? 'Tạo mới' : 'Cập nhật'} hộ khẩu thành công!`);
       
+      // CRITICAL: Fetch list to refresh - never set result object to households array
       await fetchHouseholds();
       handleModalClose();
     } catch (err) {
@@ -92,7 +100,9 @@ const HouseholdList = () => {
   };
 
   // Filter households by search term
-  const filteredHouseholds = households.filter(household => {
+  // CRITICAL: Ensure households is always an array to prevent .filter() crash
+  const safeHouseholds = Array.isArray(households) ? households : [];
+  const filteredHouseholds = safeHouseholds.filter(household => {
     if (!searchTerm.trim()) return true;
     const search = searchTerm.toLowerCase();
     return (
@@ -105,6 +115,9 @@ const HouseholdList = () => {
   if (loading) return <Loader />;
   if (error) return <ErrorMessage message={error} onRetry={fetchHouseholds} />;
 
+  // Debug log to ensure households is an array
+  console.log('Households in List:', households, 'Type:', Array.isArray(households) ? 'Array' : typeof households);
+
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Header với title và actions */}
@@ -113,18 +126,20 @@ const HouseholdList = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Quản lý hộ khẩu</h1>
             <p className="text-sm text-gray-600 mt-1">
-              Tổng số: <span className="font-semibold text-blue-600">{households.length}</span> hộ khẩu
+              Tổng số: <span className="font-semibold text-blue-600">{safeHouseholds.length}</span> hộ khẩu
             </p>
           </div>
-          <button
-            onClick={handleAdd}
-            className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition shadow-md hover:shadow-lg"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Thêm hộ khẩu
-          </button>
+          {canModifyHousehold && (
+            <button
+              onClick={handleAdd}
+              className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition shadow-md hover:shadow-lg"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Thêm hộ khẩu
+            </button>
+          )}
         </div>
 
         {/* Search bar */}
@@ -169,6 +184,8 @@ const HouseholdList = () => {
           onDelete={handleDelete}
           onView={handleView}
           basePath="/household"
+          canEdit={canModifyHousehold}
+          canDelete={canModifyHousehold}
         />
       </div>
 

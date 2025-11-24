@@ -6,19 +6,18 @@ import FormInput from '../../../components/Form/FormInput';
 import FormSelect from '../../../components/Form/FormSelect';
 
 const schema = yup.object().shape({
-  loaiBienDong: yup.string().required('Vui lòng chọn loại biến động'),
-  ngayBienDong: yup.date().required('Vui lòng nhập ngày biến động'),
-  noiDung: yup.string().required('Vui lòng nhập nội dung'),
-  ghiChu: yup.string()
+  loai: yup.string()
+    .required('Vui lòng nhập loại biến động')
+    .max(100, 'Loại biến động không được vượt quá 100 ký tự'),
+  noiDung: yup.string()
+    .required('Vui lòng nhập nội dung')
+    .max(1000, 'Nội dung không được vượt quá 1000 ký tự'),
+  thoiGian: yup.string()
+    .nullable()
+    .matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/, 'Thời gian không hợp lệ'),
+  hoKhauId: yup.number().nullable(),
+  nhanKhauId: yup.number().nullable()
 });
-
-const changeTypeOptions = [
-  { value: 'CHUYEN_DEN', label: 'Chuyển đến' },
-  { value: 'CHUYEN_DI', label: 'Chuyển đi' },
-  { value: 'TAM_TRU', label: 'Tạm trú' },
-  { value: 'TAM_VANG', label: 'Tạm vắng' },
-  { value: 'MAT', label: 'Mất' }
-];
 
 export const PopulationForm = ({ initialValues, onSubmit }) => {
   const { register, handleSubmit, formState: { errors } } = useForm({
@@ -28,20 +27,20 @@ export const PopulationForm = ({ initialValues, onSubmit }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <FormSelect
+      <FormInput
         label="Loại biến động"
         register={register}
-        name="loaiBienDong"
-        options={changeTypeOptions}
-        error={errors.loaiBienDong}
+        name="loai"
+        error={errors.loai}
+        placeholder="Ví dụ: Tạm trú, Tạm vắng, Khai sinh, Khai tử..."
       />
 
       <FormInput
-        label="Ngày biến động"
-        type="date"
+        label="Thời gian biến động (tùy chọn)"
+        type="datetime-local"
         register={register}
-        name="ngayBienDong"
-        error={errors.ngayBienDong}
+        name="thoiGian"
+        error={errors.thoiGian}
       />
 
       <FormInput
@@ -49,13 +48,25 @@ export const PopulationForm = ({ initialValues, onSubmit }) => {
         register={register}
         name="noiDung"
         error={errors.noiDung}
+        placeholder="Mô tả chi tiết nội dung biến động"
       />
 
       <FormInput
-        label="Ghi chú"
+        label="ID Hộ khẩu (tùy chọn)"
+        type="number"
         register={register}
-        name="ghiChu"
-        error={errors.ghiChu}
+        name="hoKhauId"
+        error={errors.hoKhauId}
+        placeholder="Nhập ID hộ khẩu liên quan"
+      />
+
+      <FormInput
+        label="ID Nhân khẩu (tùy chọn)"
+        type="number"
+        register={register}
+        name="nhanKhauId"
+        error={errors.nhanKhauId}
+        placeholder="Nhập ID nhân khẩu liên quan"
       />
 
       <div className="flex justify-end space-x-4">
