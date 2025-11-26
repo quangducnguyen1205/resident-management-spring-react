@@ -50,9 +50,9 @@ public class ThuPhiHoKhauController {
         return ResponseEntity.ok(service.getStats());
     }
 
-    @GetMapping("/calc")
+    @GetMapping("/calculate")
     @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
-    @Operation(summary = "Tính phí cho hộ khẩu", description = "Tính tổng phí hàng năm cho một hộ khẩu trong đợt thu phí cụ thể. Công thức: 6000 * 12 * số_người (loại trừ người tạm vắng dài hạn)")
+    @Operation(summary = "Tính phí cho hộ khẩu", description = "Tính tổng phí cho một hộ khẩu trong đợt thu phí cụ thể với tính toán số tháng động. Công thức: định_mức_tháng * số_tháng * số_người")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tính phí thành công"),
             @ApiResponse(responseCode = "400", description = "Không tìm thấy hộ khẩu hoặc đợt thu phí")
@@ -62,7 +62,7 @@ public class ThuPhiHoKhauController {
             @RequestParam Long hoKhauId,
             @Parameter(description = "ID đợt thu phí", example = "1", required = true)
             @RequestParam Long dotThuPhiId) {
-        return ResponseEntity.ok(service.calculateTotalFee(hoKhauId, dotThuPhiId));
+        return ResponseEntity.ok(service.calculateFee(hoKhauId, dotThuPhiId));
     }
 
     @GetMapping("/{id}")

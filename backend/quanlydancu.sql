@@ -20,15 +20,7 @@ CREATE TABLE ho_khau (
     so_ho_khau VARCHAR(50) UNIQUE,
     ten_chu_ho VARCHAR(255),
     dia_chi VARCHAR(255),
-    ngay_tao DATE,
-    noi_dung_thay_doi_chu_ho VARCHAR(500),
-    ngay_thay_doi_chu_ho DATE,
-    created_by BIGINT,
-    updated_by BIGINT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    CONSTRAINT fk_hokhau_created_by FOREIGN KEY (created_by) REFERENCES tai_khoan(id),
-    CONSTRAINT fk_hokhau_updated_by FOREIGN KEY (updated_by) REFERENCES tai_khoan(id)
+    ngay_tao DATE
 );
 
 -- ========================
@@ -52,13 +44,7 @@ CREATE TABLE nhan_khau (
     tam_tru_tu DATE,
     tam_tru_den DATE,
     ho_khau_id BIGINT,
-    created_by BIGINT,
-    updated_by BIGINT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    CONSTRAINT fk_nhankhau_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id),
-    CONSTRAINT fk_nhankhau_created_by FOREIGN KEY (created_by) REFERENCES tai_khoan(id),
-    CONSTRAINT fk_nhankhau_updated_by FOREIGN KEY (updated_by) REFERENCES tai_khoan(id)
+    CONSTRAINT fk_nhankhau_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id)
 );
 
 -- ========================
@@ -71,11 +57,8 @@ CREATE TABLE bien_dong (
     thoi_gian TIMESTAMP,
     ho_khau_id BIGINT,
     nhan_khau_id BIGINT,
-    created_by BIGINT,
-    created_at TIMESTAMP,
     CONSTRAINT fk_biendong_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id),
-    CONSTRAINT fk_biendong_nhankhau FOREIGN KEY (nhan_khau_id) REFERENCES nhan_khau(id),
-    CONSTRAINT fk_biendong_created_by FOREIGN KEY (created_by) REFERENCES tai_khoan(id)
+    CONSTRAINT fk_biendong_nhankhau FOREIGN KEY (nhan_khau_id) REFERENCES nhan_khau(id)
 );
 
 -- ========================
@@ -87,11 +70,7 @@ CREATE TABLE dot_thu_phi (
     loai VARCHAR(20) CHECK (loai IN ('BAT_BUOC', 'TU_NGUYEN')),
     ngay_bat_dau DATE,
     ngay_ket_thuc DATE,
-    dinh_muc DECIMAL(15,2),
-    created_by BIGINT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    CONSTRAINT fk_dotthuphi_created_by FOREIGN KEY (created_by) REFERENCES tai_khoan(id)
+    dinh_muc DECIMAL(15,2)
 );
 
 COMMENT ON COLUMN dot_thu_phi.loai IS 'Loại phí: BAT_BUOC (bắt buộc) hoặc TU_NGUYEN (tự nguyện)';
@@ -105,22 +84,18 @@ CREATE TABLE thu_phi_ho_khau (
     dot_thu_phi_id BIGINT,
     so_nguoi INT,
     tong_phi DECIMAL(15,2),
-    so_tien_da_thu DECIMAL(15,2),
     trang_thai VARCHAR(20) CHECK (trang_thai IN ('CHUA_NOP', 'DA_NOP', 'KHONG_AP_DUNG')),
-    period_description VARCHAR(100),
     ngay_thu DATE,
     ghi_chu VARCHAR(500),
     collected_by BIGINT,
-    created_at TIMESTAMP,
     CONSTRAINT fk_thuphi_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id),
     CONSTRAINT fk_thuphi_dotthuphi FOREIGN KEY (dot_thu_phi_id) REFERENCES dot_thu_phi(id),
     CONSTRAINT fk_thuphi_collected_by FOREIGN KEY (collected_by) REFERENCES tai_khoan(id)
 );
 
 COMMENT ON COLUMN thu_phi_ho_khau.so_nguoi IS 'Số người trong hộ (không bao gồm người tạm vắng dài hạn). Với phí TU_NGUYEN luôn = 0';
-COMMENT ON COLUMN thu_phi_ho_khau.tong_phi IS 'Tổng phí phải nộp. Phí BAT_BUOC: dinh_muc * 12 * so_nguoi. Phí TU_NGUYEN: luôn = 0';
+COMMENT ON COLUMN thu_phi_ho_khau.tong_phi IS 'Tổng phí phải nộp. Phí BAT_BUOC: dinh_muc * months * so_nguoi. Phí TU_NGUYEN: luôn = 0';
 COMMENT ON COLUMN thu_phi_ho_khau.trang_thai IS 'Trạng thái: CHUA_NOP (chưa nộp đủ), DA_NOP (đã nộp đủ), KHONG_AP_DUNG (phí tự nguyện)';
-COMMENT ON COLUMN thu_phi_ho_khau.period_description IS 'Mô tả kỳ thu phí (vd: "Cả năm 2025")';
 
 
 

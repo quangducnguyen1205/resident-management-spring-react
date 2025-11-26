@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import DataTable from '../../../components/Table/DataTable';
 import feeCollectionApi from '../../../api/feeCollectionApi';
 
+/**
+ * FeeByHousehold - Refactored 2025
+ * 
+ * Shows fee collection history for a specific household
+ * Updated to match new backend response format
+ */
 const FeeByHousehold = ({ householdId }) => {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -24,19 +30,51 @@ const FeeByHousehold = ({ householdId }) => {
   }, [householdId]);
 
   const columns = [
-    { key: 'tenDotThu', title: 'Đợt thu' },
-    { key: 'soTien', title: 'Số tiền' },
-    { key: 'ngayThu', title: 'Ngày thu' },
+    { key: 'tenDot', title: 'Đợt thu' },
+    { 
+      key: 'soNguoi', 
+      title: 'Số người',
+      render: (value) => `${value || 0} người`
+    },
+    { 
+      key: 'tongPhi', 
+      title: 'Tổng phí',
+      render: (value) => (
+        <span className="font-semibold text-blue-700">
+          {new Intl.NumberFormat('vi-VN').format(value || 0)} ₫
+        </span>
+      )
+    },
+    { 
+      key: 'ngayThu', 
+      title: 'Ngày thu',
+      render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : '-'
+    },
     {
       key: 'trangThai',
       title: 'Trạng thái',
-      render: (value) => (
-        <span className={`px-2 py-1 rounded-full text-xs ${
-          value === 'DA_NOP' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          {value === 'DA_NOP' ? 'Đã nộp' : 'Chưa nộp'}
-        </span>
-      )
+      render: (value) => {
+        if (value === 'DA_NOP') {
+          return (
+            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+              ✅ Đã nộp
+            </span>
+          );
+        } else if (value === 'CHUA_NOP') {
+          return (
+            <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+              ⏳ Chưa nộp
+            </span>
+          );
+        } else if (value === 'KHONG_AP_DUNG') {
+          return (
+            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+              ➖ Không áp dụng
+            </span>
+          );
+        }
+        return '-';
+      }
     }
   ];
 

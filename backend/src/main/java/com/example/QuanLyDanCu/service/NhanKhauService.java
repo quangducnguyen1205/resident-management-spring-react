@@ -5,12 +5,10 @@ import com.example.QuanLyDanCu.dto.request.NhanKhauRequestDto;
 import com.example.QuanLyDanCu.dto.request.NhanKhauUpdateDto;
 import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
 import com.example.QuanLyDanCu.entity.NhanKhau;
-import com.example.QuanLyDanCu.entity.TaiKhoan;
 import com.example.QuanLyDanCu.entity.BienDong;
 import com.example.QuanLyDanCu.event.ChangeOperation;
 import com.example.QuanLyDanCu.event.NhanKhauChangedEvent;
 import com.example.QuanLyDanCu.repository.NhanKhauRepository;
-import com.example.QuanLyDanCu.repository.TaiKhoanRepository;
 import com.example.QuanLyDanCu.repository.BienDongRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +32,6 @@ public class NhanKhauService {
 
     private final NhanKhauRepository nhanKhauRepo;
     private final BienDongRepository bienDongRepo;
-    private final TaiKhoanRepository taiKhoanRepo;
     private final ApplicationEventPublisher eventPublisher;
 
     // ========== DTO-based methods ==========
@@ -56,10 +53,6 @@ public class NhanKhauService {
     // Thêm nhân khẩu mới (DTO)
     @Transactional
     public NhanKhauResponseDto create(NhanKhauRequestDto dto, Authentication auth) {
-
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
-
         // CCCD validation based on age
         validateCccdByAge(dto.getNgaySinh(), dto.getCmndCccd(), dto.getNgayCap(), dto.getNoiCap());
 
@@ -76,10 +69,6 @@ public class NhanKhauService {
                 .quanHeChuHo(dto.getQuanHeChuHo())
                 .ghiChu(dto.getGhiChu())
                 .hoKhauId(dto.getHoKhauId())
-                .createdAt(LocalDateTime.now())
-                .createdBy(user.getId())
-                .updatedAt(LocalDateTime.now())
-                .updatedBy(user.getId())
                 .build();
 
         NhanKhau saved = nhanKhauRepo.save(nk);
@@ -99,9 +88,6 @@ public class NhanKhauService {
 
         NhanKhau existing = nhanKhauRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
-
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
 
         boolean changed = false;
 
@@ -168,9 +154,6 @@ public class NhanKhauService {
             throw new RuntimeException("Không có gì để thay đổi!");
         }
 
-        existing.setUpdatedAt(LocalDateTime.now());
-        existing.setUpdatedBy(user.getId());
-
         NhanKhau saved = nhanKhauRepo.save(existing);
         
         // Publish event to trigger ThuPhiHoKhau recalculation
@@ -204,13 +187,9 @@ public class NhanKhauService {
             throw new IllegalArgumentException("Ngày bắt đầu phải bé hơn ngày kết thúc");
 
         NhanKhau nk = nhanKhauRepo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu"));
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
 
         nk.setTamTruTu(dto.getNgayBatDau());
         nk.setTamTruDen(dto.getNgayKetThuc());
-        nk.setUpdatedAt(LocalDateTime.now());
-        nk.setUpdatedBy(user.getId());
 
         BienDong bd = BienDong.builder()
                 .loai("Tạm trú")
@@ -220,9 +199,7 @@ public class NhanKhauService {
                         + (dto.getLyDo() != null ? " - Lý do: " + dto.getLyDo() : ""))
                 .thoiGian(LocalDateTime.now())
                 .hoKhauId(nk.getHoKhauId())
-                .nhanKhauId(nk.getId())
-                .createdBy(user.getId())
-                .createdAt(LocalDateTime.now())
+            .nhanKhauId(nk.getId())
                 .build();
         bienDongRepo.save(bd);
 
@@ -233,21 +210,15 @@ public class NhanKhauService {
     public void huyTamTru(Long id, Authentication auth) {
         NhanKhau existing = nhanKhauRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
         existing.setTamTruTu(null);
         existing.setTamTruDen(null);
-        existing.setUpdatedAt(LocalDateTime.now());
-        existing.setUpdatedBy(user.getId());
 
         BienDong bd = BienDong.builder()
                 .loai("Hủy tạm trú")
                 .noiDung("Hủy tạm trú cho " + existing.getHoTen())
                 .thoiGian(LocalDateTime.now())
                 .hoKhauId(existing.getHoKhauId())
-                .nhanKhauId(existing.getId())
-                .createdBy(user.getId())
-                .createdAt(LocalDateTime.now())
+            .nhanKhauId(existing.getId())
                 .build();
 
         bienDongRepo.save(bd);
@@ -261,13 +232,9 @@ public class NhanKhauService {
             throw new IllegalArgumentException("Ngày bắt đầu phải bé hơn ngày kết thúc");
 
         NhanKhau nk = nhanKhauRepo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu"));
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
 
         nk.setTamVangTu(dto.getNgayBatDau());
         nk.setTamVangDen(dto.getNgayKetThuc());
-        nk.setUpdatedAt(LocalDateTime.now());
-        nk.setUpdatedBy(user.getId());
 
         BienDong bd = BienDong.builder()
                 .loai("Tạm trú")
@@ -277,9 +244,7 @@ public class NhanKhauService {
                         + (dto.getLyDo() != null ? " - Lý do: " + dto.getLyDo() : ""))
                 .thoiGian(LocalDateTime.now())
                 .hoKhauId(nk.getHoKhauId())
-                .nhanKhauId(nk.getId())
-                .createdBy(user.getId())
-                .createdAt(LocalDateTime.now())
+            .nhanKhauId(nk.getId())
                 .build();
         bienDongRepo.save(bd);
 
@@ -297,21 +262,15 @@ public class NhanKhauService {
     public void huyTamVang(Long id, Authentication auth) {
         NhanKhau existing = nhanKhauRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
         existing.setTamVangTu(null);
         existing.setTamVangDen(null);
-        existing.setUpdatedAt(LocalDateTime.now());
-        existing.setUpdatedBy(user.getId());
 
         BienDong bd = BienDong.builder()
                 .loai("Kết thúc tạm vắng")
                 .noiDung("Kết thúc tạm vắng cho " + existing.getHoTen())
                 .thoiGian(LocalDateTime.now())
                 .hoKhauId(existing.getHoKhauId())
-                .nhanKhauId(existing.getId())
-                .createdBy(user.getId())
-                .createdAt(LocalDateTime.now())
+            .nhanKhauId(existing.getId())
                 .build();
 
         bienDongRepo.save(bd);
@@ -327,21 +286,15 @@ public class NhanKhauService {
     // --- KHAI TỬ ---
     public NhanKhau khaiTu(Long id, String lyDo, Authentication auth) {
         NhanKhau nk = nhanKhauRepo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu"));
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
 
         nk.setGhiChu("Đã mất");
-        nk.setUpdatedAt(LocalDateTime.now());
-        nk.setUpdatedBy(user.getId());
 
         BienDong bd = BienDong.builder()
                 .loai("Khai tử")
                 .noiDung("Khai tử: " + nk.getHoTen() + (lyDo != null ? " - Lý do: " + lyDo : ""))
                 .thoiGian(LocalDateTime.now())
                 .hoKhauId(nk.getHoKhauId())
-                .nhanKhauId(nk.getId())
-                .createdBy(user.getId())
-                .createdAt(LocalDateTime.now())
+            .nhanKhauId(nk.getId())
                 .build();
         bienDongRepo.save(bd);
 
@@ -534,10 +487,6 @@ public class NhanKhauService {
                 .tamTruDen(nk.getTamTruDen())
                 .trangThaiHienTai(trangThaiHienTai)
                 .hoKhauId(nk.getHoKhauId())
-                .createdBy(nk.getCreatedBy())
-                .updatedBy(nk.getUpdatedBy())
-                .createdAt(nk.getCreatedAt())
-                .updatedAt(nk.getUpdatedAt())
                 .build();
     }
 }

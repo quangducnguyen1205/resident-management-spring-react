@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-@Schema(description = "Request DTO for ThuPhiHoKhau entity")
+@Schema(description = "Request DTO for ThuPhiHoKhau entity - payment confirmation")
 public class ThuPhiHoKhauRequestDto {
 
     @NotNull(message = "ID hộ khẩu không được để trống")
@@ -20,11 +20,6 @@ public class ThuPhiHoKhauRequestDto {
     @Positive(message = "ID đợt thu phí phải là số dương")
     @Schema(description = "ID của đợt thu phí", example = "1")
     private Long dotThuPhiId;
-
-    @NotNull(message = "Số tiền đã thu không được để trống")
-    @PositiveOrZero(message = "Số tiền đã thu phải lớn hơn hoặc bằng 0")
-    @Schema(description = "Số tiền đã thu (VND)", example = "216000")
-    private BigDecimal soTienDaThu;
 
     @Schema(description = "Ngày thu phí", example = "2025-01-15")
     private LocalDate ngayThu;

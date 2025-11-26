@@ -6,7 +6,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @Schema(description = "Response DTO for DotThuPhi entity")
@@ -30,12 +29,4 @@ public class DotThuPhiResponseDto {
     @Schema(description = "Định mức (VND)", example = "50000")
     private BigDecimal dinhMuc;
 
-    @Schema(description = "ID người tạo")
-    private Long createdBy;
-
-    @Schema(description = "Thời gian tạo")
-    private LocalDateTime createdAt;
-
-    @Schema(description = "Thời gian cập nhật")
-    private LocalDateTime updatedAt;
 }

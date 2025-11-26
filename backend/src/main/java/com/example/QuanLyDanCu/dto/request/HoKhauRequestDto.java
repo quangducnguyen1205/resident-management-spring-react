@@ -19,7 +19,4 @@ public class HoKhauRequestDto {
     @NotBlank(message = "Địa chỉ không được để trống")
     @Schema(description = "Địa chỉ hộ khẩu", example = "123 Đường ABC, Quận XYZ")
     private String diaChi;
-
-    @Schema(description = "Nội dung thay đổi chủ hộ (khi cập nhật)")
-    private String noiDungThayDoiChuHo;
 }

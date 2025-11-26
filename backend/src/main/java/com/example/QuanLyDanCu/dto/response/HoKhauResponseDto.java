@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -25,24 +24,6 @@ public class HoKhauResponseDto {
 
     @Schema(description = "Ngày tạo hộ khẩu")
     private LocalDate ngayTao;
-
-    @Schema(description = "Nội dung thay đổi chủ hộ")
-    private String noiDungThayDoiChuHo;
-
-    @Schema(description = "Ngày thay đổi chủ hộ")
-    private LocalDate ngayThayDoiChuHo;
-
-    @Schema(description = "ID người tạo")
-    private Long createdBy;
-
-    @Schema(description = "ID người cập nhật")
-    private Long updatedBy;
-
-    @Schema(description = "Thời gian tạo")
-    private LocalDateTime createdAt;
-
-    @Schema(description = "Thời gian cập nhật")
-    private LocalDateTime updatedAt;
 
     @Schema(description = "Số thành viên trong hộ khẩu", example = "4")
     private Integer soThanhVien;

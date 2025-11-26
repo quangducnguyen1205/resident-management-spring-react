@@ -6,20 +6,15 @@ import lombok.*;
 /**
  * DTO for partial updates of HoKhau entity.
  * All fields are nullable - only provided fields will be updated.
+ * Note: soHoKhau cannot be updated as it is immutable.
  */
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @Schema(description = "Update DTO for HoKhau entity (chỉ các trường được cung cấp)")
 public class HoKhauUpdateDto {
-
-    @Schema(description = "Số hộ khẩu (unique)", example = "HK001")
-    private String soHoKhau;
 
     @Schema(description = "Tên chủ hộ", example = "Nguyễn Văn A")
     private String tenChuHo;
 
     @Schema(description = "Địa chỉ hộ khẩu", example = "123 Đường ABC, Quận XYZ")
     private String diaChi;
-
-    @Schema(description = "Nội dung thay đổi chủ hộ (bắt buộc khi đổi tenChuHo)")
-    private String noiDungThayDoiChuHo;
 }

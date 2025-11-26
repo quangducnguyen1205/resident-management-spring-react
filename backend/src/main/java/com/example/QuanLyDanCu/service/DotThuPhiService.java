@@ -4,18 +4,14 @@ import com.example.QuanLyDanCu.dto.request.DotThuPhiRequestDto;
 import com.example.QuanLyDanCu.dto.request.DotThuPhiUpdateDto;
 import com.example.QuanLyDanCu.dto.response.DotThuPhiResponseDto;
 import com.example.QuanLyDanCu.entity.DotThuPhi;
-import com.example.QuanLyDanCu.entity.TaiKhoan;
 import com.example.QuanLyDanCu.enums.LoaiThuPhi;
 import com.example.QuanLyDanCu.repository.DotThuPhiRepository;
-import com.example.QuanLyDanCu.repository.TaiKhoanRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,7 +20,6 @@ import java.util.stream.Collectors;
 public class DotThuPhiService {
 
     private final DotThuPhiRepository repo;
-    private final TaiKhoanRepository taiKhoanRepo;
 
     // Lấy tất cả đợt thu phí
     public List<DotThuPhiResponseDto> getAll() {
@@ -61,16 +56,12 @@ public class DotThuPhiService {
             }
         }
         
-        TaiKhoan user = getCurrentUser(auth);
-
         DotThuPhi entity = DotThuPhi.builder()
                 .tenDot(dto.getTenDot())
                 .loai(dto.getLoai())
                 .ngayBatDau(dto.getNgayBatDau())
                 .ngayKetThuc(dto.getNgayKetThuc())
-                .dinhMuc(dinhMuc)
-                .createdBy(user.getId())
-                .createdAt(LocalDateTime.now())
+            .dinhMuc(dinhMuc)
                 .build();
 
         DotThuPhi saved = repo.save(entity);
@@ -124,8 +115,6 @@ public class DotThuPhiService {
             throw new RuntimeException("Không có gì để thay đổi!");
         }
 
-        existing.setUpdatedAt(LocalDateTime.now());
-
         DotThuPhi updated = repo.save(existing);
         return toResponseDto(updated);
     }
@@ -139,12 +128,6 @@ public class DotThuPhiService {
         repo.deleteById(id);
     }
 
-    // Helper methods
-    private TaiKhoan getCurrentUser(Authentication auth) {
-        return taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
-    }
-
     private DotThuPhiResponseDto toResponseDto(DotThuPhi entity) {
         return DotThuPhiResponseDto.builder()
                 .id(entity.getId())
@@ -152,10 +135,7 @@ public class DotThuPhiService {
                 .loai(entity.getLoai())
                 .ngayBatDau(entity.getNgayBatDau())
                 .ngayKetThuc(entity.getNgayKetThuc())
-                .dinhMuc(entity.getDinhMuc())
-                .createdBy(entity.getCreatedBy())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
+            .dinhMuc(entity.getDinhMuc())
                 .build();
     }
 }

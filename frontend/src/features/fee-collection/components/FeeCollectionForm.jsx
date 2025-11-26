@@ -10,14 +10,22 @@ import householdApi from '../../../api/householdApi';
 import feeCollectionApi from '../../../api/feeCollectionApi';
 import { useAuth } from '../../auth/contexts/AuthContext';
 
+/**
+ * FeeCollectionForm - Refactored 2025
+ * 
+ * REMOVED FIELDS:
+ * - soTienDaThu (backend calculates automatically)
+ * - periodDescription (no longer exists)
+ * 
+ * NEW BEHAVIOR:
+ * - Auto-calls /calculate endpoint when household + period selected
+ * - Displays amount summary card with formula breakdown
+ * - Only allows editing ngayThu and ghiChu (backend enforces)
+ * - Shows inline errors (no full-page navigation on error)
+ */
 const schema = yup.object().shape({
   hoKhauId: yup.number().required('Vui lòng chọn hộ khẩu'),
   dotThuPhiId: yup.number().required('Vui lòng chọn đợt thu phí'),
-  soTienDaThu: yup
-    .number()
-    .min(0, 'Số tiền phải lớn hơn hoặc bằng 0')
-    .required('Vui lòng nhập số tiền đã thu')
-    .typeError('Số tiền không hợp lệ'),
   ngayThu: yup.string().required('Vui lòng nhập ngày thu'),
   ghiChu: yup.string(),
 });
@@ -34,10 +42,11 @@ export const FeeCollectionForm = ({
   const [loading, setLoading] = useState(true);
   const [calculatedFee, setCalculatedFee] = useState(null);
   const [calculating, setCalculating] = useState(false);
+  const [calculationError, setCalculationError] = useState(null);
 
   const hasAccountantRole = user?.role === 'KETOAN';
+  const isEditMode = initialValues && initialValues.id;
 
-  // useForm KHỞI TẠO MỘT LẦN, defaultValues = {}
   const {
     register,
     handleSubmit,
@@ -48,10 +57,10 @@ export const FeeCollectionForm = ({
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {}, // luôn là {}, không gây re-init
+    defaultValues: {},
   });
 
-  // Khi EDIT, initialValues có dữ liệu => reset 1 lần
+  // Initialize form with existing values when editing
   useEffect(() => {
     if (initialValues && Object.keys(initialValues).length > 0) {
       reset(initialValues);
@@ -61,7 +70,7 @@ export const FeeCollectionForm = ({
   const selectedHoKhauId = watch('hoKhauId');
   const selectedDotThuPhiId = watch('dotThuPhiId');
 
-  // Fetch options cho select
+  // Fetch options for selects
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -82,9 +91,7 @@ export const FeeCollectionForm = ({
         setHouseholds(
           householdsRes.data.map((household) => ({
             value: household.id,
-            label: `${household.soHoKhau} - ${household.tenChuHo} (${
-              household.soThanhVien
-            } người)`,
+            label: `${household.soHoKhau} - ${household.tenChuHo}`,
           }))
         );
       } catch (error) {
@@ -97,7 +104,7 @@ export const FeeCollectionForm = ({
     fetchData();
   }, []);
 
-  // Khi đổi route trong /fee-collection => refetch periods (nếu bạn muốn realtime)
+  // Refetch periods when navigating within fee-collection
   useEffect(() => {
     if (location.pathname.includes('/fee-collection')) {
       const refetchPeriods = async () => {
@@ -119,29 +126,31 @@ export const FeeCollectionForm = ({
     }
   }, [location.pathname]);
 
-  // Auto-calc fee khi chọn đủ hộ + đợt
+  // Auto-calculate fee when both household and period are selected
   useEffect(() => {
     if (selectedHoKhauId && selectedDotThuPhiId) {
       calculateFee();
+    } else {
+      setCalculatedFee(null);
+      setCalculationError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedHoKhauId, selectedDotThuPhiId]);
 
   const calculateFee = async () => {
     setCalculating(true);
+    setCalculationError(null);
+    
     try {
-      const result = await feeCollectionApi.calculateFee({
-        hoKhauId: selectedHoKhauId,
-        dotThuPhiId: selectedDotThuPhiId,
-      });
+      const result = await feeCollectionApi.calculateFee(
+        selectedHoKhauId,
+        selectedDotThuPhiId
+      );
       setCalculatedFee(result.data);
-
-      // Tạo mới thì auto-fill tổng phí
-      if (!initialValues?.id) {
-        setValue('soTienDaThu', result.data.totalFee);
-      }
     } catch (error) {
       console.error('Error calculating fee:', error);
+      const errorMsg = error.response?.data?.message || 'Không thể tính phí. Vui lòng thử lại.';
+      setCalculationError(errorMsg);
       setCalculatedFee(null);
     } finally {
       setCalculating(false);
@@ -180,7 +189,7 @@ export const FeeCollectionForm = ({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      {/* Chọn hộ khẩu & đợt thu */}
+      {/* Household & Period Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg">
         <FormSelect
           label="Hộ khẩu"
@@ -189,6 +198,7 @@ export const FeeCollectionForm = ({
           options={households}
           error={errors.hoKhauId}
           required
+          disabled={isEditMode}
         />
 
         <FormSelect
@@ -198,80 +208,98 @@ export const FeeCollectionForm = ({
           options={feePeriods}
           error={errors.dotThuPhiId}
           required
+          disabled={isEditMode}
         />
       </div>
 
-      {/* Thông tin tính phí */}
-      {calculatedFee && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-green-800 mb-3">
-            📊 Thông tin tính phí
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      {isEditMode && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <p className="text-sm text-yellow-800">
+            ⚠️ <strong>Lưu ý:</strong> Không thể thay đổi hộ khẩu và đợt thu phí sau khi đã tạo bản ghi. 
+            Chỉ có thể cập nhật ngày thu và ghi chú.
+          </p>
+        </div>
+      )}
+
+      {/* Calculation Loading State */}
+      {calculating && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p className="text-gray-600">Đang tính toán phí...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Calculation Error */}
+      {calculationError && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">❌</span>
             <div>
-              <p className="text-sm text-gray-600">Số nhân khẩu</p>
-              <p className="font-semibold text-lg">
-                {calculatedFee.memberCount} người
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Phí/người/tháng</p>
-              <p className="font-semibold text-lg">
-                {new Intl.NumberFormat('vi-VN').format(
-                  calculatedFee.monthlyFeePerPerson
-                )}{' '}
-                ₫
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Số tháng</p>
-              <p className="font-semibold text-lg">
-                {calculatedFee.monthsPerYear}
-              </p>
-            </div>
-            <div className="col-span-2 md:col-span-3 bg-white p-3 rounded border border-green-300">
-              <p className="text-xs text-gray-600">Công thức tính</p>
-              <p className="font-mono text-sm">
-                {new Intl.NumberFormat('vi-VN').format(
-                  calculatedFee.monthlyFeePerPerson
-                )}{' '}
-                ₫ × {calculatedFee.monthsPerYear} tháng ×{' '}
-                {calculatedFee.memberCount} người ={' '}
-                {new Intl.NumberFormat('vi-VN').format(
-                  calculatedFee.totalFee
-                )}{' '}
-                ₫
-              </p>
-            </div>
-            <div className="col-span-2 md:col-span-3">
-              <p className="text-sm text-gray-600">Tổng phí phải thu</p>
-              <p className="text-2xl font-bold text-green-700">
-                {new Intl.NumberFormat('vi-VN').format(
-                  calculatedFee.totalFee
-                )}{' '}
-                ₫
-              </p>
+              <h4 className="font-semibold text-red-800 mb-1">Lỗi tính phí</h4>
+              <p className="text-sm text-red-700">{calculationError}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Nhập số tiền & ngày thu */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-amber-50 p-4 rounded-lg">
-        <FormInput
-          label="Số tiền đã thu (₫)"
-          type="number"
-          register={register}
-          name="soTienDaThu"
-          error={errors.soTienDaThu}
-          required
-          placeholder={
-            calculatedFee
-              ? `Tổng phí: ${calculatedFee.totalFee}`
-              : 'Nhập số tiền'
-          }
-        />
+      {/* Amount Summary Card */}
+      {calculatedFee && !calculating && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center gap-2">
+            <span className="text-2xl">💰</span>
+            Thông tin tính phí
+          </h3>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="text-xs text-gray-600 mb-1">Số nhân khẩu</p>
+              <p className="font-bold text-lg text-gray-900">
+                {calculatedFee.memberCount} <span className="text-sm font-normal">người</span>
+              </p>
+            </div>
+            
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="text-xs text-gray-600 mb-1">Định mức/tháng</p>
+              <p className="font-bold text-lg text-gray-900">
+                {new Intl.NumberFormat('vi-VN').format(calculatedFee.monthlyFeePerPerson)} ₫
+              </p>
+            </div>
+            
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="text-xs text-gray-600 mb-1">Số tháng</p>
+              <p className="font-bold text-lg text-gray-900">
+                {calculatedFee.months} <span className="text-sm font-normal">tháng</span>
+              </p>
+            </div>
+            
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="text-xs text-gray-600 mb-1">Kỳ thu</p>
+              <p className="text-xs text-gray-700">
+                {new Date(calculatedFee.periodStart).toLocaleDateString('vi-VN')} - {new Date(calculatedFee.periodEnd).toLocaleDateString('vi-VN')}
+              </p>
+            </div>
+          </div>
 
+          <div className="bg-white p-4 rounded-lg border-2 border-green-300 mb-3">
+            <p className="text-xs text-gray-600 mb-2">Công thức tính</p>
+            <p className="font-mono text-sm text-gray-800 mb-2">
+              {calculatedFee.formula}
+            </p>
+          </div>
+
+          <div className="bg-green-600 text-white p-4 rounded-lg text-center">
+            <p className="text-sm font-medium mb-1">TỔNG PHÍ PHẢI THU</p>
+            <p className="text-3xl font-bold">
+              {new Intl.NumberFormat('vi-VN').format(calculatedFee.totalFee)} ₫
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Date and Notes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-amber-50 p-4 rounded-lg">
         <FormInput
           label="Ngày thu"
           type="date"
@@ -280,35 +308,61 @@ export const FeeCollectionForm = ({
           error={errors.ngayThu}
           required
         />
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Ghi chú
+          </label>
+          <textarea
+            {...register('ghiChu')}
+            rows={3}
+            placeholder="Nhập ghi chú (nếu có)"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+          {errors.ghiChu && (
+            <p className="mt-1 text-sm text-red-600">{errors.ghiChu.message}</p>
+          )}
+        </div>
       </div>
 
-      {/* Ghi chú */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Ghi chú
-        </label>
-        <textarea
-          {...register('ghiChu')}
-          rows={3}
-          placeholder="Nhập ghi chú (ví dụ: Đã thanh toán đủ, Thanh toán một phần...)"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
-      </div>
+      {/* Backend Error Display (inline) */}
+      {errors.root && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">❌</span>
+            <div>
+              <h4 className="font-semibold text-red-800 mb-1">Lỗi</h4>
+              <p className="text-sm text-red-700">{errors.root.message}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Nút lưu */}
+      {/* Submit Button */}
       <div className="flex justify-end space-x-4 pt-4 border-t">
         <button
           type="submit"
-          disabled={submitting}
-          className={`px-6 py-2 rounded-lg transition font-medium ${
-            submitting
+          disabled={submitting || calculating || !calculatedFee}
+          className={`px-6 py-3 rounded-lg transition font-medium shadow-md ${
+            submitting || calculating || !calculatedFee
               ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-              : 'bg-blue-500 text-white hover:bg-blue-600'
+              : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
           }`}
         >
-          {submitting ? '🔄 Đang lưu...' : '💾 Lưu thay đổi'}
+          {submitting ? (
+            <span className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Đang lưu...
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              💾 {isEditMode ? 'Cập nhật' : 'Lưu thu phí'}
+            </span>
+          )}
         </button>
       </div>
     </form>
   );
 };
+
+export default FeeCollectionForm;

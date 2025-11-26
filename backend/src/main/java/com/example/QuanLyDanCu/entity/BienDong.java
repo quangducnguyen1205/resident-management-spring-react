@@ -30,15 +30,8 @@ public class BienDong {
     @Column(name = "nhan_khau_id")
     private Long nhanKhauId;
 
-    @Column(name = "created_by")
-    private Long createdBy;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
     @PrePersist
     void onCreate() {
         if (thoiGian == null) thoiGian = LocalDateTime.now();
-        if (createdAt == null) createdAt = LocalDateTime.now();
     }
 }

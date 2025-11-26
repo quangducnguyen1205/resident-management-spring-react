@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,8 @@ public class BienDongController {
     private final BienDongService bienDongService;
 
     @GetMapping
-    @Operation(summary = "Lấy danh sách tất cả biến động")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
+    @Operation(summary = "Lấy danh sách biến động dạng log thuần văn bản")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
     })
@@ -34,7 +36,8 @@ public class BienDongController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Lấy biến động theo ID")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
+    @Operation(summary = "Lấy chi tiết biến động theo ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tìm thấy biến động"),
             @ApiResponse(responseCode = "404", description = "Không tìm thấy biến động")
@@ -44,7 +47,8 @@ public class BienDongController {
     }
 
     @PostMapping
-    @Operation(summary = "Tạo biến động mới")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
+    @Operation(summary = "Ghi log biến động mới (không can thiệp bảng khác)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Tạo thành công"),
             @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
@@ -58,7 +62,8 @@ public class BienDongController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cập nhật biến động")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
+    @Operation(summary = "Cập nhật log biến động (chỉ sửa loai/noi_dung/thoi_gian)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
             @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
@@ -74,7 +79,8 @@ public class BienDongController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Xóa biến động")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
+    @Operation(summary = "Xóa log biến động")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Xóa thành công"),
             @ApiResponse(responseCode = "403", description = "Không có quyền"),

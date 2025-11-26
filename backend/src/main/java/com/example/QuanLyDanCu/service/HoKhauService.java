@@ -5,21 +5,17 @@ import com.example.QuanLyDanCu.dto.request.HoKhauUpdateDto;
 import com.example.QuanLyDanCu.dto.response.HoKhauResponseDto;
 import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
 import com.example.QuanLyDanCu.entity.HoKhau;
-import com.example.QuanLyDanCu.entity.TaiKhoan;
 import com.example.QuanLyDanCu.event.ChangeOperation;
 import com.example.QuanLyDanCu.event.HoKhauChangedEvent;
 import com.example.QuanLyDanCu.repository.HoKhauRepository;
-import com.example.QuanLyDanCu.repository.TaiKhoanRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -30,15 +26,20 @@ import java.util.stream.Collectors;
 public class HoKhauService {
 
     private final HoKhauRepository repo;
-    private final TaiKhoanRepository taiKhoanRepo;
     private final NhanKhauService nhanKhauService;
     private final ApplicationEventPublisher eventPublisher;
 
     // ========== DTO-based methods ==========
 
-    // Lấy tất cả hộ khẩu (DTO)
+    // Lấy tất cả hộ khẩu (DTO) - ordered by soHoKhau for stable UI display
     public List<HoKhauResponseDto> getAll() {
         return repo.findAll().stream()
+                .sorted((h1, h2) -> {
+                    // Sort by soHoKhau (stable natural key)
+                    if (h1.getSoHoKhau() == null) return 1;
+                    if (h2.getSoHoKhau() == null) return -1;
+                    return h1.getSoHoKhau().compareTo(h2.getSoHoKhau());
+                })
                 .map(this::toResponseDto)
                 .collect(Collectors.toList());
     }
@@ -53,16 +54,11 @@ public class HoKhauService {
     // Thêm hộ khẩu mới (DTO)
     @Transactional
     public HoKhauResponseDto create(HoKhauRequestDto dto, Authentication auth) {
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
-
         HoKhau hk = HoKhau.builder()
                 .soHoKhau(dto.getSoHoKhau())
                 .tenChuHo(dto.getTenChuHo())
                 .diaChi(dto.getDiaChi())
-                .ngayTao(LocalDate.now())
-                .createdAt(LocalDateTime.now())
-                .createdBy(user.getId())
+            .ngayTao(LocalDate.now())
                 .build();
 
         HoKhau saved = repo.save(hk);
@@ -75,24 +71,17 @@ public class HoKhauService {
     }
 
     // Cập nhật hộ khẩu (DTO) - PARTIAL UPDATE SUPPORT
+    // Note: soHoKhau is immutable and cannot be updated
     @Transactional
     public HoKhauResponseDto update(Long id, HoKhauUpdateDto dto, Authentication auth) {
         HoKhau existing = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu id = " + id));
-
-        TaiKhoan user = taiKhoanRepo.findByTenDangNhap(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
         
         boolean changed = false;
 
         // Cập nhật tên chủ hộ (only if provided)
         if (dto.getTenChuHo() != null && !Objects.equals(existing.getTenChuHo(), dto.getTenChuHo())) {
-            if (dto.getNoiDungThayDoiChuHo() == null || dto.getNoiDungThayDoiChuHo().trim().isEmpty()) {
-                throw new RuntimeException("Bạn phải nhập nội dung thay đổi chủ hộ!");
-            }
             existing.setTenChuHo(dto.getTenChuHo());
-            existing.setNoiDungThayDoiChuHo(dto.getNoiDungThayDoiChuHo());
-            existing.setNgayThayDoiChuHo(LocalDate.now());
             changed = true;
         }
 
@@ -102,18 +91,9 @@ public class HoKhauService {
             changed = true;
         }
 
-        // Cập nhật số hộ khẩu (only if provided)
-        if (dto.getSoHoKhau() != null && !Objects.equals(existing.getSoHoKhau(), dto.getSoHoKhau())) {
-            existing.setSoHoKhau(dto.getSoHoKhau());
-            changed = true;
-        }
-
         if (!changed) {
             throw new RuntimeException("Không có gì để thay đổi!");
         }
-
-        existing.setUpdatedAt(LocalDateTime.now());
-        existing.setUpdatedBy(user.getId());
 
         HoKhau saved = repo.save(existing);
         
@@ -137,12 +117,6 @@ public class HoKhauService {
                 .tenChuHo(hk.getTenChuHo())
                 .diaChi(hk.getDiaChi())
                 .ngayTao(hk.getNgayTao())
-                .noiDungThayDoiChuHo(hk.getNoiDungThayDoiChuHo())
-                .ngayThayDoiChuHo(hk.getNgayThayDoiChuHo())
-                .createdBy(hk.getCreatedBy())
-                .updatedBy(hk.getUpdatedBy())
-                .createdAt(hk.getCreatedAt())
-                .updatedAt(hk.getUpdatedAt())
                 .soThanhVien(listNhanKhauDto != null ? listNhanKhauDto.size() : 0)
                 .listNhanKhau(listNhanKhauDto)
                 .build();

@@ -3,7 +3,6 @@ package com.example.QuanLyDanCu.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -14,19 +13,12 @@ public class HoKhau {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
+    @Column(unique = true, updatable = false)
     private String soHoKhau;
 
     private String tenChuHo;
     private String diaChi;
     private LocalDate ngayTao;
-    private String noiDungThayDoiChuHo;
-    private LocalDate ngayThayDoiChuHo;
-
-    private Long createdBy;
-    private Long updatedBy;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "hoKhauId")
     private List<NhanKhau> nhanKhauList;
