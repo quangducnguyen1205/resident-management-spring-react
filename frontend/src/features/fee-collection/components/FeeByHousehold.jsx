@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../../components/Table/DataTable';
 import feeCollectionApi from '../../../api/feeCollectionApi';
+import StatusBadge from './StatusBadge';
 
+/**
+ * FeeByHousehold - Refactored 2025
+ * 
+ * Shows fee collection history for a specific household
+ * Updated to match new backend response format
+ */
 const FeeByHousehold = ({ householdId }) => {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -11,7 +18,7 @@ const FeeByHousehold = ({ householdId }) => {
       setLoading(true);
       try {
         const response = await feeCollectionApi.getByHousehold(householdId);
-        setCollections(response.data);
+        setCollections(response);
       } catch (error) {
         console.error('Error fetching collections:', error);
       }
@@ -24,19 +31,30 @@ const FeeByHousehold = ({ householdId }) => {
   }, [householdId]);
 
   const columns = [
-    { key: 'tenDotThu', title: 'Đợt thu' },
-    { key: 'soTien', title: 'Số tiền' },
-    { key: 'ngayThu', title: 'Ngày thu' },
+    { key: 'tenDot', title: 'Đợt thu' },
+    { 
+      key: 'soNguoi', 
+      title: 'Số người',
+      render: (value) => `${value || 0} người`
+    },
+    { 
+      key: 'tongPhi', 
+      title: 'Tổng phí',
+      render: (value) => (
+        <span className="font-semibold text-blue-700">
+          {new Intl.NumberFormat('vi-VN').format(value || 0)} ₫
+        </span>
+      )
+    },
+    { 
+      key: 'ngayThu', 
+      title: 'Ngày thu',
+      render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : '-'
+    },
     {
       key: 'trangThai',
       title: 'Trạng thái',
-      render: (value) => (
-        <span className={`px-2 py-1 rounded-full text-xs ${
-          value === 'DA_NOP' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          {value === 'DA_NOP' ? 'Đã nộp' : 'Chưa nộp'}
-        </span>
-      )
+      render: (value) => <StatusBadge status={value} size="sm" />
     }
   ];
 

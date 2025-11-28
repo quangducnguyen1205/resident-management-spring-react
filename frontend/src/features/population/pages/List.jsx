@@ -1,10 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../../components/Table/DataTable';
-import populationApi from '../../../api/populationApi';
+import populationApi, { BIEN_DONG_TYPES } from '../../../api/populationApi';
 import Loader from '../../../components/Loader';
 import ErrorMessage from '../../../components/ErrorMessage';
 import useApiHandler from '../../../hooks/useApiHandler';
+
+const CUSTOM_TYPE_LABELS = {
+  CHUYEN_DEN: 'Chuyển đến',
+  CHUYEN_DI: 'Chuyển đi',
+  TACH_HO: 'Tách hộ',
+  NHAP_HO: 'Nhập hộ',
+  SINH: 'Khai sinh',
+  KHAI_TU: 'Khai tử',
+  THAY_DOI_THONG_TIN: 'Thay đổi thông tin',
+  TAM_TRU: 'Đăng ký tạm trú',
+  HUY_TAM_TRU: 'Huỷ tạm trú',
+  TAM_VANG: 'Đăng ký tạm vắng',
+  HUY_TAM_VANG: 'Huỷ tạm vắng'
+};
+
+const BIEN_DONG_LABELS = BIEN_DONG_TYPES.reduce((acc, type) => {
+  acc[type] = CUSTOM_TYPE_LABELS[type] || type.replace(/_/g, ' ');
+  return acc;
+}, {});
+
+const formatBienDongType = (type) => BIEN_DONG_LABELS[type] || type?.replace(/_/g, ' ') || '-';
+const formatDateTime = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString('vi-VN');
+};
 
 const PopulationList = () => {
   const navigate = useNavigate();
@@ -16,19 +45,30 @@ const PopulationList = () => {
   } = useApiHandler([]);
 
   const columns = [
-    { key: 'loaiBienDong', title: 'Loại biến động' },
-    { key: 'ngayBienDong', title: 'Ngày biến động' },
-    { key: 'noiDung', title: 'Nội dung' },
     {
-      key: 'trangThai',
-      title: 'Trạng thái',
-      render: (value) => (
-        <span className={`px-2 py-1 rounded-full text-xs ${
-          value === 'DA_DUYET' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-        }`}>
-          {value === 'DA_DUYET' ? 'Đã duyệt' : 'Chờ duyệt'}
-        </span>
-      )
+      key: 'loai',
+      title: 'Loại biến động',
+      render: (value) => formatBienDongType(value)
+    },
+    {
+      key: 'noiDung',
+      title: 'Nội dung',
+      render: (value) => value || '-'
+    },
+    {
+      key: 'thoiGian',
+      title: 'Thời gian',
+      render: (value) => formatDateTime(value)
+    },
+    {
+      key: 'hoKhauId',
+      title: 'Hộ khẩu',
+      render: (value) => value ?? '-'
+    },
+    {
+      key: 'nhanKhauId',
+      title: 'Nhân khẩu',
+      render: (value) => value ?? '-'
     }
   ];
 
@@ -60,6 +100,13 @@ const PopulationList = () => {
   if (loading) return <Loader />;
   if (error) return <ErrorMessage message={error} onRetry={fetchChanges} />;
 
+  const changeList = Array.isArray(changes) ? [...changes] : [];
+  changeList.sort((a, b) => {
+    const dateA = a?.thoiGian ? new Date(a.thoiGian).getTime() : 0;
+    const dateB = b?.thoiGian ? new Date(b.thoiGian).getTime() : 0;
+    return dateB - dateA;
+  });
+
   return (
     <div className="container mx-auto px-4">
       <div className="flex justify-between items-center mb-6">
@@ -75,7 +122,7 @@ const PopulationList = () => {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <DataTable
           columns={columns}
-          data={changes}
+          data={changeList}
           loading={loading}
           onEdit={handleEdit}
           onDelete={handleDelete}

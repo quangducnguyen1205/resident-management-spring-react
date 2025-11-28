@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import TamTruForm from './TamTruForm';
-import citizenApi from '../../../api/citizenApi';
+import citizenApi, { buildTemporaryChangePayload } from '../../../api/citizenApi';
 
 const TamTruModal = ({ isOpen, onClose, citizen, onSuccess }) => {
   const [error, setError] = useState('');
@@ -10,13 +10,7 @@ const TamTruModal = ({ isOpen, onClose, citizen, onSuccess }) => {
   const handleSubmit = async (data) => {
     try {
       setError('');
-      // Convert dates to YYYY-MM-DD format for backend
-      const payload = {
-        ngayBatDau: data.ngayBatDau,
-        ngayKetThuc: data.ngayKetThuc,
-        lyDo: data.lyDo
-      };
-      
+      const payload = buildTemporaryChangePayload(data);
       await citizenApi.updateTamTru(citizen.id, payload);
       
       if (onSuccess) {
@@ -28,6 +22,7 @@ const TamTruModal = ({ isOpen, onClose, citizen, onSuccess }) => {
       setError(
         err.response?.data?.message ||
         err.response?.data ||
+        err.message ||
         'Không thể đăng ký tạm trú. Vui lòng thử lại.'
       );
     }
@@ -53,6 +48,7 @@ const TamTruModal = ({ isOpen, onClose, citizen, onSuccess }) => {
         setError(
           err.response?.data?.message ||
           err.response?.data ||
+          err.message ||
           'Không thể hủy tạm trú. Vui lòng thử lại.'
         );
       }

@@ -18,6 +18,7 @@ const menuItems = [
   { to: '/population', label: 'Biến động', icon: <HiTrendingUp />, roles: ['ADMIN', 'TOTRUONG'] },
   { to: '/fee-period', label: 'Đợt thu phí', icon: <HiCash />, roles: ['ADMIN', 'TOTRUONG', 'KETOAN'] },
   { to: '/fee-collection', label: 'Thu phí hộ', icon: <HiCash />, roles: ['ADMIN', 'TOTRUONG', 'KETOAN'] },
+  { to: '/fee-collection/periods', label: 'Tổng hợp theo đợt', icon: <HiCash />, roles: ['ADMIN', 'TOTRUONG', 'KETOAN'] },
   { to: '/statistics', label: 'Thống kê', icon: <HiChartBar />, roles: ['ADMIN', 'TOTRUONG', 'KETOAN'] },
   { to: '/tai-khoan', label: 'Tài khoản', icon: <HiUserGroup />, roles: ['ADMIN'] }
 ];

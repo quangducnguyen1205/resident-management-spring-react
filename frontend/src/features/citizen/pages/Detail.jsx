@@ -1,21 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { CitizenForm } from '../components/CitizenForm';
 import citizenApi from '../../../api/citizenApi';
-import householdApi from '../../../api/householdApi';
 import Loader from '../../../components/Loader';
 import ErrorMessage from '../../../components/ErrorMessage';
 import useApiHandler from '../../../hooks/useApiHandler';
 import TamVangModal from '../components/TamVangModal';
 import TamTruModal from '../components/TamTruModal';
 import KhaiTuModal from '../components/KhaiTuModal';
+import { deriveCitizenStatus } from '../utils/status';
+
+const CITIZEN_REFRESH_EVENT = 'citizen:refresh';
+
+const STATUS_BADGES = {
+  THUONG_TRU: { label: 'Thường trú', color: 'bg-gray-100 text-gray-800' },
+  TAM_TRU: { label: 'Tạm trú', color: 'bg-green-100 text-green-800' },
+  TAM_VANG: { label: 'Tạm vắng', color: 'bg-yellow-100 text-yellow-800' },
+  DA_KHAI_TU: { label: 'Đã khai tử', color: 'bg-red-100 text-red-800' }
+};
+
+const getStatusBadge = (status) => STATUS_BADGES[status] || { label: 'Chưa xác định', color: 'bg-gray-100 text-gray-800' };
+const formatDate = (value) => (value ? new Date(value).toLocaleDateString('vi-VN') : '-');
 
 const CitizenDetail = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const [toast, setToast] = useState(null); // State cho thông báo
-  const [householdOptions, setHouseholdOptions] = useState([]); // Danh sách hộ khẩu
   
   // Modal visibility state
   const [showTamVang, setShowTamVang] = useState(false);
@@ -25,10 +36,6 @@ const CitizenDetail = () => {
   // Detect "new" mode từ pathname
   const isNew = location.pathname === '/citizen/new';
   
-  // DEBUG: Log param và pathname
-  console.log('CitizenDetail mounted with id:', id, 'pathname:', location.pathname);
-  console.log('isNew:', isNew);
-  
   const {
     data: citizen,
     loading,
@@ -36,67 +43,62 @@ const CitizenDetail = () => {
     handleApi
   } = useApiHandler(null);
 
-  const fetchCitizen = async () => {
+  const normalizedCitizen = useMemo(() => (
+    citizen ? { ...citizen, trangThaiHienTai: deriveCitizenStatus(citizen) } : null
+  ), [citizen]);
+
+  const emitCitizenRefresh = useCallback(() => {
+    window.dispatchEvent(new Event(CITIZEN_REFRESH_EVENT));
+  }, []);
+
+  const fetchCitizen = useCallback(async () => {
     if (isNew) return; // Khi tạo mới, không cần fetch
     await handleApi(
       () => citizenApi.getById(id),
       'Không thể tải thông tin nhân khẩu'
     );
-  };
+  }, [handleApi, id, isNew]);
 
-  const fetchHouseholds = async () => {
-    try {
-      const response = await householdApi.getAll();
-      const households = Array.isArray(response.data) ? response.data : response.data?.data || [];
-      // Transform thành options format - using chuHo (household head name) as label
-      const options = households.map(h => ({
-        value: h.id,
-        label: h.chuHo || `Hộ ${h.maHoKhau || h.id}`
-      }));
-      setHouseholdOptions(options);
-      console.log('Loaded household options:', options);
-    } catch (err) {
-      console.error('Lỗi tải danh sách hộ khẩu:', err);
-    }
-  };
+  const refreshCitizenAndBroadcast = useCallback(async () => {
+    await fetchCitizen();
+    emitCitizenRefresh();
+  }, [emitCitizenRefresh, fetchCitizen]);
 
   useEffect(() => {
     fetchCitizen();
-    fetchHouseholds(); // Load household list khi component mount
-  }, [id]);
+  }, [fetchCitizen]);
 
-  const handleSubmit = async (data) => {
+  const handleSubmit = async (formValues) => {
     try {
-      // Dùng isNew thay vì (id === 'new')
-      await handleApi(
-        () => isNew ? citizenApi.create(data) : citizenApi.update(id, data),
+      const result = await handleApi(
+        () => (isNew ? citizenApi.create(formValues) : citizenApi.update(id, formValues)),
         'Không thể lưu thông tin nhân khẩu'
       );
-      
-      // Hiển thị thông báo thành công
-      const message = isNew ? 'Thêm nhân khẩu thành công!' : 'Cập nhật nhân khẩu thành công!';
-      setToast({
-        type: 'success',
-        message: message
-      });
-      
-      // Tự động quay lại sau 2 giây
-      setTimeout(() => {
-        navigate('/citizen');
-      }, 2000);
+
+      if (!result.success) {
+        const error = new Error(result.message || 'Không thể lưu thông tin nhân khẩu');
+        error.status = result.status;
+        throw error;
+      }
+
+      const successMessage = isNew ? 'Thêm nhân khẩu thành công!' : 'Cập nhật nhân khẩu thành công!';
+      setToast({ type: 'success', message: successMessage });
+      emitCitizenRefresh();
+
+      if (isNew) {
+        setTimeout(() => {
+          navigate('/citizen');
+        }, 2000);
+      } else {
+        await fetchCitizen();
+      }
+
+      return result.data;
     } catch (err) {
-      // Log chi tiết lỗi từ backend
-      console.error('Submit error:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        message: err.message
-      });
-      
-      // Hiển thị thông báo lỗi
-      setToast({
-        type: 'error',
-        message: err.response?.data?.message || 'Lỗi khi lưu dữ liệu'
-      });
+      console.error('Submit error:', err);
+      const message = err.response?.data?.message || err.message || 'Lỗi khi lưu dữ liệu';
+      setToast({ type: 'error', message });
+      throw err;
     }
   };
 
@@ -147,7 +149,7 @@ const CitizenDetail = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
         <span className="text-gray-900 font-medium">
-          {isNew ? 'Thêm nhân khẩu mới' : `Chi tiết - ${citizen?.hoTen || 'Đang tải...'}`}
+          {isNew ? 'Thêm nhân khẩu mới' : `Chi tiết - ${normalizedCitizen?.hoTen || 'Đang tải...'}`}
         </span>
       </nav>
 
@@ -160,26 +162,41 @@ const CitizenDetail = () => {
             </svg>
             {isNew ? 'Thêm nhân khẩu mới' : 'Chi tiết nhân khẩu'}
           </h1>
-          {!isNew && citizen && (
-            <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+          {!isNew && normalizedCitizen && (
+            <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-600">
               <span className="flex items-center gap-1">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
                 </svg>
-                ID: {citizen.id}
+                ID: {normalizedCitizen.id}
               </span>
               <span className="flex items-center gap-1">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-                CMND/CCCD: {citizen.cmndCccd || '-'}
+                Hộ khẩu: {normalizedCitizen.hoKhauId ?? '-'}
+              </span>
+              <span className="flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 17l-4 4m0 0l-4-4m4 4V3" />
+                </svg>
+                Quan hệ: {normalizedCitizen.quanHeChuHo || '-'}
+              </span>
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Trạng thái:</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(normalizedCitizen.trangThaiHienTai).color}`}>
+                  {getStatusBadge(normalizedCitizen.trangThaiHienTai).label}
+                </span>
               </span>
             </div>
           )}
         </div>
         <div className="flex flex-wrap gap-3">
           {/* Action buttons - Only show when viewing existing citizen */}
-          {!isNew && citizen && (
+          {!isNew && normalizedCitizen && (
             <>
               <button
                 onClick={() => setShowTamVang(true)}
@@ -221,38 +238,52 @@ const CitizenDetail = () => {
           </button>
         </div>
       </div>
+
+      {!isNew && normalizedCitizen && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {[
+            { label: 'CMND/CCCD', value: normalizedCitizen.cmndCccd || 'Chưa cấp' },
+            { label: 'Ngày cấp', value: formatDate(normalizedCitizen.ngayCap) },
+            { label: 'Nơi cấp', value: normalizedCitizen.cmndCccd ? (normalizedCitizen.noiCap || '-') : 'Chưa cấp' }
+          ].map((item) => (
+            <div key={item.label} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{item.label}</p>
+              <p className="mt-1 text-lg font-semibold text-gray-800">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
       
       {/* Form card */}
       <div className="bg-white rounded-xl shadow-lg p-8">
         <CitizenForm 
-          initialValues={citizen}
+          initialValues={normalizedCitizen}
           onSubmit={handleSubmit}
-          householdOptions={householdOptions}
         />
       </div>
 
       {/* Modals - Only render when citizen data is loaded */}
-      {!isNew && citizen && (
+      {!isNew && normalizedCitizen && (
         <>
           <TamVangModal
             isOpen={showTamVang}
             onClose={() => setShowTamVang(false)}
-            citizen={citizen}
-            onSuccess={fetchCitizen}
+            citizen={normalizedCitizen}
+            onSuccess={refreshCitizenAndBroadcast}
           />
 
           <TamTruModal
             isOpen={showTamTru}
             onClose={() => setShowTamTru(false)}
-            citizen={citizen}
-            onSuccess={fetchCitizen}
+            citizen={normalizedCitizen}
+            onSuccess={refreshCitizenAndBroadcast}
           />
 
           <KhaiTuModal
             isOpen={showKhaiTu}
             onClose={() => setShowKhaiTu(false)}
-            citizen={citizen}
-            onSuccess={fetchCitizen}
+            citizen={normalizedCitizen}
+            onSuccess={refreshCitizenAndBroadcast}
           />
         </>
       )}

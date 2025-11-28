@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "thu_phi_ho_khau")
@@ -33,33 +32,21 @@ public class ThuPhiHoKhau {
 
     /**
      * Tổng phí phải nộp (tính tự động)
-     * - Phí BAT_BUOC: dinh_muc * 12 * soNguoi (ví dụ: 6000 * 12 * 3 = 216,000 VND)
+     * - Phí BAT_BUOC: dinh_muc * months * soNguoi (months calculated from period dates)
      * - Phí TU_NGUYEN: Luôn = 0 (không bắt buộc, người dân tự nguyện đóng góp)
      */
     @Column(name = "tong_phi", precision = 15, scale = 2)
     private BigDecimal tongPhi;
 
     /**
-     * Số tiền đã thu (người dân đã nộp)
-     * - Phí BAT_BUOC: So sánh với tongPhi để xác định trạng thái
-     * - Phí TU_NGUYEN: Ghi nhận số tiền đóng góp thực tế (không yêu cầu đủ tongPhi)
-     */
-    @Column(name = "so_tien_da_thu", precision = 15, scale = 2)
-    private BigDecimal soTienDaThu;
-
-    /**
-     * Trạng thái thu phí (tự động set)
-     * - CHUA_NOP: Phí BAT_BUOC chưa nộp đủ (soTienDaThu < tongPhi)
-     * - DA_NOP: Phí BAT_BUOC đã nộp đủ (soTienDaThu >= tongPhi)
-     * - KHONG_AP_DUNG: Phí TU_NGUYEN (không áp dụng logic nộp đủ/thiếu)
+     * Trạng thái thu phí
+     * - CHUA_NOP: Phí BAT_BUOC chưa nộp (initial state)
+     * - DA_NOP: Phí BAT_BUOC đã nộp đủ (one-time full payment)
+     * - KHONG_AP_DUNG: Phí TU_NGUYEN (not applicable)
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "trang_thai", length = 20)
     private TrangThaiThuPhi trangThai;
-
-    // Mô tả kỳ thu (vd: "Cả năm 2025")
-    @Column(name = "period_description", length = 100)
-    private String periodDescription;
 
     @Column(name = "ngay_thu")
     private LocalDate ngayThu;
@@ -70,6 +57,4 @@ public class ThuPhiHoKhau {
     @Column(name = "collected_by")
     private Long collectedBy;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
 }

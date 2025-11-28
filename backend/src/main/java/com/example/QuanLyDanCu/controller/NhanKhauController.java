@@ -167,13 +167,13 @@ public class NhanKhauController {
     // --- KHAI TỬ ---
     @PutMapping("/{id}/khaitu")
     @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
-    public NhanKhau khaiTu(
+    public ResponseEntity<NhanKhauResponseDto> khaiTu(
             @PathVariable Long id,
             @RequestBody Map<String, Object> body,
             Authentication auth) {
 
         String lyDo = body.get("lyDo") != null ? body.get("lyDo").toString() : null;
-        return nhanKhauService.khaiTu(id, lyDo, auth);
+        return ResponseEntity.ok(nhanKhauService.khaiTu(id, lyDo, auth));
     }
 
     // Search theo tên

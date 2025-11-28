@@ -20,6 +20,14 @@ const FeePeriodList = () => {
   // KETOAN and ADMIN can modify fee periods, TOTRUONG can only view
   const canModifyFeePeriod = user?.role === 'ADMIN' || user?.role === 'KETOAN';
 
+  const navigateToRecords = (row) => {
+    if (row?.id === undefined || row?.id === null || row?.id === '') {
+      alert('Lỗi: ID không hợp lệ');
+      return;
+    }
+    navigate(`/fee-collection/overview/${row.id}`);
+  };
+
   const columns = [
     { key: 'tenDot', title: 'Tên đợt thu' },
     {
@@ -39,6 +47,22 @@ const FeePeriodList = () => {
       key: 'dinhMuc',
       title: 'Định mức (VND)',
       render: (value) => value ? new Intl.NumberFormat('vi-VN').format(value) : '0'
+    },
+    {
+      key: 'records',
+      title: 'Khoản thu',
+      render: (_, row) => (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            navigateToRecords(row);
+          }}
+          className="text-sm text-emerald-600 hover:text-emerald-800 font-medium"
+        >
+          Xem chi tiết
+        </button>
+      )
     }
   ];
 
@@ -57,32 +81,17 @@ const FeePeriodList = () => {
   const handleAdd = () => navigate('/fee-period/new');
   
   const handleEdit = (row) => {
-    console.log('Edit clicked for row:', row);
-    // Strict validation: must be a valid finite number
-    if (!row?.id || typeof row.id !== 'number' || !isFinite(row.id)) {
-      console.error('Row ID is invalid:', { id: row?.id, row });
+    if (row?.id === undefined || row?.id === null || row?.id === '') {
       alert('Lỗi: ID không hợp lệ');
       return;
     }
     navigate(`/fee-period/${row.id}`);
   };
   
-  const handleView = (row) => {
-    console.log('View clicked for row:', row);
-    // Strict validation: must be a valid finite number
-    if (!row?.id || typeof row.id !== 'number' || !isFinite(row.id)) {
-      console.error('Row ID is invalid:', { id: row?.id, row });
-      alert('Lỗi: ID không hợp lệ');
-      return;
-    }
-    navigate(`/fee-period/${row.id}`);
-  };
+  const handleView = handleEdit;
   
   const handleDelete = async (row) => {
-    console.log('Delete clicked for row:', row);
-    // Strict validation: must be a valid finite number
-    if (!row?.id || typeof row.id !== 'number' || !isFinite(row.id)) {
-      console.error('Row ID is invalid:', { id: row?.id, row });
+    if (row?.id === undefined || row?.id === null || row?.id === '') {
       alert('Lỗi: ID không hợp lệ');
       return;
     }

@@ -1,65 +1,103 @@
 import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import FormInput from '../../../components/Form/FormInput';
 import FormSelect from '../../../components/Form/FormSelect';
+import { LOAI_THU_PHI } from '../../../api/feePeriodApi';
+
+const DATE_REG_EXP = /^\d{4}-\d{2}-\d{2}$/;
+
+const DEFAULT_VALUES = {
+  tenDot: '',
+  loai: LOAI_THU_PHI[0],
+  ngayBatDau: '',
+  ngayKetThuc: '',
+  dinhMuc: ''
+};
 
 const schema = yup.object().shape({
   tenDot: yup.string().required('Vui lòng nhập tên đợt thu'),
   loai: yup.string()
     .required('Vui lòng chọn loại phí')
-    .oneOf(['BAT_BUOC', 'TU_NGUYEN'], 'Loại phí không hợp lệ'),
-  ngayBatDau: yup.date().required('Vui lòng nhập ngày bắt đầu'),
-  ngayKetThuc: yup.date()
-    .min(yup.ref('ngayBatDau'), 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu')
-    .required('Vui lòng nhập ngày kết thúc'),
+    .oneOf(LOAI_THU_PHI, 'Loại phí không hợp lệ'),
+  ngayBatDau: yup.string()
+    .required('Vui lòng nhập ngày bắt đầu')
+    .matches(DATE_REG_EXP, 'Định dạng ngày không hợp lệ (YYYY-MM-DD)'),
+  ngayKetThuc: yup.string()
+    .required('Vui lòng nhập ngày kết thúc')
+    .matches(DATE_REG_EXP, 'Định dạng ngày không hợp lệ (YYYY-MM-DD)')
+    .test('end-after-start', 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu', function check(value) {
+      const { ngayBatDau } = this.parent;
+      if (!value || !ngayBatDau) return true;
+      return new Date(value) >= new Date(ngayBatDau);
+    }),
   dinhMuc: yup.number()
+    .transform((value, originalValue) => (originalValue === '' || originalValue === null ? undefined : value))
     .when('loai', {
       is: 'BAT_BUOC',
-      then: (schema) => schema.positive('Mức phí bắt buộc phải lớn hơn 0').required('Vui lòng nhập định mức phí'),
-      otherwise: (schema) => schema.min(0, 'Định mức phí không được âm')
+      then: (current) => current
+        .typeError('Định mức phải là số')
+        .positive('Định mức phải lớn hơn 0')
+        .required('Vui lòng nhập định mức phí'),
+      otherwise: (current) => current
+        .typeError('Định mức phải là số')
+        .min(0, 'Định mức không được âm')
     })
 });
 
-const feeTypeOptions = [
-  { value: 'BAT_BUOC', label: 'Bắt buộc' },
-  { value: 'TU_NGUYEN', label: 'Tự nguyện' }
-];
+const feeTypeOptions = LOAI_THU_PHI.map((type) => ({
+  value: type,
+  label: type === 'BAT_BUOC' ? 'Bắt buộc' : 'Tự nguyện'
+}));
+
+const toDateInput = (value) => {
+  if (!value) return '';
+  if (DATE_REG_EXP.test(value)) {
+    return value;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return '';
+  }
+  return parsed.toISOString().split('T')[0];
+};
 
 export const FeePeriodForm = ({ initialValues, onSubmit }) => {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, formState: { errors }, control } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: initialValues
+    defaultValues: DEFAULT_VALUES
   });
+
+  const loaiValue = useWatch({ control, name: 'loai' }) || LOAI_THU_PHI[0];
 
   // Update form when initialValues changes (edit mode)
   useEffect(() => {
     if (initialValues && Object.keys(initialValues).length > 0) {
-      const formattedValues = {
-        ...initialValues,
-        ngayBatDau: initialValues.ngayBatDau ? initialValues.ngayBatDau.split('T')[0] : '',
-        ngayKetThuc: initialValues.ngayKetThuc ? initialValues.ngayKetThuc.split('T')[0] : ''
-      };
-      reset(formattedValues);
+      reset({
+        tenDot: initialValues.tenDot || '',
+        loai: initialValues.loai || LOAI_THU_PHI[0],
+        ngayBatDau: toDateInput(initialValues.ngayBatDau),
+        ngayKetThuc: toDateInput(initialValues.ngayKetThuc),
+        dinhMuc: initialValues.dinhMuc ?? ''
+      });
+    } else {
+      reset(DEFAULT_VALUES);
     }
   }, [initialValues, reset]);
 
   const onSubmitHandler = (data) => {
     // Ensure data matches backend DTO exactly
+    const normalizedLoai = (data.loai || '').toString().trim().toUpperCase();
+    const isVoluntary = normalizedLoai === 'TU_NGUYEN';
     const formattedData = {
       tenDot: data.tenDot.trim(),
-      loai: data.loai, // BAT_BUOC or TU_NGUYEN
-      ngayBatDau: typeof data.ngayBatDau === 'string' 
-        ? data.ngayBatDau 
-        : data.ngayBatDau.toISOString().split('T')[0],
-      ngayKetThuc: typeof data.ngayKetThuc === 'string'
-        ? data.ngayKetThuc
-        : data.ngayKetThuc.toISOString().split('T')[0],
-      dinhMuc: data.dinhMuc ? parseFloat(data.dinhMuc) : (data.loai === 'TU_NGUYEN' ? 0 : 0)
+      loai: normalizedLoai,
+      ngayBatDau: toDateInput(data.ngayBatDau),
+      ngayKetThuc: toDateInput(data.ngayKetThuc),
+      dinhMuc: isVoluntary ? 0 : Number(data.dinhMuc)
     };
-    
-    console.log('Submitting fee period data:', formattedData);
+
     onSubmit(formattedData);
   };
 
@@ -104,8 +142,15 @@ export const FeePeriodForm = ({ initialValues, onSubmit }) => {
         register={register}
         name="dinhMuc"
         error={errors.dinhMuc}
-        placeholder="Nhập mức phí (bắt buộc cho phí BẮT BUỘC)"
+        placeholder={loaiValue === 'TU_NGUYEN' ? 'Không áp dụng cho phí tự nguyện' : 'Nhập mức phí (bắt buộc)'}
+        disabled={loaiValue === 'TU_NGUYEN'}
       />
+
+      {loaiValue === 'TU_NGUYEN' && (
+        <p className="text-sm text-gray-500">
+          Đợt thu tự nguyện không yêu cầu định mức. Hệ thống sẽ tự đánh dấu các hộ khẩu là <strong>KHÔNG ÁP DỤNG</strong>.
+        </p>
+      )}
 
       <div className="flex justify-end space-x-4">
         <button

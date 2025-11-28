@@ -41,14 +41,12 @@ const DataTable = ({
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
                   onClick={() => {
-                    console.log('Detail button clicked for row:', row);
-                    // Strict validation: must be a valid finite number
-                    if (!row?.id || typeof row.id !== 'number' || !isFinite(row.id)) {
-                      console.error('Cannot navigate: row.id is invalid', { id: row?.id, row });
+                    const rowId = row?.id;
+                    if (rowId === undefined || rowId === null || rowId === '') {
                       alert('Lỗi: ID không hợp lệ');
                       return;
                     }
-                    navigate(`${basePath}/${row.id}`);
+                    navigate(`${basePath}/${rowId}`);
                   }}
                   className="text-blue-600 hover:text-blue-900 mr-4"
                 >

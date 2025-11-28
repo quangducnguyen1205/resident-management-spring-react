@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "Response DTO for BienDong entity")
+@Schema(description = "Response DTO phản ánh đúng các trường trong bảng bien_dong")
 public class BienDongResponseDto {
 
     @JsonProperty("id")
@@ -19,7 +19,7 @@ public class BienDongResponseDto {
     private Long id;
 
     @JsonProperty("loai")
-    @Schema(description = "Loại biến động", example = "Tạm trú")
+    @Schema(description = "Loại biến động", example = "TAM_TRU")
     private String loai;
 
     @JsonProperty("noiDung")
@@ -31,18 +31,10 @@ public class BienDongResponseDto {
     private LocalDateTime thoiGian;
 
     @JsonProperty("hoKhauId")
-    @Schema(description = "ID hộ khẩu liên quan")
+    @Schema(description = "ID hộ khẩu liên quan (có thể null)")
     private Long hoKhauId;
 
     @JsonProperty("nhanKhauId")
-    @Schema(description = "ID nhân khẩu liên quan")
+    @Schema(description = "ID nhân khẩu liên quan (có thể null)")
     private Long nhanKhauId;
-
-    @JsonProperty("createdBy")
-    @Schema(description = "ID người tạo")
-    private Long createdBy;
-
-    @JsonProperty("createdAt")
-    @Schema(description = "Thời gian tạo")
-    private LocalDateTime createdAt;
 }

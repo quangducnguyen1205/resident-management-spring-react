@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -66,18 +65,6 @@ public class NhanKhauResponseDto {
 
     @Schema(description = "ID hộ khẩu", example = "1")
     private Long hoKhauId;
-
-    @Schema(description = "ID người tạo", example = "1")
-    private Long createdBy;
-
-    @Schema(description = "ID người cập nhật", example = "2")
-    private Long updatedBy;
-
-    @Schema(description = "Thời gian tạo", example = "2024-01-01T10:00:00")
-    private LocalDateTime createdAt;
-
-    @Schema(description = "Thời gian cập nhật", example = "2024-01-15T14:30:00")
-    private LocalDateTime updatedAt;
 
     @Schema(description = "Trạng thái hiện tại (computed)", example = "THUONG_TRU", allowableValues = {"THUONG_TRU", "TAM_VANG", "TAM_TRU"})
     private String trangThaiHienTai;
