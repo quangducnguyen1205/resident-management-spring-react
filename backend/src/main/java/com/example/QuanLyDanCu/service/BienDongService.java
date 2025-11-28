@@ -3,32 +3,21 @@ package com.example.QuanLyDanCu.service;
 import com.example.QuanLyDanCu.dto.request.BienDongRequestDto;
 import com.example.QuanLyDanCu.dto.response.BienDongResponseDto;
 import com.example.QuanLyDanCu.entity.BienDong;
+import com.example.QuanLyDanCu.enums.BienDongType;
 import com.example.QuanLyDanCu.repository.BienDongRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class BienDongService {
-
-        private static final List<String> ALLOWED_TYPE_VALUES = List.of(
-            "CHUYEN_DEN",
-            "CHUYEN_DI",
-            "TACH_HO",
-            "NHAP_HO",
-            "KHAI_TU",
-            "SINH",
-            "THAY_DOI_THONG_TIN"
-        );
-
-        private static final Set<String> ALLOWED_TYPES = Set.copyOf(ALLOWED_TYPE_VALUES);
 
     private final BienDongRepository bienDongRepository;
 
@@ -46,13 +35,10 @@ public class BienDongService {
     }
 
     public BienDongResponseDto createDto(BienDongRequestDto dto, Authentication auth) {
-        validateLoaiBienDong(dto.getLoai());
-
-        LocalDateTime now = LocalDateTime.now();
         BienDong entity = BienDong.builder()
-                .loai(dto.getLoai().toUpperCase())
+                .loai(dto.toBienDongType())
                 .noiDung(dto.getNoiDung())
-                .thoiGian(dto.getThoiGian() != null ? dto.getThoiGian() : now)
+                .thoiGian(dto.getThoiGian() != null ? dto.getThoiGian() : LocalDateTime.now())
                 .hoKhauId(dto.getHoKhauId())
                 .nhanKhauId(dto.getNhanKhauId())
                 .build();
@@ -74,11 +60,12 @@ public class BienDongService {
 
         boolean changed = false;
 
-        if (dto.getLoai() != null && !dto.getLoai().isBlank() &&
-                !Objects.equals(existing.getLoai(), dto.getLoai().toUpperCase())) {
-            validateLoaiBienDong(dto.getLoai());
-            existing.setLoai(dto.getLoai().toUpperCase());
-            changed = true;
+        if (dto.getLoai() != null && !dto.getLoai().isBlank()) {
+            BienDongType newType = BienDongType.fromString(dto.getLoai());
+            if (existing.getLoai() != newType) {
+                existing.setLoai(newType);
+                changed = true;
+            }
         }
 
         if (dto.getNoiDung() != null && !Objects.equals(existing.getNoiDung(), dto.getNoiDung())) {
@@ -105,20 +92,26 @@ public class BienDongService {
         bienDongRepository.delete(entity);
     }
 
+    @Transactional
+    public BienDong log(BienDongType type, String noiDung, Long hoKhauId, Long nhanKhauId) {
+        BienDong entity = BienDong.builder()
+                .loai(type)
+                .noiDung(noiDung)
+                .thoiGian(LocalDateTime.now())
+                .hoKhauId(hoKhauId)
+                .nhanKhauId(nhanKhauId)
+                .build();
+        return bienDongRepository.save(entity);
+    }
+
     private BienDongResponseDto toResponseDto(BienDong entity) {
         return BienDongResponseDto.builder()
                 .id(entity.getId())
-                .loai(entity.getLoai())
+                .loai(entity.getLoai() != null ? entity.getLoai().name() : null)
                 .noiDung(entity.getNoiDung())
                 .thoiGian(entity.getThoiGian())
                 .hoKhauId(entity.getHoKhauId())
                 .nhanKhauId(entity.getNhanKhauId())
                 .build();
-    }
-
-    private void validateLoaiBienDong(String loai) {
-        if (loai == null || !ALLOWED_TYPES.contains(loai.toUpperCase())) {
-            throw new RuntimeException("Loại biến động không hợp lệ. Cho phép: " + String.join(", ", ALLOWED_TYPE_VALUES));
-        }
     }
 }

@@ -229,6 +229,16 @@ test_bien_dong() {
   assert_http_code "200" "$API_STATUS" "Initial GET /api/bien-dong should succeed"
   local initial_count
   initial_count=$(echo "$API_BODY" | jq 'length')
+  if [[ "$initial_count" != "0" ]]; then
+    log_info "Cleaning up $initial_count leftover bien_dong log(s) before running assertions"
+    while IFS= read -r log_id; do
+      api_call DELETE "/api/bien-dong/${log_id}" "$ADMIN_TOKEN"
+      assert_http_code "204" "$API_STATUS" "Pre-test bien_dong cleanup should return 204"
+    done < <(echo "$API_BODY" | jq -r '.[].id')
+    api_call GET "/api/bien-dong" "$ADMIN_TOKEN"
+    assert_http_code "200" "$API_STATUS" "Re-check bien_dong after cleanup"
+    initial_count=$(echo "$API_BODY" | jq 'length')
+  fi
   assert_equals "0" "$initial_count" "Seed must have no bien_dong records"
 
   local create_payload

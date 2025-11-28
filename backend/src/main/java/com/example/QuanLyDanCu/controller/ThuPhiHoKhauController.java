@@ -65,6 +65,19 @@ public class ThuPhiHoKhauController {
         return ResponseEntity.ok(service.calculateFee(hoKhauId, dotThuPhiId));
     }
 
+    @GetMapping("/overview")
+    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
+    @Operation(summary = "Tổng quan thu phí theo đợt", description = "Trả về toàn bộ hộ khẩu cùng trạng thái thu phí cho một đợt cụ thể")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lấy tổng quan thành công",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class)))
+    })
+    public ResponseEntity<List<ThuPhiHoKhauResponseDto>> getOverviewByPeriod(
+            @Parameter(description = "ID đợt thu phí", required = true)
+            @RequestParam Long dotThuPhiId) {
+        return ResponseEntity.ok(service.getOverviewByPeriod(dotThuPhiId));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
     @Operation(summary = "Lấy thu phí theo ID", description = "Trả về thông tin chi tiết của một bản ghi thu phí")
@@ -98,6 +111,7 @@ public class ThuPhiHoKhauController {
     public ResponseEntity<List<ThuPhiHoKhauResponseDto>> getByDotThuPhiId(@PathVariable Long dotThuPhiId) {
         return ResponseEntity.ok(service.findByDotThuPhiId(dotThuPhiId));
     }
+
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")

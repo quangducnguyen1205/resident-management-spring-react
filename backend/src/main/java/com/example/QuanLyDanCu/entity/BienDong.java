@@ -1,7 +1,9 @@
 package com.example.QuanLyDanCu.entity;
 
+import com.example.QuanLyDanCu.enums.BienDongType;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,7 +17,9 @@ public class BienDong {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String loai;                    // VARCHAR(100)
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50, nullable = false)
+    private BienDongType loai;              // ENUM stored as VARCHAR
 
     @Column(name = "noi_dung", length = 1000)
     private String noiDung;                 // VARCHAR(1000)

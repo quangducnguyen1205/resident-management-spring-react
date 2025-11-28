@@ -6,6 +6,7 @@ import Loader from '../../../components/Loader';
 import ErrorMessage from '../../../components/ErrorMessage';
 import useApiHandler from '../../../hooks/useApiHandler';
 import { useAuth } from '../../auth/contexts/AuthContext';
+import StatusBadge from '../components/StatusBadge';
 
 /**
  * FeeCollectionDetail Page - Refactored 2025
@@ -104,6 +105,7 @@ const FeeCollectionDetail = () => {
         dotThuPhiId: data.dotThuPhiId,
         ngayThu: data.ngayThu,
         ghiChu: data.ghiChu || '',
+        trangThai: data.trangThai,
       };
 
       let response;
@@ -114,6 +116,7 @@ const FeeCollectionDetail = () => {
         response = await feeCollectionApi.update(id, {
           ngayThu: data.ngayThu,
           ghiChu: data.ghiChu || '',
+          trangThai: data.trangThai,
         });
       }
 
@@ -228,9 +231,21 @@ const FeeCollectionDetail = () => {
 
       <div className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">
-            {isNew ? '➕ Ghi nhận thu phí mới' : '📝 Cập nhật thu phí'}
-          </h1>
+          <div>
+            <h1 className="text-2xl font-bold">
+              {isNew ? '➕ Ghi nhận thu phí mới' : '📝 Cập nhật thu phí'}
+            </h1>
+            {!isNew && collection && (
+              <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-600">
+                <span>Số hộ khẩu: <strong>{collection.soHoKhau}</strong></span>
+                <span>Đợt thu: <strong>{collection.tenDot}</strong></span>
+                <span className="inline-flex items-center gap-2">
+                  Trạng thái:
+                  <StatusBadge status={collection.trangThai} />
+                </span>
+              </div>
+            )}
+          </div>
           <button
             onClick={() => navigate('/fee-collection')}
             className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"

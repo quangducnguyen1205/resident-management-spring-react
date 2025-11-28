@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,6 +106,70 @@ public class ThuPhiHoKhauService {
                 .map(this::toResponseDto)
                 .collect(Collectors.toList());
     }
+
+        /**
+         * Tổng quan thu phí theo đợt – trả về tất cả hộ khẩu cùng trạng thái hiện tại.
+         */
+        public List<ThuPhiHoKhauResponseDto> getOverviewByPeriod(Long dotThuPhiId) {
+        log.info("Building fee overview for dotThuPhiId={}", dotThuPhiId);
+
+        DotThuPhi dotThuPhi = dotThuPhiRepo.findById(dotThuPhiId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt thu phí với ID = " + dotThuPhiId));
+
+        Map<Long, ThuPhiHoKhau> existingRecords = repo.findByDotThuPhiId(dotThuPhiId).stream()
+            .collect(Collectors.toMap(
+                record -> record.getHoKhau().getId(),
+                record -> record,
+                (left, right) -> left,
+                LinkedHashMap::new
+            ));
+
+        List<HoKhau> households = hoKhauRepo.findAll().stream()
+            .sorted(Comparator.comparing(
+                (HoKhau hk) -> hk.getSoHoKhau(),
+                Comparator.nullsLast(String::compareTo)
+            ))
+            .collect(Collectors.toList());
+
+        boolean isVoluntary = dotThuPhi.getLoai() == LoaiThuPhi.TU_NGUYEN;
+        int months = isVoluntary ? 0 : calculateMonthsInPeriod(dotThuPhi.getNgayBatDau(), dotThuPhi.getNgayKetThuc());
+
+        List<ThuPhiHoKhauResponseDto> overview = new ArrayList<>();
+
+        for (HoKhau hoKhau : households) {
+            ThuPhiHoKhau existing = existingRecords.get(hoKhau.getId());
+            if (existing != null) {
+            overview.add(toResponseDto(existing));
+            continue;
+            }
+
+            int soNguoi = isVoluntary ? 0 : countEligibleMembers(hoKhau.getId());
+            BigDecimal tongPhi = isVoluntary
+                ? BigDecimal.ZERO
+                : calculateTotalFee(soNguoi, dotThuPhi.getDinhMuc(), months);
+
+            TrangThaiThuPhi trangThai = isVoluntary
+                ? TrangThaiThuPhi.KHONG_AP_DUNG
+                : TrangThaiThuPhi.CHUA_NOP;
+
+            overview.add(ThuPhiHoKhauResponseDto.builder()
+                .id(null)
+                .hoKhauId(hoKhau.getId())
+                .soHoKhau(hoKhau.getSoHoKhau())
+                .tenChuHo(hoKhau.getTenChuHo())
+                .dotThuPhiId(dotThuPhi.getId())
+                .tenDot(dotThuPhi.getTenDot())
+                .soNguoi(soNguoi)
+                .tongPhi(tongPhi)
+                .trangThai(trangThai)
+                .ngayThu(null)
+                .ghiChu(null)
+                .collectedBy(null)
+                .build());
+        }
+
+        return overview;
+        }
 
     /**
      * Tính toán phí cho hộ khẩu theo đợt thu phí

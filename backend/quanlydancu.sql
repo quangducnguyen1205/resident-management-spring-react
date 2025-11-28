@@ -57,8 +57,8 @@ CREATE TABLE bien_dong (
     thoi_gian TIMESTAMP,
     ho_khau_id BIGINT,
     nhan_khau_id BIGINT,
-    CONSTRAINT fk_biendong_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id),
-    CONSTRAINT fk_biendong_nhankhau FOREIGN KEY (nhan_khau_id) REFERENCES nhan_khau(id)
+    CONSTRAINT fk_biendong_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id) ON DELETE SET NULL,
+    CONSTRAINT fk_biendong_nhankhau FOREIGN KEY (nhan_khau_id) REFERENCES nhan_khau(id) ON DELETE SET NULL
 );
 
 -- ========================

@@ -6,6 +6,7 @@ import Loader from '../../../components/Loader';
 import ErrorMessage from '../../../components/ErrorMessage';
 import useApiHandler from '../../../hooks/useApiHandler';
 import { useAuth } from '../../auth/contexts/AuthContext';
+import StatusBadge from '../components/StatusBadge';
 
 /**
  * FeeCollectionList - Refactored 2025
@@ -83,28 +84,7 @@ const FeeCollectionList = () => {
     {
       key: 'trangThai',
       title: 'Trạng thái',
-      render: (value) => {
-        if (value === 'DA_NOP') {
-          return (
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              ✅ Đã nộp
-            </span>
-          );
-        } else if (value === 'CHUA_NOP') {
-          return (
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-              ⏳ Chưa nộp
-            </span>
-          );
-        } else if (value === 'KHONG_AP_DUNG') {
-          return (
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-              ➖ Không áp dụng
-            </span>
-          );
-        }
-        return <span className="text-gray-400">-</span>;
-      }
+      render: (value) => <StatusBadge status={value} />
     }
   ];
 

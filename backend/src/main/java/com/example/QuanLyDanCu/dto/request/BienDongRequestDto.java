@@ -1,8 +1,8 @@
 package com.example.QuanLyDanCu.dto.request;
 
+import com.example.QuanLyDanCu.enums.BienDongType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -16,11 +16,10 @@ import java.time.LocalDateTime;
 @Schema(description = "Request DTO cho bảng bien_dong (ghi log thuần văn bản)")
 public class BienDongRequestDto {
 
-    private static final String ALLOWED_TYPES_REGEX = "^(?i)(CHUYEN_DEN|CHUYEN_DI|TACH_HO|NHAP_HO|KHAI_TU|SINH|THAY_DOI_THONG_TIN)$";
+        private static final String ALLOWED_TYPES_MESSAGE = BienDongType.allowedValues();
 
     @NotBlank(message = "Loại biến động không được để trống")
-    @Pattern(regexp = ALLOWED_TYPES_REGEX, message = "Loại biến động phải thuộc: CHUYEN_DEN, CHUYEN_DI, TACH_HO, NHAP_HO, KHAI_TU, SINH, THAY_DOI_THONG_TIN")
-    @Schema(description = "Loại biến động hợp lệ", example = "NHAP_HO", required = true)
+        @Schema(description = "Loại biến động hợp lệ", example = "NHAP_HO", required = true)
     private String loai;
 
     @NotBlank(message = "Nội dung không được để trống")
@@ -36,4 +35,12 @@ public class BienDongRequestDto {
 
     @Schema(description = "ID nhân khẩu liên quan, cho phép null", example = "10")
     private Long nhanKhauId;
+
+    public BienDongType toBienDongType() {
+        try {
+            return BienDongType.fromString(loai);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Loại biến động phải thuộc: " + ALLOWED_TYPES_MESSAGE);
+        }
+    }
 }

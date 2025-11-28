@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useLocation } from 'react-router-dom';
@@ -9,6 +9,7 @@ import feePeriodApi from '../../../api/feePeriodApi';
 import householdApi from '../../../api/householdApi';
 import feeCollectionApi from '../../../api/feeCollectionApi';
 import { useAuth } from '../../auth/contexts/AuthContext';
+import { PAYMENT_STATUS_OPTIONS } from './StatusBadge';
 
 /**
  * FeeCollectionForm - Refactored 2025
@@ -24,11 +25,32 @@ import { useAuth } from '../../auth/contexts/AuthContext';
  * - Shows inline errors (no full-page navigation on error)
  */
 const schema = yup.object().shape({
-  hoKhauId: yup.number().required('Vui lòng chọn hộ khẩu'),
-  dotThuPhiId: yup.number().required('Vui lòng chọn đợt thu phí'),
+  hoKhauId: yup.string().required('Vui lòng chọn hộ khẩu'),
+  dotThuPhiId: yup.string().required('Vui lòng chọn đợt thu phí'),
   ngayThu: yup.string().required('Vui lòng nhập ngày thu'),
+  trangThai: yup.string().oneOf(['DA_NOP', 'CHUA_NOP']).required('Vui lòng chọn trạng thái'),
   ghiChu: yup.string(),
 });
+
+const formatDateDisplay = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleDateString('vi-VN');
+};
+
+const formatCurrency = (value) => new Intl.NumberFormat('vi-VN').format(value || 0);
+
+const buildPeriodOptions = (periods = []) => (
+  Array.isArray(periods) ? periods : []
+).map((period) => ({
+  value: period.id,
+  label: `${period.tenDot || period.tenDotThu || 'Không có tên'} (${formatDateDisplay(period.ngayBatDau)} - ${formatDateDisplay(period.ngayKetThuc)})`,
+  loai: period.loai,
+  raw: period
+}));
 
 export const FeeCollectionForm = ({
   initialValues,
@@ -51,24 +73,35 @@ export const FeeCollectionForm = ({
     register,
     handleSubmit,
     watch,
-    setValue,
     setError: setFormError,
     reset,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {},
+    defaultValues: { trangThai: 'CHUA_NOP' },
   });
 
   // Initialize form with existing values when editing
   useEffect(() => {
     if (initialValues && Object.keys(initialValues).length > 0) {
-      reset(initialValues);
+      reset({
+        ...initialValues,
+        hoKhauId: initialValues.hoKhauId != null ? String(initialValues.hoKhauId) : '',
+        dotThuPhiId: initialValues.dotThuPhiId != null ? String(initialValues.dotThuPhiId) : '',
+        trangThai: initialValues.trangThai || 'CHUA_NOP'
+      });
     }
   }, [initialValues, reset]);
 
   const selectedHoKhauId = watch('hoKhauId');
   const selectedDotThuPhiId = watch('dotThuPhiId');
+
+  const periodLookup = useMemo(() => (
+    feePeriods || []
+  ).reduce((acc, option) => {
+    acc[String(option.value)] = option;
+    return acc;
+  }, {}), [feePeriods]);
 
   // Fetch options for selects
   useEffect(() => {
@@ -79,17 +112,10 @@ export const FeeCollectionForm = ({
           householdApi.getAll(),
         ]);
 
-        setFeePeriods(
-          periodsRes.data.map((period) => ({
-            value: period.id,
-            label: `${period.tenDot || period.tenDotThu || 'Không có tên'} (${
-              period.ngayBatDau
-            } - ${period.ngayKetThuc})`,
-          }))
-        );
+        setFeePeriods(buildPeriodOptions(periodsRes));
 
         setHouseholds(
-          householdsRes.data.map((household) => ({
+          (Array.isArray(householdsRes) ? householdsRes : []).map((household) => ({
             value: household.id,
             label: `${household.soHoKhau} - ${household.tenChuHo}`,
           }))
@@ -110,14 +136,7 @@ export const FeeCollectionForm = ({
       const refetchPeriods = async () => {
         try {
           const periodsRes = await feePeriodApi.getAll();
-          setFeePeriods(
-            periodsRes.data.map((period) => ({
-              value: period.id,
-              label: `${
-                period.tenDot || period.tenDotThu || 'Không có tên'
-              } (${period.ngayBatDau} - ${period.ngayKetThuc})`,
-            }))
-          );
+          setFeePeriods(buildPeriodOptions(periodsRes));
         } catch (error) {
           console.error('Error re-fetching periods:', error);
         }
@@ -126,27 +145,22 @@ export const FeeCollectionForm = ({
     }
   }, [location.pathname]);
 
-  // Auto-calculate fee when both household and period are selected
-  useEffect(() => {
-    if (selectedHoKhauId && selectedDotThuPhiId) {
-      calculateFee();
-    } else {
-      setCalculatedFee(null);
-      setCalculationError(null);
+  const calculateFee = useCallback(async () => {
+    const hoKhauIdNumber = Number(selectedHoKhauId);
+    const dotThuPhiIdNumber = Number(selectedDotThuPhiId);
+    if (!Number.isFinite(hoKhauIdNumber) || !Number.isFinite(dotThuPhiIdNumber)) {
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedHoKhauId, selectedDotThuPhiId]);
 
-  const calculateFee = async () => {
     setCalculating(true);
     setCalculationError(null);
     
     try {
       const result = await feeCollectionApi.calculateFee(
-        selectedHoKhauId,
-        selectedDotThuPhiId
+        hoKhauIdNumber,
+        dotThuPhiIdNumber
       );
-      setCalculatedFee(result.data);
+      setCalculatedFee(result);
     } catch (error) {
       console.error('Error calculating fee:', error);
       const errorMsg = error.response?.data?.message || 'Không thể tính phí. Vui lòng thử lại.';
@@ -155,7 +169,36 @@ export const FeeCollectionForm = ({
     } finally {
       setCalculating(false);
     }
-  };
+  }, [selectedHoKhauId, selectedDotThuPhiId]);
+
+  // Auto-calculate fee when both household and period are selected
+  useEffect(() => {
+    if (!selectedHoKhauId || !selectedDotThuPhiId) {
+      setCalculatedFee(null);
+      setCalculationError(null);
+      setCalculating(false);
+      return;
+    }
+
+    const selectedPeriod = periodLookup[String(selectedDotThuPhiId)];
+    if (selectedPeriod?.loai === 'TU_NGUYEN') {
+      setCalculating(false);
+      setCalculationError(null);
+      setCalculatedFee({
+        loai: 'TU_NGUYEN',
+        memberCount: 0,
+        monthlyFeePerPerson: 0,
+        months: 0,
+        totalFee: 0,
+        periodStart: selectedPeriod.raw?.ngayBatDau || null,
+        periodEnd: selectedPeriod.raw?.ngayKetThuc || null,
+        formula: 'Phí tự nguyện - không bắt buộc thu'
+      });
+      return;
+    }
+
+    calculateFee();
+  }, [selectedHoKhauId, selectedDotThuPhiId, periodLookup, calculateFee]);
 
   if (loading) {
     return <div className="text-center py-4">Đang tải...</div>;
@@ -184,7 +227,20 @@ export const FeeCollectionForm = ({
   }
 
   const handleFormSubmit = async (data) => {
-    await onSubmit(data, setFormError);
+    const parseId = (value) => {
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? undefined : parsed;
+    };
+
+    const payload = {
+      hoKhauId: parseId(data.hoKhauId),
+      dotThuPhiId: parseId(data.dotThuPhiId),
+      ngayThu: data.ngayThu,
+      ghiChu: data.ghiChu ? data.ghiChu.trim() : '',
+      trangThai: data.trangThai
+    };
+
+    await onSubmit(payload, setFormError);
   };
 
   return (
@@ -256,28 +312,28 @@ export const FeeCollectionForm = ({
             <div className="bg-white p-3 rounded-lg shadow-sm">
               <p className="text-xs text-gray-600 mb-1">Số nhân khẩu</p>
               <p className="font-bold text-lg text-gray-900">
-                {calculatedFee.memberCount} <span className="text-sm font-normal">người</span>
+                {calculatedFee.memberCount ?? 0} <span className="text-sm font-normal">người</span>
               </p>
             </div>
             
             <div className="bg-white p-3 rounded-lg shadow-sm">
               <p className="text-xs text-gray-600 mb-1">Định mức/tháng</p>
               <p className="font-bold text-lg text-gray-900">
-                {new Intl.NumberFormat('vi-VN').format(calculatedFee.monthlyFeePerPerson)} ₫
+                {formatCurrency(calculatedFee.monthlyFeePerPerson)} ₫
               </p>
             </div>
             
             <div className="bg-white p-3 rounded-lg shadow-sm">
               <p className="text-xs text-gray-600 mb-1">Số tháng</p>
               <p className="font-bold text-lg text-gray-900">
-                {calculatedFee.months} <span className="text-sm font-normal">tháng</span>
+                {calculatedFee.months ?? 0} <span className="text-sm font-normal">tháng</span>
               </p>
             </div>
             
             <div className="bg-white p-3 rounded-lg shadow-sm">
               <p className="text-xs text-gray-600 mb-1">Kỳ thu</p>
               <p className="text-xs text-gray-700">
-                {new Date(calculatedFee.periodStart).toLocaleDateString('vi-VN')} - {new Date(calculatedFee.periodEnd).toLocaleDateString('vi-VN')}
+                {formatDateDisplay(calculatedFee.periodStart)} - {formatDateDisplay(calculatedFee.periodEnd)}
               </p>
             </div>
           </div>
@@ -285,20 +341,25 @@ export const FeeCollectionForm = ({
           <div className="bg-white p-4 rounded-lg border-2 border-green-300 mb-3">
             <p className="text-xs text-gray-600 mb-2">Công thức tính</p>
             <p className="font-mono text-sm text-gray-800 mb-2">
-              {calculatedFee.formula}
+              {calculatedFee.formula || 'Đang áp dụng công thức mặc định'}
             </p>
+            {calculatedFee.loai === 'TU_NGUYEN' && (
+              <p className="text-xs text-gray-500">
+                Đợt thu tự nguyện - hộ khẩu này sẽ được đánh dấu <strong>KHÔNG ÁP DỤNG</strong>.
+              </p>
+            )}
           </div>
 
           <div className="bg-green-600 text-white p-4 rounded-lg text-center">
             <p className="text-sm font-medium mb-1">TỔNG PHÍ PHẢI THU</p>
             <p className="text-3xl font-bold">
-              {new Intl.NumberFormat('vi-VN').format(calculatedFee.totalFee)} ₫
+              {formatCurrency(calculatedFee.totalFee)} ₫
             </p>
           </div>
         </div>
       )}
 
-      {/* Payment Date and Notes */}
+      {/* Payment Date, Status and Notes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-amber-50 p-4 rounded-lg">
         <FormInput
           label="Ngày thu"
@@ -306,6 +367,15 @@ export const FeeCollectionForm = ({
           register={register}
           name="ngayThu"
           error={errors.ngayThu}
+          required
+        />
+
+        <FormSelect
+          label="Trạng thái thu phí"
+          register={register}
+          name="trangThai"
+          options={PAYMENT_STATUS_OPTIONS}
+          error={errors.trangThai}
           required
         />
 

@@ -42,7 +42,7 @@ const StatisticsOverview = () => {
 
         // Fetch household statistics
         const householdsResponse = await householdApi.getAll();
-        const households = householdsResponse.data || [];
+        const households = householdsResponse || [];
         
         const totalHouseholds = households.length;
         const totalMembers = households.reduce((sum, h) => sum + (h.soThanhVien || 0), 0);
@@ -59,17 +59,17 @@ const StatisticsOverview = () => {
           feeCollectionApi.getAll()
         ]);
         
-        const feePeriods = feePeriodsResponse.data || [];
-        const feeCollections = feeCollectionsResponse.data || [];
+        const feePeriods = feePeriodsResponse || [];
+        const feeCollections = feeCollectionsResponse || [];
         
-        const totalCollected = feeCollections.reduce((sum, f) => sum + (f.soTienDaThu || 0), 0);
+        const totalCollected = feeCollections.reduce((sum, record) => {
+          return sum + (record.trangThai === 'DA_NOP' ? (record.tongPhi || 0) : 0);
+        }, 0);
         const totalExpected = feeCollections.reduce((sum, f) => sum + (f.tongPhi || 0), 0);
         const completionRate = totalExpected > 0 ? ((totalCollected / totalExpected) * 100).toFixed(1) : 0;
         
-        // Outstanding households (where soTienDaThu < tongPhi)
-        const outstanding = feeCollections.filter(f => 
-          (f.soTienDaThu || 0) < (f.tongPhi || 0)
-        );
+        // Outstanding households (status = CHUA_NOP)
+        const outstanding = feeCollections.filter((f) => f.trangThai === 'CHUA_NOP');
 
         // Money collected per fee period
         const collectionsByPeriod = {};
@@ -83,7 +83,7 @@ const StatisticsOverview = () => {
               expected: 0
             };
           }
-          collectionsByPeriod[periodId].collected += (fc.soTienDaThu || 0);
+          collectionsByPeriod[periodId].collected += (fc.trangThai === 'DA_NOP' ? (fc.tongPhi || 0) : 0);
           collectionsByPeriod[periodId].expected += (fc.tongPhi || 0);
         });
 
@@ -366,7 +366,8 @@ const StatisticsOverview = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {fees.outstanding.slice(0, 10).map((fee, index) => {
-                    const remaining = (fee.tongPhi || 0) - (fee.soTienDaThu || 0);
+                    const paidAmount = fee.trangThai === 'DA_NOP' ? (fee.tongPhi || 0) : 0;
+                    const remaining = (fee.tongPhi || 0) - paidAmount;
                     return (
                       <tr key={index} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-sm text-gray-800">{fee.tenDot || '-'}</td>
@@ -375,7 +376,7 @@ const StatisticsOverview = () => {
                           {new Intl.NumberFormat('vi-VN').format(fee.tongPhi || 0)} ₫
                         </td>
                         <td className="px-4 py-3 text-sm text-right text-green-600 font-medium">
-                          {new Intl.NumberFormat('vi-VN').format(fee.soTienDaThu || 0)} ₫
+                          {new Intl.NumberFormat('vi-VN').format(paidAmount)} ₫
                         </td>
                         <td className="px-4 py-3 text-sm text-right text-red-600 font-bold">
                           {new Intl.NumberFormat('vi-VN').format(remaining)} ₫

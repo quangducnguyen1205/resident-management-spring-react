@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../../components/Table/DataTable';
 import feeCollectionApi from '../../../api/feeCollectionApi';
+import StatusBadge from './StatusBadge';
 
 /**
  * FeeByHousehold - Refactored 2025
@@ -17,7 +18,7 @@ const FeeByHousehold = ({ householdId }) => {
       setLoading(true);
       try {
         const response = await feeCollectionApi.getByHousehold(householdId);
-        setCollections(response.data);
+        setCollections(response);
       } catch (error) {
         console.error('Error fetching collections:', error);
       }
@@ -53,28 +54,7 @@ const FeeByHousehold = ({ householdId }) => {
     {
       key: 'trangThai',
       title: 'Trạng thái',
-      render: (value) => {
-        if (value === 'DA_NOP') {
-          return (
-            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-              ✅ Đã nộp
-            </span>
-          );
-        } else if (value === 'CHUA_NOP') {
-          return (
-            <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
-              ⏳ Chưa nộp
-            </span>
-          );
-        } else if (value === 'KHONG_AP_DUNG') {
-          return (
-            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
-              ➖ Không áp dụng
-            </span>
-          );
-        }
-        return '-';
-      }
+      render: (value) => <StatusBadge status={value} size="sm" />
     }
   ];
 

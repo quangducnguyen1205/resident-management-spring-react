@@ -5,25 +5,23 @@ import com.example.QuanLyDanCu.dto.request.NhanKhauRequestDto;
 import com.example.QuanLyDanCu.dto.request.NhanKhauUpdateDto;
 import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
 import com.example.QuanLyDanCu.entity.NhanKhau;
-import com.example.QuanLyDanCu.entity.BienDong;
+import com.example.QuanLyDanCu.enums.BienDongType;
 import com.example.QuanLyDanCu.event.ChangeOperation;
 import com.example.QuanLyDanCu.event.NhanKhauChangedEvent;
 import com.example.QuanLyDanCu.repository.NhanKhauRepository;
-import com.example.QuanLyDanCu.repository.BienDongRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.time.LocalDate;
-import java.time.Period;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +29,7 @@ import java.time.Period;
 public class NhanKhauService {
 
     private final NhanKhauRepository nhanKhauRepo;
-    private final BienDongRepository bienDongRepo;
+    private final BienDongService bienDongService;
     private final ApplicationEventPublisher eventPublisher;
 
     // ========== DTO-based methods ==========
@@ -78,6 +76,12 @@ public class NhanKhauService {
                  saved.getId(), saved.getHoKhauId());
         eventPublisher.publishEvent(new NhanKhauChangedEvent(this, saved.getId(), 
                                      saved.getHoKhauId(), ChangeOperation.CREATE));
+
+        bienDongService.log(
+            BienDongType.THAY_DOI_THONG_TIN,
+            "Tạo nhân khẩu mới: " + saved.getHoTen(),
+            saved.getHoKhauId(),
+            saved.getId());
         
         return toResponseDTO(saved);
     }
@@ -90,6 +94,7 @@ public class NhanKhauService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
 
         boolean changed = false;
+        List<Consumer<NhanKhau>> pendingLogs = new ArrayList<>();
 
         // CCCD validation if ngaySinh is being updated
         LocalDate finalNgaySinh = dto.getNgaySinh() != null ? dto.getNgaySinh() : existing.getNgaySinh();
@@ -102,52 +107,98 @@ public class NhanKhauService {
 
         // Cập nhật các trường thông tin cá nhân
         if (dto.getHoTen() != null && !Objects.equals(existing.getHoTen(), dto.getHoTen())) {
-            existing.setHoTen(dto.getHoTen());
+            String oldVal = existing.getHoTen();
+            String newVal = dto.getHoTen();
+            existing.setHoTen(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "họ tên", oldVal, newVal);
         }
         if (dto.getNgaySinh() != null && !Objects.equals(existing.getNgaySinh(), dto.getNgaySinh())) {
-            existing.setNgaySinh(dto.getNgaySinh());
+            LocalDate oldVal = existing.getNgaySinh();
+            LocalDate newVal = dto.getNgaySinh();
+            existing.setNgaySinh(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "ngày sinh", oldVal, newVal);
         }
         if (dto.getGioiTinh() != null && !Objects.equals(existing.getGioiTinh(), dto.getGioiTinh())) {
-            existing.setGioiTinh(dto.getGioiTinh());
+            String oldVal = existing.getGioiTinh();
+            String newVal = dto.getGioiTinh();
+            existing.setGioiTinh(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "giới tính", oldVal, newVal);
         }
         if (dto.getDanToc() != null && !Objects.equals(existing.getDanToc(), dto.getDanToc())) {
-            existing.setDanToc(dto.getDanToc());
+            String oldVal = existing.getDanToc();
+            String newVal = dto.getDanToc();
+            existing.setDanToc(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "dân tộc", oldVal, newVal);
         }
         if (dto.getQuocTich() != null && !Objects.equals(existing.getQuocTich(), dto.getQuocTich())) {
-            existing.setQuocTich(dto.getQuocTich());
+            String oldVal = existing.getQuocTich();
+            String newVal = dto.getQuocTich();
+            existing.setQuocTich(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "quốc tịch", oldVal, newVal);
         }
         if (dto.getNgheNghiep() != null && !Objects.equals(existing.getNgheNghiep(), dto.getNgheNghiep())) {
-            existing.setNgheNghiep(dto.getNgheNghiep());
+            String oldVal = existing.getNgheNghiep();
+            String newVal = dto.getNgheNghiep();
+            existing.setNgheNghiep(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "nghề nghiệp", oldVal, newVal);
         }
         if (dto.getCmndCccd() != null && !Objects.equals(existing.getCmndCccd(), dto.getCmndCccd())) {
-            existing.setCmndCccd(dto.getCmndCccd());
+            String oldVal = existing.getCmndCccd();
+            String newVal = dto.getCmndCccd();
+            existing.setCmndCccd(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "CMND/CCCD", oldVal, newVal);
         }
         if (dto.getNgayCap() != null && !Objects.equals(existing.getNgayCap(), dto.getNgayCap())) {
-            existing.setNgayCap(dto.getNgayCap());
+            LocalDate oldVal = existing.getNgayCap();
+            LocalDate newVal = dto.getNgayCap();
+            existing.setNgayCap(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "ngày cấp CMND/CCCD", oldVal, newVal);
         }
         if (dto.getNoiCap() != null && !Objects.equals(existing.getNoiCap(), dto.getNoiCap())) {
-            existing.setNoiCap(dto.getNoiCap());
+            String oldVal = existing.getNoiCap();
+            String newVal = dto.getNoiCap();
+            existing.setNoiCap(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "nơi cấp CMND/CCCD", oldVal, newVal);
         }
         if (dto.getQuanHeChuHo() != null && !Objects.equals(existing.getQuanHeChuHo(), dto.getQuanHeChuHo())) {
-            existing.setQuanHeChuHo(dto.getQuanHeChuHo());
+            String oldVal = existing.getQuanHeChuHo();
+            String newVal = dto.getQuanHeChuHo();
+            existing.setQuanHeChuHo(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "quan hệ với chủ hộ", oldVal, newVal);
         }
         if (dto.getGhiChu() != null && !Objects.equals(existing.getGhiChu(), dto.getGhiChu())) {
-            existing.setGhiChu(dto.getGhiChu());
+            String oldVal = existing.getGhiChu();
+            String newVal = dto.getGhiChu();
+            existing.setGhiChu(newVal);
             changed = true;
+            addChangeLog(pendingLogs, "ghi chú", oldVal, newVal);
         }
         if (dto.getHoKhauId() != null && !Objects.equals(existing.getHoKhauId(), dto.getHoKhauId())) {
-            existing.setHoKhauId(dto.getHoKhauId());
+            Long oldHoKhauId = existing.getHoKhauId();
+            Long newHoKhauId = dto.getHoKhauId();
+            existing.setHoKhauId(newHoKhauId);
             changed = true;
+            final String citizenName = existing.getHoTen();
+            pendingLogs.add(nk -> bienDongService.log(
+                    BienDongType.CHUYEN_DI,
+                    String.format("Nhân khẩu %s chuyển khỏi hộ %s", citizenName, oldHoKhauId),
+                    oldHoKhauId,
+                    nk.getId()));
+            pendingLogs.add(nk -> bienDongService.log(
+                    BienDongType.CHUYEN_DEN,
+                    String.format("Nhân khẩu %s chuyển đến hộ %s", citizenName, newHoKhauId),
+                    newHoKhauId,
+                    nk.getId()));
         }
 
         if (!changed) {
@@ -155,6 +206,8 @@ public class NhanKhauService {
         }
 
         NhanKhau saved = nhanKhauRepo.save(existing);
+
+        pendingLogs.forEach(callback -> callback.accept(saved));
         
         // Publish event to trigger ThuPhiHoKhau recalculation
         log.info("Publishing NhanKhauChangedEvent for updated citizen: {} in household: {}", 
@@ -173,6 +226,14 @@ public class NhanKhauService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu id = " + id));
         
         Long hoKhauId = nk.getHoKhauId();
+
+        BienDongType deletionType = "Đã mất".equalsIgnoreCase(nk.getGhiChu())
+            ? BienDongType.KHAI_TU
+            : BienDongType.THAY_DOI_THONG_TIN;
+        String content = deletionType == BienDongType.KHAI_TU
+            ? "Khai tử nhân khẩu khi xóa hồ sơ: " + nk.getHoTen()
+            : "Xóa nhân khẩu " + nk.getHoTen();
+        bienDongService.log(deletionType, content, hoKhauId, null);
         
         // Publish event BEFORE deletion to trigger ThuPhiHoKhau recalculation
         log.info("Publishing NhanKhauChangedEvent for citizen deletion: {} in household: {}", id, hoKhauId);
@@ -191,19 +252,19 @@ public class NhanKhauService {
         nk.setTamTruTu(dto.getNgayBatDau());
         nk.setTamTruDen(dto.getNgayKetThuc());
 
-        BienDong bd = BienDong.builder()
-                .loai("Tạm trú")
-                .noiDung("Đăng ký tạm trú cho " + nk.getHoTen()
-                        + " từ " + dto.getNgayBatDau()
-                        + (dto.getNgayKetThuc() != null ? " đến " + dto.getNgayKetThuc() : "")
-                        + (dto.getLyDo() != null ? " - Lý do: " + dto.getLyDo() : ""))
-                .thoiGian(LocalDateTime.now())
-                .hoKhauId(nk.getHoKhauId())
-            .nhanKhauId(nk.getId())
-                .build();
-        bienDongRepo.save(bd);
+        String content = "Đăng ký tạm trú cho " + nk.getHoTen()
+            + " từ " + dto.getNgayBatDau()
+            + (dto.getNgayKetThuc() != null ? " đến " + dto.getNgayKetThuc() : "")
+            + (dto.getLyDo() != null ? " - Lý do: " + dto.getLyDo() : "");
+        bienDongService.log(BienDongType.TAM_TRU, content, nk.getHoKhauId(), nk.getId());
 
         NhanKhau saved = nhanKhauRepo.save(nk);
+
+        log.info("Publishing NhanKhauChangedEvent for tam_tru registration: {} in household: {}",
+                saved.getId(), saved.getHoKhauId());
+        eventPublisher.publishEvent(new NhanKhauChangedEvent(this, saved.getId(),
+                saved.getHoKhauId(), ChangeOperation.UPDATE));
+
         return toResponseDTO(saved);
     }
 
@@ -213,16 +274,17 @@ public class NhanKhauService {
         existing.setTamTruTu(null);
         existing.setTamTruDen(null);
 
-        BienDong bd = BienDong.builder()
-                .loai("Hủy tạm trú")
-                .noiDung("Hủy tạm trú cho " + existing.getHoTen())
-                .thoiGian(LocalDateTime.now())
-                .hoKhauId(existing.getHoKhauId())
-            .nhanKhauId(existing.getId())
-                .build();
+        bienDongService.log(
+            BienDongType.HUY_TAM_TRU,
+            "Hủy tạm trú cho " + existing.getHoTen(),
+            existing.getHoKhauId(),
+            existing.getId());
+        NhanKhau saved = nhanKhauRepo.save(existing);
 
-        bienDongRepo.save(bd);
-        nhanKhauRepo.save(existing);
+        log.info("Publishing NhanKhauChangedEvent for tam_tru cancellation: {} in household: {}",
+                saved.getId(), saved.getHoKhauId());
+        eventPublisher.publishEvent(new NhanKhauChangedEvent(this, saved.getId(),
+                saved.getHoKhauId(), ChangeOperation.UPDATE));
     }
 
 
@@ -236,17 +298,11 @@ public class NhanKhauService {
         nk.setTamVangTu(dto.getNgayBatDau());
         nk.setTamVangDen(dto.getNgayKetThuc());
 
-        BienDong bd = BienDong.builder()
-                .loai("Tạm trú")
-                .noiDung("Đăng ký tạm vắng cho " + nk.getHoTen()
-                        + " từ " + dto.getNgayBatDau()
-                        + (dto.getNgayKetThuc() != null ? " đến " + dto.getNgayKetThuc() : "")
-                        + (dto.getLyDo() != null ? " - Lý do: " + dto.getLyDo() : ""))
-                .thoiGian(LocalDateTime.now())
-                .hoKhauId(nk.getHoKhauId())
-            .nhanKhauId(nk.getId())
-                .build();
-        bienDongRepo.save(bd);
+        String content = "Đăng ký tạm vắng cho " + nk.getHoTen()
+            + " từ " + dto.getNgayBatDau()
+            + (dto.getNgayKetThuc() != null ? " đến " + dto.getNgayKetThuc() : "")
+            + (dto.getLyDo() != null ? " - Lý do: " + dto.getLyDo() : "");
+        bienDongService.log(BienDongType.TAM_VANG, content, nk.getHoKhauId(), nk.getId());
 
         NhanKhau saved = nhanKhauRepo.save(nk);
         
@@ -265,15 +321,11 @@ public class NhanKhauService {
         existing.setTamVangTu(null);
         existing.setTamVangDen(null);
 
-        BienDong bd = BienDong.builder()
-                .loai("Kết thúc tạm vắng")
-                .noiDung("Kết thúc tạm vắng cho " + existing.getHoTen())
-                .thoiGian(LocalDateTime.now())
-                .hoKhauId(existing.getHoKhauId())
-            .nhanKhauId(existing.getId())
-                .build();
-
-        bienDongRepo.save(bd);
+        bienDongService.log(
+            BienDongType.HUY_TAM_VANG,
+            "Kết thúc tạm vắng cho " + existing.getHoTen(),
+            existing.getHoKhauId(),
+            existing.getId());
         nhanKhauRepo.save(existing);
         
         // Publish event because tam_vang affects fee calculation
@@ -284,21 +336,26 @@ public class NhanKhauService {
     }
 
     // --- KHAI TỬ ---
-    public NhanKhau khaiTu(Long id, String lyDo, Authentication auth) {
+    public NhanKhauResponseDto khaiTu(Long id, String lyDo, Authentication auth) {
         NhanKhau nk = nhanKhauRepo.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu"));
 
         nk.setGhiChu("Đã mất");
+        nk.setTamTruTu(null);
+        nk.setTamTruDen(null);
+        nk.setTamVangTu(null);
+        nk.setTamVangDen(null);
 
-        BienDong bd = BienDong.builder()
-                .loai("Khai tử")
-                .noiDung("Khai tử: " + nk.getHoTen() + (lyDo != null ? " - Lý do: " + lyDo : ""))
-                .thoiGian(LocalDateTime.now())
-                .hoKhauId(nk.getHoKhauId())
-            .nhanKhauId(nk.getId())
-                .build();
-        bienDongRepo.save(bd);
+        String content = "Khai tử: " + nk.getHoTen() + (lyDo != null ? " - Lý do: " + lyDo : "");
+        bienDongService.log(BienDongType.KHAI_TU, content, nk.getHoKhauId(), nk.getId());
 
-        return nhanKhauRepo.save(nk);
+        NhanKhau saved = nhanKhauRepo.save(nk);
+
+        log.info("Publishing NhanKhauChangedEvent for citizen death declaration: {} in household: {}",
+                saved.getId(), saved.getHoKhauId());
+        eventPublisher.publishEvent(new NhanKhauChangedEvent(this, saved.getId(),
+                saved.getHoKhauId(), ChangeOperation.UPDATE));
+
+        return toResponseDTO(saved);
     }
 
     // Search theo tên
@@ -391,6 +448,26 @@ public class NhanKhauService {
 
     // --- helper ---
 
+    private void addChangeLog(List<Consumer<NhanKhau>> pendingLogs, String fieldLabel, Object oldValue, Object newValue) {
+        final String message = formatChange(fieldLabel, oldValue, newValue);
+        pendingLogs.add(nk -> bienDongService.log(
+                BienDongType.THAY_DOI_THONG_TIN,
+                message,
+                nk.getHoKhauId(),
+                nk.getId()));
+    }
+
+    private String formatChange(String fieldLabel, Object oldValue, Object newValue) {
+        return String.format("Cập nhật %s: '%s' → '%s'",
+                fieldLabel,
+                formatValue(oldValue),
+                formatValue(newValue));
+    }
+
+    private String formatValue(Object value) {
+        return value == null ? "" : value.toString();
+    }
+
     /**
      * Validate CCCD fields based on age
      * - If age < 14: all CCCD fields must be null/empty
@@ -455,8 +532,12 @@ public class NhanKhauService {
         LocalDate now = LocalDate.now();
         String trangThaiHienTai = "THUONG_TRU"; // default
         
-        // Check tam_vang first (higher priority)
-        if (nk.getTamVangTu() != null && 
+        // Highest priority: citizen marked as deceased
+        if (nk.getGhiChu() != null && nk.getGhiChu().trim().equalsIgnoreCase("đã mất")) {
+            trangThaiHienTai = "DA_KHAI_TU";
+        }
+        // Check tam_vang next (higher priority than tam_tru)
+        else if (nk.getTamVangTu() != null && 
             !now.isBefore(nk.getTamVangTu()) && 
             (nk.getTamVangDen() == null || !now.isAfter(nk.getTamVangDen()))) {
             trangThaiHienTai = "TAM_VANG";

@@ -1,12 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../../components/Table/DataTable';
 import CitizenSearch from '../components/CitizenSearch';
 import useApiHandler from '../../../hooks/useApiHandler';
-import citizenApi from '../../../api/citizenApi';
+import citizenApi, { buildKhaiTuPayload, buildTemporaryChangePayload } from '../../../api/citizenApi';
 import Loader from '../../../components/Loader';
 import ErrorMessage from '../../../components/ErrorMessage';
 import { useAuth } from '../../auth/contexts/AuthContext';
+import { deriveCitizenStatus } from '../utils/status';
+
+const CITIZEN_REFRESH_EVENT = 'citizen:refresh';
+
+const STATUS_BADGES = {
+  THUONG_TRU: { label: 'Thường trú', color: 'bg-gray-100 text-gray-800' },
+  TAM_TRU: { label: 'Tạm trú', color: 'bg-green-100 text-green-800' },
+  TAM_VANG: { label: 'Tạm vắng', color: 'bg-yellow-100 text-yellow-800' },
+  DA_KHAI_TU: { label: 'Đã khai tử', color: 'bg-red-100 text-red-800' }
+};
+
+const getStatusBadge = (status) => STATUS_BADGES[status] || { label: 'Chưa xác định', color: 'bg-gray-100 text-gray-800' };
+
+const formatDate = (value) => (value ? new Date(value).toLocaleDateString('vi-VN') : '-');
 
 const CitizenList = () => {
   const navigate = useNavigate();
@@ -26,135 +40,168 @@ const CitizenList = () => {
     loading,
     error,
     handleApi
-  } = useApiHandler({});
+  } = useApiHandler([]);
 
-  // Compute status based on database fields
-  const computeStatus = (citizen) => {
-    const today = new Date();
-    
-    // Check for Tạm vắng
-    if (citizen.tamVangTu) {
-      const tamVangTu = new Date(citizen.tamVangTu);
-      const tamVangDen = citizen.tamVangDen ? new Date(citizen.tamVangDen) : null;
-      
-      if (!tamVangDen || today <= tamVangDen) {
-        return { label: 'Tạm vắng', color: 'bg-yellow-100 text-yellow-800' };
-      }
-    }
-    
-    // Check for Tạm trú
-    if (citizen.tamTruTu) {
-      const tamTruTu = new Date(citizen.tamTruTu);
-      const tamTruDen = citizen.tamTruDen ? new Date(citizen.tamTruDen) : null;
-      
-      if (!tamTruDen || today <= tamTruDen) {
-        return { label: 'Tạm trú', color: 'bg-green-100 text-green-800' };
-      }
-    }
-    
-    // Check for Khai tử
-    if (citizen.ghiChu) {
-      const ghiChuLower = citizen.ghiChu.toLowerCase();
-      if (ghiChuLower.includes('khai tử') || ghiChuLower.includes('đã chết')) {
-        return { label: 'Đã khai tử', color: 'bg-red-100 text-red-800' };
-      }
-    }
-    
-    // Default to Thường trú
-    return { label: 'Thường trú', color: 'bg-gray-100 text-gray-800' };
-  };
+  const emitCitizenRefresh = useCallback(() => {
+    window.dispatchEvent(new Event(CITIZEN_REFRESH_EVENT));
+  }, []);
 
-  const columns = [
-    { key: 'id', title: 'ID' },
-    { key: 'hoTen', title: 'Họ tên' },
-    { 
-      key: 'ngaySinh', 
-      title: 'Ngày sinh',
-      render: (value) => value ? new Date(value).toLocaleDateString('vi-VN') : '-'
-    },
-    { key: 'gioiTinh', title: 'Giới tính' },
-    { key: 'cmndCccd', title: 'CMND/CCCD' },
-    {
-      key: 'trangThai',
-      title: 'Trạng thái',
-      render: (_, row) => {
-        const status = computeStatus(row);
-        return (
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.color}`}>
-            {status.label}
-          </span>
-        );
-      }
-    },
-    {
-      key: 'actions',
-      title: 'Thao tác',
-      render: (_, row) => (
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleTamVang(row);
-            }}
-            className="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded transition-colors"
-            title="Tạm vắng"
-          >
-            Tạm vắng
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleTamTru(row);
-            }}
-            className="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors"
-            title="Tạm trú"
-          >
-            Tạm trú
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleKhaiTu(row);
-            }}
-            className="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors"
-            title="Khai tử"
-          >
-            Khai tử
-          </button>
-        </div>
-      )
-    }
-  ];
+  const openStatusModal = useCallback((type, citizen) => {
+    setSelectedCitizen(citizen);
+    setShowModal(type);
+  }, []);
 
-  const fetchCitizens = async () => {
+  const handleTamVang = useCallback((citizen) => {
+    openStatusModal('tamvang', citizen);
+  }, [openStatusModal]);
+
+  const handleTamTru = useCallback((citizen) => {
+    openStatusModal('tamtru', citizen);
+  }, [openStatusModal]);
+
+  const handleKhaiTu = useCallback((citizen) => {
+    openStatusModal('khaitu', citizen);
+  }, [openStatusModal]);
+
+  const columns = useMemo(() => {
+    const baseColumns = [
+      { key: 'id', title: 'ID' },
+      { key: 'hoTen', title: 'Họ tên' },
+      {
+        key: 'hoKhauId',
+        title: 'Hộ khẩu',
+        render: (value) => (value ? `HK-${value}` : '-')
+      },
+      {
+        key: 'quanHeChuHo',
+        title: 'Quan hệ với chủ hộ',
+        render: (value) => value || '-'
+      },
+      {
+        key: 'ngaySinh',
+        title: 'Ngày sinh',
+        render: (value) => formatDate(value)
+      },
+      { key: 'gioiTinh', title: 'Giới tính' },
+      {
+        key: 'ngheNghiep',
+        title: 'Nghề nghiệp',
+        render: (value) => value || '-'
+      },
+      {
+        key: 'cmndCccd',
+        title: 'CMND/CCCD',
+        render: (value) => value || 'Chưa cấp'
+      },
+      {
+        key: 'ngayCap',
+        title: 'Ngày cấp',
+        render: (value) => formatDate(value)
+      },
+      {
+        key: 'noiCap',
+        title: 'Nơi cấp',
+        render: (value, row) => (row?.cmndCccd ? (value || '-') : 'Chưa cấp')
+      },
+      {
+        key: 'trangThaiHienTai',
+        title: 'Trạng thái',
+        render: (value) => {
+          const status = getStatusBadge(value);
+          return (
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.color}`}>
+              {status.label}
+            </span>
+          );
+        }
+      }
+    ];
+
+    if (canModifyCitizen) {
+      baseColumns.push({
+        key: 'statusActions',
+        title: 'Quản lý trạng thái',
+        render: (_, row) => (
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTamVang(row);
+              }}
+              className="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded transition-colors"
+              title="Tạm vắng"
+            >
+              Tạm vắng
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTamTru(row);
+              }}
+              className="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors"
+              title="Tạm trú"
+            >
+              Tạm trú
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleKhaiTu(row);
+              }}
+              className="px-2 py-1 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors"
+              title="Khai tử"
+            >
+              Khai tử
+            </button>
+          </div>
+        )
+      });
+    }
+
+    return baseColumns;
+  }, [canModifyCitizen, handleTamTru, handleTamVang, handleKhaiTu]);
+
+  const fetchCitizens = useCallback(async () => {
     await handleApi(
       () => citizenApi.getAll(),
       'Không thể tải danh sách nhân khẩu'
     );
-  };
+  }, [handleApi]);
 
   useEffect(() => {
     fetchCitizens();
-  }, []);
+  }, [fetchCitizens]);
 
-  const handleAdd = () => navigate('/citizen/new');
-  const handleEdit = (row) => navigate(`/citizen/${row.id}`);
-  const handleView = (row) => navigate(`/citizen/${row.id}`);
-  const handleDelete = async (row) => {
+  useEffect(() => {
+    const handleRefreshEvent = () => {
+      fetchCitizens();
+    };
+    window.addEventListener(CITIZEN_REFRESH_EVENT, handleRefreshEvent);
+    return () => window.removeEventListener(CITIZEN_REFRESH_EVENT, handleRefreshEvent);
+  }, [fetchCitizens]);
+
+  const handleAdd = useCallback(() => navigate('/citizen/new'), [navigate]);
+  const handleEdit = useCallback((row) => navigate(`/citizen/${row.id}`), [navigate]);
+
+  const handleDelete = useCallback(async (row) => {
     if (!window.confirm(`Xác nhận xóa nhân khẩu "${row.hoTen}"?`)) return;
     try {
-      await handleApi(
+      const result = await handleApi(
         () => citizenApi.delete(row.id),
         'Không thể xóa nhân khẩu'
       );
+      if (!result.success) {
+        throw new Error(result.message || 'Không thể xóa nhân khẩu');
+      }
       alert('Xóa nhân khẩu thành công!');
       await fetchCitizens();
+      emitCitizenRefresh();
     } catch (err) {
       // Error handled by hook
     }
-  };
+  }, [emitCitizenRefresh, fetchCitizens, handleApi]);
 
-  const handleSearch = async (searchTerm) => {
+  const handleSearch = useCallback(async (searchTerm) => {
     if (!searchTerm || searchTerm.trim() === '') {
       await fetchCitizens();
       return;
@@ -167,74 +214,67 @@ const CitizenList = () => {
     } catch (err) {
       // Error handled by hook
     }
-  };
+  }, [fetchCitizens, handleApi]);
 
-  // Handlers for special actions
-  const handleTamVang = (citizen) => {
-    setSelectedCitizen(citizen);
-    setShowModal('tamvang');
-  };
+  const citizens = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
-  const handleTamTru = (citizen) => {
-    setSelectedCitizen(citizen);
-    setShowModal('tamtru');
-  };
+  const normalizedCitizens = useMemo(() => citizens.map((citizen) => ({
+    ...citizen,
+    trangThaiHienTai: deriveCitizenStatus(citizen)
+  })), [citizens]);
 
-  const handleKhaiTu = (citizen) => {
-    setSelectedCitizen(citizen);
-    setShowModal('khaitu');
-  };
-
-  const handleCancelTamVang = async (citizen) => {
-    if (!window.confirm(`Xác nhận huỷ tạm vắng cho ${citizen.hoTen}?`)) return;
-    try {
-      await citizenApi.deleteTamVang(citizen.id);
-      alert('Đã huỷ tạm vắng thành công');
-      await fetchCitizens();
-    } catch (err) {
-      alert('Không thể huỷ tạm vắng: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleCancelTamTru = async (citizen) => {
-    if (!window.confirm(`Xác nhận huỷ tạm trú cho ${citizen.hoTen}?`)) return;
-    try {
-      await citizenApi.deleteTamTru(citizen.id);
-      alert('Đã huỷ tạm trú thành công');
-      await fetchCitizens();
-    } catch (err) {
-      alert('Không thể huỷ tạm trú: ' + (err.response?.data?.message || err.message));
-    }
-  };
+  const sortedCitizens = useMemo(() => {
+    const clone = [...normalizedCitizens];
+    const getTimestamp = (item) => {
+      const candidates = ['updatedAt', 'ngayCapNhat', 'modifiedAt', 'ngayCap'];
+      for (const field of candidates) {
+        if (item?.[field]) {
+          const ts = new Date(item[field]).getTime();
+          if (!Number.isNaN(ts)) {
+            return ts;
+          }
+        }
+      }
+      return 0;
+    };
+    return clone.sort((a, b) => {
+      const diff = getTimestamp(b) - getTimestamp(a);
+      if (diff !== 0) return diff;
+      return (b?.id || 0) - (a?.id || 0);
+    });
+  }, [normalizedCitizens]);
 
   const handleModalSubmit = async (formData) => {
+    if (!selectedCitizen || !showModal) return;
     try {
       if (showModal === 'tamvang') {
-        await citizenApi.updateTamVang(selectedCitizen.id, formData);
+        const payload = buildTemporaryChangePayload(formData);
+        await citizenApi.updateTamVang(selectedCitizen.id, payload);
         alert('Đã cập nhật tạm vắng thành công');
       } else if (showModal === 'tamtru') {
-        await citizenApi.updateTamTru(selectedCitizen.id, formData);
+        const payload = buildTemporaryChangePayload(formData);
+        await citizenApi.updateTamTru(selectedCitizen.id, payload);
         alert('Đã cập nhật tạm trú thành công');
       } else if (showModal === 'khaitu') {
-        await citizenApi.updateKhaiTu(selectedCitizen.id, formData);
+        const payload = buildKhaiTuPayload(formData);
+        await citizenApi.updateKhaiTu(selectedCitizen.id, payload);
         alert('Đã khai tử thành công');
       }
       setShowModal(null);
       setSelectedCitizen(null);
       await fetchCitizens();
+      emitCitizenRefresh();
     } catch (err) {
-      alert('Không thể thực hiện: ' + (err.response?.data?.message || err.message));
+      const message = err.response?.data?.message || err.message || 'Không thể thực hiện yêu cầu';
+      alert(message);
     }
   };
 
   if (loading) return <Loader />;
   if (error) return <ErrorMessage message={error} onRetry={fetchCitizens} />;
-
-  // Transform data - API có thể trả về array hoặc object
-  const citizens = Array.isArray(data) ? data : (data?.data || []);
   
   // Apply filters - use backend's trangThaiHienTai field
-  const filteredCitizens = citizens.filter(citizen => {
+  const filteredCitizens = sortedCitizens.filter(citizen => {
     if (filters.trangThai && citizen.trangThaiHienTai !== filters.trangThai) return false;
     if (filters.gioiTinh && citizen.gioiTinh !== filters.gioiTinh) return false;
     return true;
@@ -299,6 +339,7 @@ const CitizenList = () => {
               <option value="THUONG_TRU">Thường trú</option>
               <option value="TAM_TRU">Tạm trú</option>
               <option value="TAM_VANG">Tạm vắng</option>
+              <option value="DA_KHAI_TU">Đã khai tử</option>
             </select>
           </div>
           <div>
@@ -348,7 +389,7 @@ const CitizenList = () => {
           }}
           onSubmit={handleModalSubmit}
         >
-          <TamVangForm />
+          <InlineTamVangForm />
         </Modal>
       )}
 
@@ -362,7 +403,7 @@ const CitizenList = () => {
           }}
           onSubmit={handleModalSubmit}
         >
-          <TamTruForm />
+          <InlineTamTruForm />
         </Modal>
       )}
 
@@ -376,7 +417,7 @@ const CitizenList = () => {
           }}
           onSubmit={handleModalSubmit}
         >
-          <KhaiTuForm />
+          <InlineKhaiTuForm />
         </Modal>
       )}
     </div>
@@ -427,35 +468,30 @@ const Modal = ({ title, onClose, onSubmit, children }) => {
   );
 };
 
+const todayISO = new Date().toISOString().split('T')[0];
+
 // Tạm vắng Form
-const TamVangForm = ({ formData, setFormData }) => (
+const InlineTamVangForm = ({ formData, setFormData }) => (
   <div className="space-y-4">
     <div>
       <label className="block text-sm font-medium mb-1">Ngày bắt đầu</label>
       <input
         type="date"
         value={formData.ngayBatDau || ''}
+        min={todayISO}
         onChange={(e) => setFormData({ ...formData, ngayBatDau: e.target.value })}
         className="w-full border rounded px-3 py-2"
         required
       />
     </div>
     <div>
-      <label className="block text-sm font-medium mb-1">Ngày kết thúc (dự kiến)</label>
+      <label className="block text-sm font-medium mb-1">Ngày kết thúc</label>
       <input
         type="date"
         value={formData.ngayKetThuc || ''}
+        min={formData.ngayBatDau || todayISO}
         onChange={(e) => setFormData({ ...formData, ngayKetThuc: e.target.value })}
         className="w-full border rounded px-3 py-2"
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium mb-1">Địa chỉ tạm vắng</label>
-      <textarea
-        value={formData.diaChiTamVang || ''}
-        onChange={(e) => setFormData({ ...formData, diaChiTamVang: e.target.value })}
-        className="w-full border rounded px-3 py-2"
-        rows="3"
         required
       />
     </div>
@@ -465,41 +501,37 @@ const TamVangForm = ({ formData, setFormData }) => (
         value={formData.lyDo || ''}
         onChange={(e) => setFormData({ ...formData, lyDo: e.target.value })}
         className="w-full border rounded px-3 py-2"
-        rows="2"
+        rows="3"
+        required
+        minLength={10}
+        maxLength={500}
       />
     </div>
   </div>
 );
 
 // Tạm trú Form
-const TamTruForm = ({ formData, setFormData }) => (
+const InlineTamTruForm = ({ formData, setFormData }) => (
   <div className="space-y-4">
     <div>
       <label className="block text-sm font-medium mb-1">Ngày bắt đầu</label>
       <input
         type="date"
         value={formData.ngayBatDau || ''}
+        min={todayISO}
         onChange={(e) => setFormData({ ...formData, ngayBatDau: e.target.value })}
         className="w-full border rounded px-3 py-2"
         required
       />
     </div>
     <div>
-      <label className="block text-sm font-medium mb-1">Ngày kết thúc (dự kiến)</label>
+      <label className="block text-sm font-medium mb-1">Ngày kết thúc</label>
       <input
         type="date"
         value={formData.ngayKetThuc || ''}
+        min={formData.ngayBatDau || todayISO}
         onChange={(e) => setFormData({ ...formData, ngayKetThuc: e.target.value })}
         className="w-full border rounded px-3 py-2"
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium mb-1">Địa chỉ thường trú</label>
-      <textarea
-        value={formData.diaChiThuongTru || ''}
-        onChange={(e) => setFormData({ ...formData, diaChiThuongTru: e.target.value })}
-        className="w-full border rounded px-3 py-2"
-        rows="3"
         required
       />
     </div>
@@ -509,52 +541,28 @@ const TamTruForm = ({ formData, setFormData }) => (
         value={formData.lyDo || ''}
         onChange={(e) => setFormData({ ...formData, lyDo: e.target.value })}
         className="w-full border rounded px-3 py-2"
-        rows="2"
+        rows="3"
+        required
+        minLength={10}
+        maxLength={500}
       />
     </div>
   </div>
 );
 
 // Khai tử Form
-const KhaiTuForm = ({ formData, setFormData }) => (
+const InlineKhaiTuForm = ({ formData, setFormData }) => (
   <div className="space-y-4">
     <div>
-      <label className="block text-sm font-medium mb-1">Ngày mất</label>
-      <input
-        type="date"
-        value={formData.ngayMat || ''}
-        onChange={(e) => setFormData({ ...formData, ngayMat: e.target.value })}
-        className="w-full border rounded px-3 py-2"
-        required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium mb-1">Nguyên nhân</label>
+      <label className="block text-sm font-medium mb-1">Lý do khai tử</label>
       <textarea
-        value={formData.nguyenNhan || ''}
-        onChange={(e) => setFormData({ ...formData, nguyenNhan: e.target.value })}
+        value={formData.lyDo || ''}
+        onChange={(e) => setFormData({ ...formData, lyDo: e.target.value })}
         className="w-full border rounded px-3 py-2"
-        rows="3"
+        rows="4"
         required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium mb-1">Nơi mất</label>
-      <input
-        type="text"
-        value={formData.noiMat || ''}
-        onChange={(e) => setFormData({ ...formData, noiMat: e.target.value })}
-        className="w-full border rounded px-3 py-2"
-        required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium mb-1">Số giấy khai tử</label>
-      <input
-        type="text"
-        value={formData.soGiayKhaiTu || ''}
-        onChange={(e) => setFormData({ ...formData, soGiayKhaiTu: e.target.value })}
-        className="w-full border rounded px-3 py-2"
+        minLength={10}
+        maxLength={500}
       />
     </div>
   </div>

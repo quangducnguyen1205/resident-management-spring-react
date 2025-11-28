@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { HouseholdForm } from './HouseholdForm';
 
 export const HouseholdModal = ({ isOpen, onClose, onSave, household }) => {
   if (!isOpen) return null;
+
+  const initialValues = useMemo(() => household || null, [household]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -20,7 +22,8 @@ export const HouseholdModal = ({ isOpen, onClose, onSave, household }) => {
         </div>
 
         <HouseholdForm
-          initialValues={household || {}}
+          key={initialValues?.id || 'new-household'}
+          initialValues={initialValues || undefined}
           onSubmit={onSave}
         />
       </div>
