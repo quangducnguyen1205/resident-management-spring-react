@@ -1,13 +1,17 @@
 package com.example.QuanLyDanCu.controller;
 
+import com.example.QuanLyDanCu.dto.request.RegisterRequestDto;
 import com.example.QuanLyDanCu.dto.response.TaiKhoanResponseDto;
+import com.example.QuanLyDanCu.service.AuthService;
 import com.example.QuanLyDanCu.service.TaiKhoanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -23,6 +27,19 @@ import java.util.List;
 public class TaiKhoanController {
     
     private final TaiKhoanService taiKhoanService;
+    private final AuthService authService;
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Đăng ký tài khoản mới", description = "Tạo tài khoản người dùng mới trong hệ thống")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Đăng ký thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ hoặc tên đăng nhập đã tồn tại")
+    })
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequestDto dto) {
+        String result = authService.register(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('ADMIN')")

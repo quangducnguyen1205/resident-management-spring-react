@@ -18,19 +18,4 @@ public enum BienDongType {
     HUY_TAM_TRU,
     TAM_VANG,
     HUY_TAM_VANG;
-
-    public static BienDongType fromString(String value) {
-        if (value == null) {
-            throw new IllegalArgumentException("Loại biến động không được để trống");
-        }
-        try {
-            return BienDongType.valueOf(value.trim().toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Loại biến động phải thuộc: " + allowedValues());
-        }
-    }
-
-    public static String allowedValues() {
-        return Arrays.stream(values()).map(Enum::name).collect(Collectors.joining(", "));
-    }
 }

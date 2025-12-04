@@ -50,6 +50,3 @@ test-results.log
 # Ignore build artifacts
 target/
 *.jar
-
-/test/
-/docs/
