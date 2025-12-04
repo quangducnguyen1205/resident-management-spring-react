@@ -11,9 +11,13 @@ const useApiHandler = (initialState = null) => {
       setError(null);
 
       const response = await apiCall();
-      setData(response.data);
+      const payload = response && Object.prototype.hasOwnProperty.call(response, 'data')
+        ? response.data
+        : response;
 
-      return { success: true, data: response.data };
+      setData(payload);
+
+      return { success: true, data: payload };
 
     } catch (err) {
       const status = err.response?.status;

@@ -23,7 +23,6 @@ export default function Dashboard() {
     try {
       setLoading(true);
       
-      console.log('Dashboard: Fetching stats...');
       const [genderData, ageData, feeData, feeCollectionData] = await Promise.all([
         citizenApi.getGenderStats(),
         citizenApi.getAgeStats(),
@@ -31,16 +30,11 @@ export default function Dashboard() {
         feeCollectionApi.getAll(),
       ]);
 
-      console.log('Dashboard - Gender response:', genderData);
-      console.log('Dashboard - Age response:', ageData);
-      console.log('Dashboard - Fee response:', feeData);
-
       // Parse Gender Stats từ backend format:
       // { total: 2, byGender: { "Nam": 2, "Nữ": 0 } }
       let genderStats = [];
       const rawGenderStats = genderData?.data || genderData;
       if (rawGenderStats?.byGender) {
-        console.log('Dashboard: Parsing gender stats...');
         genderStats = Object.entries(rawGenderStats.byGender).map(([name, value]) => ({
           name,
           value
@@ -52,16 +46,12 @@ export default function Dashboard() {
       let ageStats = [];
       const rawAgeStats = ageData?.data || ageData;
       if (rawAgeStats?.buckets) {
-        console.log('Dashboard: Parsing age stats...');
         ageStats = Object.entries(rawAgeStats.buckets).map(([key, bucket]) => ({
           range: bucket.label || key,
           count: bucket.total || 0,
           byGender: bucket.byGender || {}
         }));
       }
-
-      console.log('Dashboard - Parsed gender stats:', genderStats);
-      console.log('Dashboard - Parsed age stats:', ageStats);
 
       // Parse Fee Stats từ backend format:
       // { totalRecords: 1, totalCollected: 3000000, totalHouseholds: 1, paidRecords: 1, unpaidRecords: 0 }
@@ -70,18 +60,32 @@ export default function Dashboard() {
       const feeCollectionStats = [];
       
       if (rawFeeStats || allCollections) {
-        const totalCollected = rawFeeStats?.totalCollected || 0;
         const totalHouseholds = rawFeeStats?.totalHouseholds || 0;
         const paidRecords = rawFeeStats?.paidRecords || 0;
         const unpaidRecords = rawFeeStats?.unpaidRecords || 0;
-        
-        // Tính tổng tiền cần thu từ tất cả bản ghi (từ allCollections)
+
+        const isVoluntaryRecord = (record) => record?.loaiThuPhi === 'TU_NGUYEN';
+        const getMandatoryAmount = (record) => record?.tongPhi || 0;
+        const getVoluntaryAmount = (record) => record?.tongPhiTuNguyen || 0;
+
         let totalRequired = 0;
+        let totalMandatoryCollected = 0;
+        let totalVoluntary = 0;
+
         if (Array.isArray(allCollections)) {
-          totalRequired = allCollections.reduce((sum, record) => {
-            return sum + (record.tongPhi || 0);
-          }, 0);
+          allCollections.forEach((record) => {
+            if (isVoluntaryRecord(record)) {
+              totalVoluntary += getVoluntaryAmount(record);
+            } else {
+              totalRequired += getMandatoryAmount(record);
+              if (record.trangThai === 'DA_NOP') {
+                totalMandatoryCollected += getMandatoryAmount(record);
+              }
+            }
+          });
         }
+
+        const totalCollected = totalMandatoryCollected + totalVoluntary;
         
         // Chart data: Đã thu vs Chưa thu
         feeCollectionStats.push(
@@ -92,10 +96,11 @@ export default function Dashboard() {
         // Stats properties
         feeCollectionStats.totalCollected = totalCollected;
         feeCollectionStats.totalRequired = totalRequired;
+        feeCollectionStats.totalVoluntary = totalVoluntary;
         feeCollectionStats.totalHouseholds = totalHouseholds;
         // Tỷ lệ thu: (tổng tiền đã thu / tổng tiền cần thu) * 100
         feeCollectionStats.collectionRate = totalRequired > 0 
-          ? Math.round((totalCollected / totalRequired) * 100) 
+          ? Math.round((totalMandatoryCollected / totalRequired) * 100) 
           : 0;
         feeCollectionStats.householdsPaid = paidRecords;
         feeCollectionStats.householdsUnpaid = unpaidRecords;

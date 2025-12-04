@@ -3,26 +3,33 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 
+const startOfToday = () => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
 // Validation schema matching backend DangKyTamTruTamVangRequestDto
 const schema = yup.object().shape({
   ngayBatDau: yup
     .date()
+    .typeError('Ngày bắt đầu không hợp lệ')
     .required('Vui lòng chọn ngày bắt đầu')
-    .min(new Date(), 'Ngày bắt đầu phải là ngày hiện tại hoặc trong tương lai')
-    .typeError('Ngày bắt đầu không hợp lệ'),
+    .min(startOfToday(), 'Ngày bắt đầu phải là ngày hiện tại hoặc trong tương lai'),
   ngayKetThuc: yup
     .date()
+    .typeError('Ngày kết thúc không hợp lệ')
     .required('Vui lòng chọn ngày kết thúc')
-    .min(yup.ref('ngayBatDau'), 'Ngày kết thúc phải sau ngày bắt đầu')
-    .test('is-future', 'Ngày kết thúc phải là ngày trong tương lai', function(value) {
-      return value && value > new Date();
-    })
-    .typeError('Ngày kết thúc không hợp lệ'),
+    .test('future-date', 'Ngày kết thúc phải là ngày trong tương lai', (value) => !!value && value > new Date())
+    .when('ngayBatDau', (ngayBatDau, schemaRef) => (
+      ngayBatDau
+        ? schemaRef.min(ngayBatDau, 'Ngày kết thúc phải sau ngày bắt đầu')
+        : schemaRef
+    )),
   lyDo: yup
     .string()
+    .trim()
     .required('Vui lòng nhập lý do tạm trú')
-    .min(10, 'Lý do phải có ít nhất 10 ký tự')
-    .max(500, 'Lý do không được vượt quá 500 ký tự')
 });
 
 const TamTruForm = ({ initialValues, onSubmit, onCancel }) => {

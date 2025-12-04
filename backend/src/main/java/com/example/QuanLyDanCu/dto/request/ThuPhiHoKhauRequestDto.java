@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-@Schema(description = "Request DTO for ThuPhiHoKhau entity")
+@Schema(description = "Request DTO for ThuPhiHoKhau entity - payment confirmation")
 public class ThuPhiHoKhauRequestDto {
 
     @NotNull(message = "ID hộ khẩu không được để trống")
@@ -21,14 +21,15 @@ public class ThuPhiHoKhauRequestDto {
     @Schema(description = "ID của đợt thu phí", example = "1")
     private Long dotThuPhiId;
 
-    @NotNull(message = "Số tiền đã thu không được để trống")
-    @PositiveOrZero(message = "Số tiền đã thu phải lớn hơn hoặc bằng 0")
-    @Schema(description = "Số tiền đã thu (VND)", example = "216000")
-    private BigDecimal soTienDaThu;
-
+    @NotNull(message = "Vui lòng nhập ngày thu!")
     @Schema(description = "Ngày thu phí", example = "2025-01-15")
     private LocalDate ngayThu;
 
     @Schema(description = "Ghi chú", example = "Đã thanh toán đủ")
     private String ghiChu;
+
+    @Schema(description = "Tổng số tiền hộ khẩu tự nguyện đóng góp (chỉ bắt buộc nếu đợt thu là tự nguyện)", example = "500000")
+    @Digits(integer = 15, fraction = 2, message = "Tổng phí tự nguyện không đúng định dạng")
+    @DecimalMin(value = "0.01", message = "Tổng phí tự nguyện phải lớn hơn 0")
+    private BigDecimal tongPhi;
 }

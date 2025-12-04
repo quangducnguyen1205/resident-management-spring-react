@@ -59,7 +59,7 @@ const FeeStats = ({ stats }) => {
           {/* Tỷ lệ thu - Progress bar */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">Tỷ lệ thu</span>
+              <span className="text-sm font-medium text-gray-700">Tỷ lệ thu bắt buộc</span>
               <span className="text-lg font-bold text-blue-600">{collectionRate}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
@@ -75,6 +75,10 @@ const FeeStats = ({ stats }) => {
             <li className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Tổng số tiền đã thu:</span>
               <span className="font-semibold text-green-600">{new Intl.NumberFormat('vi-VN').format(stats.totalCollected || 0)} ₫</span>
+            </li>
+            <li className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Đóng góp tự nguyện:</span>
+              <span className="font-semibold text-purple-600">{new Intl.NumberFormat('vi-VN').format(stats.totalVoluntary || 0)} ₫</span>
             </li>
             <li className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Số hộ đã nộp:</span>

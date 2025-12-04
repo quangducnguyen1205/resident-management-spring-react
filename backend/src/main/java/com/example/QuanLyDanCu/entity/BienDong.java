@@ -1,7 +1,11 @@
 package com.example.QuanLyDanCu.entity;
 
+import com.example.QuanLyDanCu.enums.BienDongType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,7 +19,9 @@ public class BienDong {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String loai;                    // VARCHAR(100)
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50, nullable = false)
+    private BienDongType loai;              // ENUM stored as VARCHAR
 
     @Column(name = "noi_dung", length = 1000)
     private String noiDung;                 // VARCHAR(1000)
@@ -24,21 +30,27 @@ public class BienDong {
     private LocalDateTime thoiGian;         // TIMESTAMP
 
     // FK dạng Long
-    @Column(name = "ho_khau_id")
-    private Long hoKhauId;
+        @Column(name = "ho_khau_id")
+        private Long hoKhauId;
+
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(
+            name = "ho_khau_id",
+            insertable = false,
+            updatable = false,
+            foreignKey = @ForeignKey(
+                name = "fk_bien_dong_ho_khau",
+                foreignKeyDefinition = "FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id) ON DELETE CASCADE"
+            )
+        )
+        @OnDelete(action = OnDeleteAction.CASCADE)
+        private HoKhau hoKhau;
 
     @Column(name = "nhan_khau_id")
     private Long nhanKhauId;
 
-    @Column(name = "created_by")
-    private Long createdBy;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
     @PrePersist
     void onCreate() {
         if (thoiGian == null) thoiGian = LocalDateTime.now();
-        if (createdAt == null) createdAt = LocalDateTime.now();
     }
 }

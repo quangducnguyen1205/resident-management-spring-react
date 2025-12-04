@@ -6,6 +6,28 @@ import Loader from '../../../components/Loader';
 import ErrorMessage from '../../../components/ErrorMessage';
 import useApiHandler from '../../../hooks/useApiHandler';
 import { useAuth } from '../../auth/contexts/AuthContext';
+import StatusBadge from '../components/StatusBadge';
+
+const TYPE_META = {
+  BAT_BUOC: { label: 'Bắt buộc', color: 'bg-blue-100 text-blue-800' },
+  TU_NGUYEN: { label: 'Tự nguyện', color: 'bg-purple-100 text-purple-800' }
+};
+
+const formatAmount = (row) => (
+  row?.loaiThuPhi === 'TU_NGUYEN' ? row?.tongPhiTuNguyen : row?.tongPhi
+);
+
+/**
+ * FeeCollectionList - Refactored 2025
+ * 
+ * REMOVED COLUMNS:
+ * - soTienDaThu (backend no longer tracks partial payments)
+ * - periodDescription (field removed from backend)
+ * 
+ * UPDATED COLUMNS:
+ * - trangThai now shows 3 values: DA_NOP, CHUA_NOP, KHONG_AP_DUNG
+ * - Stable sorting by soHoKhau (matches backend)
+ */
 
 // Toast Alert Component
 const Toast = ({ message, type, onClose }) => {
@@ -36,10 +58,7 @@ const FeeCollectionList = () => {
   const [toast, setToast] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // KETOAN and ADMIN can modify fee collections, TOTRUONG can only view
   const canModifyFeeCollection = user?.role === 'ADMIN' || user?.role === 'KETOAN';
-
-  // Check if user has accountant role (Kế toán) - keeping for backward compatibility
   const hasAccountantRole = user?.role === 'KETOAN';
 
   const {
@@ -49,19 +68,38 @@ const FeeCollectionList = () => {
     handleApi
   } = useApiHandler([]);
 
+  /**
+   * Updated columns - Removed soTienDaThu, updated status display
+   */
   const columns = [
     { key: 'soHoKhau', title: 'Số hộ khẩu' },
     { key: 'tenChuHo', title: 'Chủ hộ' },
     { key: 'tenDot', title: 'Đợt thu' },
+    {
+      key: 'loaiThuPhi',
+      title: 'Loại phí',
+      render: (value) => {
+        const meta = TYPE_META[value] || { label: 'Khác', color: 'bg-gray-100 text-gray-700' };
+        return (
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${meta.color}`}>
+            {meta.label}
+          </span>
+        );
+      }
+    },
+    { 
+      key: 'soNguoi', 
+      title: 'Số người',
+      render: (value, row) => (
+        <span className="font-medium text-gray-700">{row?.loaiThuPhi === 'TU_NGUYEN' ? '—' : (value || 0)}</span>
+      )
+    },
     { 
       key: 'tongPhi', 
       title: 'Tổng phí',
-      render: (value) => <span className="font-medium text-gray-700">{new Intl.NumberFormat('vi-VN').format(value || 0)} ₫</span>
-    },
-    { 
-      key: 'soTienDaThu', 
-      title: 'Đã thu',
-      render: (value) => <span className="text-green-600 font-medium">{new Intl.NumberFormat('vi-VN').format(value || 0)} ₫</span>
+      render: (value, row) => (
+        <span className="font-semibold text-blue-700">{new Intl.NumberFormat('vi-VN').format(formatAmount(row) || 0)} ₫</span>
+      )
     },
     { 
       key: 'ngayThu', 
@@ -71,13 +109,7 @@ const FeeCollectionList = () => {
     {
       key: 'trangThai',
       title: 'Trạng thái',
-      render: (value) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          value === 'DA_NOP' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-        }`}>
-          {value === 'DA_NOP' ? '✅ Đủ' : '⏳ Còn thiếu'}
-        </span>
-      )
+      render: (value) => <StatusBadge status={value} />
     }
   ];
 
@@ -86,14 +118,13 @@ const FeeCollectionList = () => {
       () => feeCollectionApi.getAll(),
       'Không thể tải danh sách thu phí'
     );
-    // Sort by newest first (ngayThu descending) if data exists
+    
+    // Sort by soHoKhau for stable ordering (matches backend behavior)
     if (result && Array.isArray(result)) {
       return result.sort((a, b) => {
-        // Sort by ngayThu if available, otherwise by id (assuming higher id = newer)
-        if (a.ngayThu && b.ngayThu) {
-          return new Date(b.ngayThu) - new Date(a.ngayThu);
-        }
-        return (b.id || 0) - (a.id || 0);
+        const so1 = a.soHoKhau || '';
+        const so2 = b.soHoKhau || '';
+        return so1.localeCompare(so2, 'vi', { numeric: true });
       });
     }
     return result;
@@ -110,7 +141,6 @@ const FeeCollectionList = () => {
   const handleDelete = async (row) => {
     if (!window.confirm(`Xác nhận xóa khoản thu phí cho hộ ${row.soHoKhau}?`)) return;
     try {
-      // Delete the record
       await feeCollectionApi.delete(row.id);
       
       setToast({
@@ -118,7 +148,6 @@ const FeeCollectionList = () => {
         message: '✅ Xóa khoản thu thành công!'
       });
       
-      // Reload the list after successful delete
       await fetchCollections();
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Không thể xóa khoản thu';

@@ -220,16 +220,18 @@ Module đợt thu phí quản lý các kỳ thu phí, bao gồm:
 ### 5.4 Phân Loại Phí
 
 **Phí Bắt Buộc (BAT_BUOC):**
-- Yêu cầu định mức > 0
-- Tự động tính phí cho mọi hộ khẩu
-- Tình trạng: CHUA_NOP hoặc DA_NOP
-- Tự động tính lại khi số lượng thành viên hộ thay đổi
+- Yêu cầu định mức > 0.
+- Công thức: `tongPhi = dinh_muc × active_member_count × số_tháng` (số tháng giữa `ngayBatDau` và `ngayKetThuc`, tính cả hai đầu mút).
+- Payload không được chứa trường `tongPhi`; hệ thống sẽ tự tính dựa trên định mức.
+- `ngayThu` là trường bắt buộc và phải nằm trong khoảng thời gian của đợt thu phí.
+- Trạng thái: `CHUA_NOP` (ngầm hiểu khi chưa có bản ghi) hoặc `DA_NOP` khi đã ghi nhận thanh toán.
+- Được tính lại mỗi khi số lượng thành viên thường trú thay đổi (nhân khẩu mới, chuyển hộ, xóa, hoặc cập nhật tạm vắng).
 
 **Phí Tự Nguyện (TU_NGUYEN):**
-- Định mức mặc định = 0
-- Không tự động tính phí
-- Tình trạng: KHONG_AP_DUNG
-- Không tự động tính lại
+- `dinhMuc` chỉ đóng vai trò gợi ý, có thể bằng 0.
+- Hệ thống không tạo bản ghi tự động; chỉ ghi nhận khi cán bộ nhập khoản đóng góp.
+- `tongPhi` là bắt buộc trong payload và phải > 0.
+- Mọi bản ghi đều có trạng thái `DA_NOP`, `soNguoi = 0`, `tongPhi` bằng số tiền thực tế hộ đóng góp (không tồn tại bản ghi `CHUA_NOP`).
 
 ---
 
@@ -237,11 +239,11 @@ Module đợt thu phí quản lý các kỳ thu phí, bao gồm:
 
 ### 6.1 Tổng Quan Chức Năng
 
-Module thu phí hộ khẩu quản lý việc ghi nhận các khoản thanh toán, bao gồm:
-- Ghi nhận thanh toán từng hộ khẩu
-- Tính toán tự động số tiền phải nộp
-- Hỗ trợ thanh toán nhiều lần
-- Thống kê tình trạng thu phí
+Module thu phí hộ khẩu quản lý việc ghi nhận từng khoản thanh toán trọn vẹn cho mỗi `(hoKhauId, dotThuPhiId)`:
+- Ghi nhận đúng **một** bản ghi cho mỗi hộ và đợt thu.
+- Tự động tính số người đủ điều kiện và số tiền phải nộp cho đợt bắt buộc.
+- Cho phép nhập khoản đóng góp tự nguyện với số tiền tùy ý.
+- Cung cấp API tổng quan cho cả đợt bắt buộc và tự nguyện (tỷ lệ hộ đã nộp, tổng tiền tự nguyện, v.v.).
 
 ### 6.2 Danh Sách Endpoints
 
@@ -261,38 +263,31 @@ Module thu phí hộ khẩu quản lý việc ghi nhận các khoản thanh toá
 
 - Hộ khẩu (tham chiếu)
 - Đợt thu phí (tham chiếu)
-- Số người (tự động tính)
-- Tổng phí (tự động tính)
-- Số tiền đã thu (người dùng nhập)
-- Trạng thái: CHUA_NOP, DA_NOP, KHONG_AP_DUNG
+- Số người (tự động tính cho đợt bắt buộc, luôn = 0 cho đợt tự nguyện)
+- Tổng phí (`tongPhi`):
+  - Bắt buộc = `dinh_muc × active_member_count × soThang` (server tự tính; client không gửi trường này)
+  - Tự nguyện = số tiền hộ đóng góp
+- Trạng thái lưu trữ: luôn `DA_NOP`; `CHUA_NOP` chỉ được trả về ảo trong API tổng quan cho các hộ chưa có bản ghi.
 - Ngày thu, ghi chú
 - Người thu (tự động ghi nhận)
 
 ### 6.4 Công Thức Tính Phí
 
 ```
-Tổng phí = Định mức × 12 tháng × Số người đủ điều kiện
+Tổng phí (bắt buộc) = Định mức × Số người đủ điều kiện × Số tháng trong đợt
 ```
 
-**Lưu ý:** Chỉ tính những người đang thường trú (không bao gồm người đang tạm vắng)
+**Lưu ý:**
+- `soThang` được tính bằng `YearMonth` + `ChronoUnit.MONTHS` (bao gồm cả tháng đầu và cuối). Nếu thiếu một trong hai ngày, hệ thống mặc định 1 tháng.
+- Chỉ đếm những người không có `tamVangDen` trong tương lai.
+- `ngayThu` luôn bắt buộc và phải nằm trong phạm vi đợt thu; thiếu trường này sẽ trả về `400 Bad Request` với thông điệp "Please provide collection date!".
+- Tổng quan (`/overview`) hiển thị `CHUA_NOP` cho các hộ chưa có bản ghi nhưng không tạo thêm dữ liệu trong bảng `thu_phi_ho_khau`.
 
 ### 6.5 Quy Tắc Validation
 
-- **Hộ khẩu và đợt thu phí**: Bắt buộc
-- **Số tiền đã thu**: Bắt buộc, ≥ 0
-- **Ngày thu**: Phải nằm trong khoảng thời gian của đợt thu phí
-
-### 6.6 Tính Năng Thanh Toán Nhiều Lần
-
-Hệ thống hỗ trợ thanh toán từng phần:
-- Một hộ có thể thanh toán nhiều lần cho cùng một đợt thu phí
-- Tổng số tiền đã thu = tổng các lần thanh toán
-- Trạng thái được cập nhật đồng bộ cho tất cả bản ghi liên quan
-
-**Ví dụ:**
-- Tổng phí: 288,000 VND
-- Lần 1: Nộp 100,000 VND → Trạng thái: CHUA_NOP
-- Lần 2: Nộp 188,000 VND → Tổng đã thu: 288,000 VND → Trạng thái: DA_NOP (cả 2 bản ghi)
+- **Hộ khẩu và đợt thu phí**: Bắt buộc.
+- **tongPhi**: chỉ bắt buộc với đợt tự nguyện và phải > 0.
+- **Ngày thu**: Nếu cung cấp phải nằm trong khoảng thời gian của đợt thu phí.
 
 ---
 

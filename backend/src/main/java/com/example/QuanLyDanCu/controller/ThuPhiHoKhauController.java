@@ -27,7 +27,7 @@ import java.util.Map;
 @Tag(name = "Thu Phí Hộ Khẩu", description = "API quản lý thu phí hộ khẩu")
 public class ThuPhiHoKhauController {
 
-    private final ThuPhiHoKhauService service;
+    private final ThuPhiHoKhauService thuPhiHoKhauService;
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
@@ -37,7 +37,7 @@ public class ThuPhiHoKhauController {
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class)))
     })
     public ResponseEntity<List<ThuPhiHoKhauResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+        return ResponseEntity.ok(thuPhiHoKhauService.getAll());
     }
 
     @GetMapping("/stats")
@@ -47,12 +47,12 @@ public class ThuPhiHoKhauController {
             @ApiResponse(responseCode = "200", description = "Lấy thống kê thành công")
     })
     public ResponseEntity<Map<String, Object>> getStats() {
-        return ResponseEntity.ok(service.getStats());
+        return ResponseEntity.ok(thuPhiHoKhauService.getStats());
     }
 
-    @GetMapping("/calc")
+    @GetMapping("/calculate")
     @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
-    @Operation(summary = "Tính phí cho hộ khẩu", description = "Tính tổng phí hàng năm cho một hộ khẩu trong đợt thu phí cụ thể. Công thức: 6000 * 12 * số_người (loại trừ người tạm vắng dài hạn)")
+    @Operation(summary = "Tính phí cho hộ khẩu", description = "Tính tổng phí cho một hộ khẩu trong đợt thu phí cụ thể với tính toán số tháng động. Công thức: định_mức_tháng * số_tháng * số_người")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tính phí thành công"),
             @ApiResponse(responseCode = "400", description = "Không tìm thấy hộ khẩu hoặc đợt thu phí")
@@ -62,19 +62,20 @@ public class ThuPhiHoKhauController {
             @RequestParam Long hoKhauId,
             @Parameter(description = "ID đợt thu phí", example = "1", required = true)
             @RequestParam Long dotThuPhiId) {
-        return ResponseEntity.ok(service.calculateTotalFee(hoKhauId, dotThuPhiId));
+        return ResponseEntity.ok(thuPhiHoKhauService.calculateFee(hoKhauId, dotThuPhiId));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/overview")
     @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN','TOTRUONG')")
-    @Operation(summary = "Lấy thu phí theo ID", description = "Trả về thông tin chi tiết của một bản ghi thu phí")
+    @Operation(summary = "Tổng quan thu phí theo đợt", description = "Trả về toàn bộ hộ khẩu cùng trạng thái thu phí cho một đợt cụ thể")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Tìm thấy thu phí",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class))),
-            @ApiResponse(responseCode = "404", description = "Không tìm thấy thu phí", content = @Content)
+            @ApiResponse(responseCode = "200", description = "Lấy tổng quan thành công",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class)))
     })
-    public ResponseEntity<ThuPhiHoKhauResponseDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getById(id));
+        public ResponseEntity<Map<String, Object>> getOverviewByPeriod(
+            @Parameter(description = "ID đợt thu phí", required = true)
+            @RequestParam Long dotThuPhiId) {
+        return ResponseEntity.ok(thuPhiHoKhauService.getOverviewByPeriod(dotThuPhiId));
     }
 
     @GetMapping("/ho-khau/{hoKhauId}")
@@ -85,7 +86,7 @@ public class ThuPhiHoKhauController {
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class)))
     })
     public ResponseEntity<List<ThuPhiHoKhauResponseDto>> getByHoKhauId(@PathVariable Long hoKhauId) {
-        return ResponseEntity.ok(service.findByHoKhauId(hoKhauId));
+        return ResponseEntity.ok(thuPhiHoKhauService.findByHoKhauId(hoKhauId));
     }
 
     @GetMapping("/dot-thu-phi/{dotThuPhiId}")
@@ -96,12 +97,13 @@ public class ThuPhiHoKhauController {
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class)))
     })
     public ResponseEntity<List<ThuPhiHoKhauResponseDto>> getByDotThuPhiId(@PathVariable Long dotThuPhiId) {
-        return ResponseEntity.ok(service.findByDotThuPhiId(dotThuPhiId));
+        return ResponseEntity.ok(thuPhiHoKhauService.findByDotThuPhiId(dotThuPhiId));
     }
+
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
-    @Operation(summary = "Tạo bản ghi thu phí mới", description = "Tạo một bản ghi thu phí hộ khẩu mới (yêu cầu quyền ADMIN hoặc KETOAN). Số người và tổng phí được tính tự động.")
+        @Operation(summary = "Tạo bản ghi thu phí mới", description = "Tạo một bản ghi thu phí hộ khẩu mới (yêu cầu quyền ADMIN hoặc KETOAN). Phí bắt buộc sẽ tự tính số người và tổng phí. Phí tự nguyện yêu cầu cung cấp trường tongPhi trong payload.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Tạo thu phí thành công",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class))),
@@ -109,13 +111,13 @@ public class ThuPhiHoKhauController {
             @ApiResponse(responseCode = "403", description = "Không có quyền truy cập (chỉ ADMIN hoặc KETOAN)", content = @Content)
     })
     public ResponseEntity<ThuPhiHoKhauResponseDto> create(@Valid @RequestBody ThuPhiHoKhauRequestDto dto, Authentication auth) {
-        ThuPhiHoKhauResponseDto created = service.create(dto, auth);
+        ThuPhiHoKhauResponseDto created = thuPhiHoKhauService.create(dto, auth);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
-    @Operation(summary = "Cập nhật thu phí", description = "Cập nhật thông tin thu phí hộ khẩu (yêu cầu quyền ADMIN hoặc KETOAN)")
+        @Operation(summary = "Cập nhật thu phí", description = "Cập nhật thông tin thu phí hộ khẩu (yêu cầu quyền ADMIN hoặc KETOAN). Chỉ hỗ trợ chỉnh sửa ngày thu và ghi chú.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cập nhật thành công",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class))),
@@ -124,7 +126,7 @@ public class ThuPhiHoKhauController {
             @ApiResponse(responseCode = "404", description = "Không tìm thấy thu phí", content = @Content)
     })
     public ResponseEntity<ThuPhiHoKhauResponseDto> update(@PathVariable Long id, @Valid @RequestBody ThuPhiHoKhauRequestDto dto, Authentication auth) {
-        return ResponseEntity.ok(service.update(id, dto, auth));
+        return ResponseEntity.ok(thuPhiHoKhauService.update(id, dto, auth));
     }
 
     @DeleteMapping("/{id}")
@@ -136,7 +138,7 @@ public class ThuPhiHoKhauController {
             @ApiResponse(responseCode = "404", description = "Không tìm thấy thu phí", content = @Content)
     })
     public ResponseEntity<String> delete(@PathVariable Long id, Authentication auth) {
-        service.delete(id, auth);
+        thuPhiHoKhauService.delete(id, auth);
         return ResponseEntity.ok("Đã xóa thu phí id = " + id);
     }
 }

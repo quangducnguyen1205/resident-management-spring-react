@@ -9,10 +9,7 @@ import useApiHandler from '../../../hooks/useApiHandler';
 const FeePeriodDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  // CRITICAL: When route is /fee-period/new, id is undefined (not 'new' string)
-  // So isNew must check !id
-  const isNew = !id;
+  const isNew = id === 'new' || !id;
   
   const {
     data: period,
@@ -22,14 +19,10 @@ const FeePeriodDetail = () => {
   } = useApiHandler(null);
 
   const fetchPeriod = async () => {
-    console.log('FeePeriodDetail mounted with id:', id, 'isNew:', isNew);
-    
-    // If creating new, no need to fetch
     if (isNew) {
       return;
     }
-    
-    console.log('Fetching fee period with ID:', id);
+
     await handleApi(
       () => feePeriodApi.getById(id),
       'Không thể tải thông tin đợt thu phí'
@@ -42,8 +35,6 @@ const FeePeriodDetail = () => {
 
   const handleSubmit = async (data) => {
     try {
-      console.log('Submitting fee period data:', data, 'id:', id, 'isNew:', isNew);
-      
       const apiCall = () =>
         isNew ? feePeriodApi.create(data) : feePeriodApi.update(id, data);
       
@@ -52,7 +43,6 @@ const FeePeriodDetail = () => {
         'Không thể lưu đợt thu phí'
       );
       
-      console.log('Backend response:', result);
       alert(isNew ? 'Tạo đợt thu phí thành công!' : 'Cập nhật đợt thu phí thành công!');
       navigate('/fee-period');
     } catch (err) {
@@ -70,12 +60,22 @@ const FeePeriodDetail = () => {
         <h1 className="text-2xl font-bold">
           {isNew ? 'Thêm đợt thu phí mới' : 'Chi tiết đợt thu phí'}
         </h1>
-        <button
-          onClick={() => navigate('/fee-period')}
-          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
-        >
-          Quay lại
-        </button>
+        <div className="flex items-center gap-3">
+          {!isNew && (
+            <button
+              onClick={() => navigate(`/fee-collection/overview/${id}`)}
+              className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600"
+            >
+              Xem tổng hợp thu phí
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/fee-period')}
+            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+          >
+            Quay lại
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-lg p-6">

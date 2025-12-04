@@ -1,12 +1,12 @@
 package com.example.QuanLyDanCu.dto.response;
 
+import com.example.QuanLyDanCu.enums.LoaiThuPhi;
 import com.example.QuanLyDanCu.enums.TrangThaiThuPhi;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @Schema(description = "Response DTO for ThuPhiHoKhau entity")
@@ -30,20 +30,20 @@ public class ThuPhiHoKhauResponseDto {
     @Schema(description = "Tên đợt thu", example = "Phí vệ sinh tháng 1/2025")
     private String tenDot;
 
+    @Schema(description = "Loại đợt thu", example = "BAT_BUOC")
+    private LoaiThuPhi loaiThuPhi;
+
     @Schema(description = "Số người trong hộ", example = "3")
     private Integer soNguoi;
+
+    @Schema(description = "Số tháng được tính trong đợt", example = "2")
+    private Long soThang;
 
     @Schema(description = "Tổng phí phải nộp (VND)", example = "216000")
     private BigDecimal tongPhi;
 
-    @Schema(description = "Số tiền đã thu (VND)", example = "216000")
-    private BigDecimal soTienDaThu;
-
     @Schema(description = "Trạng thái", example = "DA_NOP")
     private TrangThaiThuPhi trangThai;
-
-    @Schema(description = "Mô tả kỳ thu", example = "Cả năm 2025")
-    private String periodDescription;
 
     @Schema(description = "Ngày thu", example = "2025-01-15")
     private LocalDate ngayThu;
@@ -54,6 +54,4 @@ public class ThuPhiHoKhauResponseDto {
     @Schema(description = "ID người thu")
     private Long collectedBy;
 
-    @Schema(description = "Thời gian tạo")
-    private LocalDateTime createdAt;
 }

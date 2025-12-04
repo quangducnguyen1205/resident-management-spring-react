@@ -16,6 +16,14 @@ public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
     // --- Tìm nhân khẩu theo hộ khẩu
     List<NhanKhau> findByHoKhauId(Long hoKhauId);
 
+    @Query("""
+            SELECT COUNT(n)
+            FROM NhanKhau n
+            WHERE n.hoKhauId = :hoKhauId
+              AND (n.tamVangDen IS NULL OR n.tamVangDen < :today)
+            """)
+    long countActiveMembers(@Param("hoKhauId") Long hoKhauId, @Param("today") LocalDate today);
+
     // --- Projection cho thống kê giới tính
     interface GenderCount {
         String getGioiTinh();

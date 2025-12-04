@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import citizenApi from '../../../api/citizenApi';
+import citizenApi, { buildKhaiTuPayload } from '../../../api/citizenApi';
 
 const KhaiTuModal = ({ isOpen, onClose, citizen, onSuccess }) => {
   const [lyDo, setLyDo] = useState('');
@@ -37,7 +37,7 @@ const KhaiTuModal = ({ isOpen, onClose, citizen, onSuccess }) => {
       setError('');
       setIsSubmitting(true);
       
-      await citizenApi.updateKhaiTu(citizen.id, { lyDo: lyDo.trim() });
+      await citizenApi.updateKhaiTu(citizen.id, buildKhaiTuPayload({ lyDo }));
       
       if (onSuccess) {
         onSuccess();
@@ -48,6 +48,7 @@ const KhaiTuModal = ({ isOpen, onClose, citizen, onSuccess }) => {
       setError(
         err.response?.data?.message ||
         err.response?.data ||
+        err.message ||
         'Không thể khai tử. Vui lòng thử lại.'
       );
     } finally {

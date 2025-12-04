@@ -1,165 +1,162 @@
-# QuanLyDanCu Backend# Quản Lý Dân Cư - Backend API
+# Quản Lý Dân Cư - Backend API
 
+REST API Spring Boot phục vụ hệ thống quản lý dân cư, hỗ trợ quản lý hộ khẩu, nhân khẩu và thu phí tự động.
 
-
-REST API backend for the Citizen Management System (Quản Lý Dân Cư) built with Spring Boot.REST API cho hệ thống quản lý dân cư với Spring Boot.
-
-
-
----## 🚀 Tính năng
-
-
-
-## 📋 Overview- ✅ Quản lý Hộ khẩu
-
-- ✅ Quản lý Tài khoản
-
-A comprehensive backend system for managing citizen records, households, fee collection, and administrative tasks for residential communities.- ✅ **Thu phí và đóng góp** (Mới)
-
-  - Quản lý đợt thu phí
-
-**Key Features:**  - Ghi nhận thu phí từng hộ khẩu
-
-- 🏠 Household management (Hộ khẩu)- ✅ Xác thực JWT
-
-- 👥 Citizen records management (Nhân khẩu)- ✅ Validation requests với Jakarta Validation
-
-- 💰 Fee collection system with mandatory and voluntary contributions- ✅ API Documentation với Swagger UI
-
-- 📊 Statistical reporting
-
-- 🔐 JWT-based authentication and role-based access control## 📋 Yêu cầu
-
-- 📝 Change history tracking (Biến động)
-
-- 🔄 Event-driven synchronization for automatic fee recalculation- Java 17+
-
-- Maven 3.6+
-
----- PostgreSQL 15
-
-- Docker & Docker Compose (optional)
+## 🚀 Tính năng chính
+- Quản lý hộ khẩu, nhân khẩu và lịch sử biến động
+- Quản lý đợt thu phí bắt buộc/tự nguyện và thống kê tổng quan
+- Ghi nhận thanh toán từng hộ khẩu với tái tính toán trực tiếp
+- Xác thực JWT, phân quyền theo vai trò và ghi log bảo mật
+- Tài liệu API đầy đủ bằng Swagger/OpenAPI
 
 ## 🛠️ Tech Stack
+- Java 17, Spring Boot 3.3.x, Spring Security + JWT
+- PostgreSQL 16, Maven 3.9+
+- Docker & Docker Compose (tùy chọn)
 
-## 🛠️ Cài đặt
+## 📋 Yêu cầu hệ thống
+- Java 17+
+- Maven 3.9+
+- PostgreSQL 16 (hoặc Docker)
+- Docker + Docker Compose nếu chạy toàn bộ stack
 
-- **Framework:** Spring Boot 3.3.5
-
-- **Language:** Java 17### Cách 1: Chạy với Docker Compose (Chỉ Database)
-
-- **Database:** PostgreSQL 16
-
-- **Build Tool:** Maven 3.9+```bash
-
-- **Security:** Spring Security + JWT# Khởi động PostgreSQL
-
-- **API Documentation:** Swagger/OpenAPI 3docker-compose up db -d
-
-- **Containerization:** Docker & Docker Compose
-
-# Chạy backend từ IntelliJ IDEA hoặc terminal
-
----./mvnw spring-boot:run
-
-```
-
-## 🚀 Getting Started
-
-### Cách 2: Chạy toàn bộ với Docker Compose
-
-### Prerequisites
-
+## ⚙️ Cài đặt
+### Cách 1: Docker Compose (backend + database)
 ```bash
+docker compose up -d
+```
+Truy cập API tại `http://localhost:8080`, Swagger UI tại `http://localhost:8080/swagger-ui/index.html`.
 
-- Java 17 or higher# Khởi động cả backend và database
-
-- Maven 3.9+docker-compose up -d
-
-- Docker & Docker Compose (recommended)```
-
-- PostgreSQL 16 (if running without Docker)
+### Cách 2: Backend local + PostgreSQL Docker
+```bash
+docker compose up db -d       # chỉ bật database
+./mvnw spring-boot:run        # chạy backend từ IDE hoặc terminal
+```
 
 ### Cách 3: Cài đặt thủ công
+1. Cài PostgreSQL 16 và tạo DB `QuanLyDanCu`
+2. Chạy `psql -U postgres -d QuanLyDanCu -f quanlydancu.sql`
+3. Điều chỉnh `src/main/resources/application.properties` nếu cần
+4. Khởi động bằng `./mvnw spring-boot:run`
 
-### Option 1: Run with Docker (Recommended)
+## 📚 Tài liệu
+- `docs/API_REFERENCE.md` – danh sách endpoint
+- `docs/ARCHITECTURE_OVERVIEW.md` – kiến trúc tổng quan
+- `docs/BUSINESS_RULES.md` – quy tắc tính phí & nghiệp vụ
 
-1. Cài đặt PostgreSQL và tạo database:
-
-**Start all services:**```sql
-
-```bashCREATE DATABASE QuanLyDanCu;
-
-docker compose up -d```
-
-```
-
-2. Chạy script SQL:
-
-**Access the application:**```bash
-
-- API: http://localhost:8080psql -U postgres -d QuanLyDanCu -f quanlydancu.sql
-
-- Swagger UI: http://localhost:8080/swagger-ui/index.html```
-
-- Adminer (DB GUI): http://localhost:8081
-
-3. Cấu hình `application.properties` nếu cần
-
-**Stop services:**
-
-```bash4. Chạy ứng dụng:
-
-docker compose down```bash
-
-```./mvnw spring-boot:run
-
-```
-
-### Option 2: Run Backend Locally with Docker Database
-
-## 📚 API Documentation
-
-**Start only the database:**
-
-```bashSau khi khởi động ứng dụng, truy cập Swagger UI tại:
-
-docker compose up db -d
-
-``````
-
-http://localhost:8080/swagger-ui.html
-
-**Run the backend:**```
-
+## 🧪 Kiểm thử
 ```bash
+./mvnw test                      # unit tests
+./test/test-voluntary-fees.sh    # kịch bản phí tự nguyện
+./test/manual-recalc-test.sh     # kịch bản tái tính toán
+```
 
-./mvnw spring-boot:runOpenAPI JSON schema:
+### Swagger UI
+Dùng Swagger UI để tương tác nhanh và xem schema chuẩn.
 
-``````
+### Ví dụ cURL
+#### Đăng nhập
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"tenDangNhap":"admin","matKhau":"admin123"}'
+```
 
-http://localhost:8080/v3/api-docs
+#### Tạo đợt thu phí
+```bash
+curl -X POST http://localhost:8080/api/dot-thu-phi \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+        "tenDot": "Thu phí quản lý tháng 1/2025",
+        "loai": "QUAN_LY",
+        "ngayBatDau": "2025-01-01",
+        "ngayKetThuc": "2025-01-31",
+        "dinhMuc": 50000
+      }'
+```
 
-Or run from IntelliJ IDEA:```
+#### Ghi nhận thu phí
+```bash
+curl -X POST http://localhost:8080/api/thu-phi-ho-khau \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+        "hoKhauId": 1,
+        "dotThuPhiId": 1,
+        "soTienDaThu": 50000,
+        "tongPhi": 50000,
+        "ngayThu": "2025-01-15",
+        "ghiChu": "Đã thanh toán đủ"
+      }'
+```
 
-1. Open the project in IntelliJ IDEA
+## 🔑 Tài khoản mặc định
+| Username | Password | Role   | Mô tả                    |
+|----------|----------|--------|-------------------------|
+| admin    | admin123 | ADMIN  | Quản trị hệ thống       |
+| ketoan01 | admin123 | KETOAN | Kế toán (quản lý phí)   |
+| ketoan02 | admin123 | KETOAN | Kế toán (quản lý phí)   |
+| user01   | admin123 | USER   | Người dùng thông thường |
+| user02   | admin123 | USER   | Người dùng thông thường |
 
-2. Right-click `QuanLyDanCuApplication.java`## 🔐 Authentication
+## 🏗️ Cấu trúc dự án
+```
+backend/
+├── src/
+│   ├── main/java/com/example/QuanLyDanCu/
+│   │   ├── config/
+│   │   ├── controller/
+│   │   ├── dto/{request,response}/
+│   │   ├── entity/
+│   │   ├── exception/
+│   │   ├── repository/
+│   │   ├── security/
+│   │   └── service/
+│   └── resources/application.properties
+├── test/java/com/example/QuanLyDanCu/
+├── test/ (shell scripts)
+├── docs/
+├── quanlydancu.sql
+├── Dockerfile
+├── docker-compose.yml
+└── pom.xml
+```
 
-3. Select "Run" or "Debug"
+## 📊 Lược đồ cơ sở dữ liệu
+- `tai_khoan`: tài khoản đăng nhập
+- `ho_khau`: thông tin hộ khẩu
+- `nhan_khau`: nhân khẩu thuộc hộ
+- `dot_thu_phi`: đợt thu phí
+- `thu_phi_ho_khau`: thông tin đóng góp của hộ
+- `bien_dong`: lịch sử biến động nhân khẩu
 
-Hầu hết các endpoints yêu cầu JWT token. 
+## ✅ Quy tắc validation nổi bật
+### `DotThuPhiRequestDto`
+- `tenDot`, `loai`, `ngayBatDau`, `ngayKetThuc`, `dinhMuc`: bắt buộc, `dinhMuc > 0`
 
-### Option 3: Full Manual Setup
+### `ThuPhiHoKhauRequestDto`
+- `hoKhauId`, `dotThuPhiId`: bắt buộc, phải là số dương
+- `ngayThu`: **bắt buộc cho cả BAT_BUOC và TU_NGUYEN**
+- `tongPhi`: chỉ gửi khi đợt thu là `TU_NGUYEN` và giá trị phải > 0; **không được gửi** trường này với `BAT_BUOC`
+- `ghiChu`: tùy chọn
 
-1. **Đăng nhập** để lấy token:
+## 🔢 Công thức tính phí
+- `BAT_BUOC`: `tongPhi = soNguoi × dinhMuc × soThang`, trong đó `soThang` là số tháng giữa `ngayBatDau` và `ngayKetThuc` (tính cả hai đầu mút). Nếu thiếu ngày, hệ thống mặc định 1 tháng để tránh sai lệch lịch sử.
+- `TU_NGUYEN`: `tongPhi` lấy trực tiếp từ trường `tongPhi` trong request, hệ thống không tự suy ra.
+- Bảng `thu_phi_ho_khau` chỉ lưu trạng thái `DA_NOP`. `CHUA_NOP` chỉ xuất hiện ảo trong API tổng quan đối với hộ chưa có bản ghi.
 
-**1. Install PostgreSQL 16**```bash
+## 🐛 Troubleshooting
+- **Kết nối database lỗi:** kiểm tra PostgreSQL đang chạy, thông tin trong `application.properties`, DB `QuanLyDanCu` tồn tại
+- **Port 8080 bận:** cập nhật `server.port=8081` hoặc dừng tiến trình `lsof -ti:8080 | xargs kill -9`
+- **Swagger UI trắng:** bảo đảm `SecurityConfig` permit `/swagger-ui/**` và `/v3/api-docs/**`
+- **Test thất bại:** xác nhận container Docker đang healthy (`docker compose ps`) và schema mới nhất đã được áp dụng
 
-POST /api/auth/login
-
-**2. Create database:**{
-
+## 🔒 Phân quyền mặc định
+- `ADMIN`: toàn quyền
+- `TOTRUONG`: quản lý hộ khẩu và thu phí
+- `KETOAN`: xem + ghi nhận thu phí
+- `USER`: truy cập giới hạn (đọc dữ liệu được phép)
 ```sql  "tenDangNhap": "admin",
 
 CREATE DATABASE quanlydancu;  "matKhau": "password"

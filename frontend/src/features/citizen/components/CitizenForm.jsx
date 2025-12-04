@@ -7,11 +7,17 @@ import FormSelect from '../../../components/Form/FormSelect';
 import FormAutocomplete from '../../../components/Form/FormAutocomplete';
 import householdApi from '../../../api/householdApi';
 
+const DATE_REG_EXP = /^\d{4}-\d{2}-\d{2}$/;
+
 // Helper function to calculate age from date of birth
 const calculateAge = (birthDate) => {
-  if (!birthDate) return 0;
+  if (!birthDate || !DATE_REG_EXP.test(birthDate)) return 0;
   const today = new Date();
-  const birth = new Date(birthDate);
+  const [year, month, day] = birthDate.split('-').map(Number);
+  const birth = new Date(year, month - 1, day);
+  if (Number.isNaN(birth.getTime())) {
+    return 0;
+  }
   let age = today.getFullYear() - birth.getFullYear();
   const monthDiff = today.getMonth() - birth.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
@@ -20,99 +26,143 @@ const calculateAge = (birthDate) => {
   return age;
 };
 
+const toDateInputValue = (value) => {
+  if (!value) return '';
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+    return trimmed.split('T')[0];
+  }
+  return '';
+};
+
+const formatDateForApi = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  return null;
+};
+
+const trimString = (value) => (typeof value === 'string' ? value.trim() : value);
+const trimToNull = (value) => {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+};
+
+const normalizeId = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const MIN_CCCD_AGE = 14;
+
+const mapDtoToFormValues = (values = {}) => ({
+  hoKhauId: values.hoKhauId ?? '',
+  hoTen: values.hoTen ?? '',
+  ngaySinh: toDateInputValue(values.ngaySinh),
+  gioiTinh: values.gioiTinh ?? '',
+  danToc: values.danToc ?? '',
+  quocTich: values.quocTich ?? '',
+  ngheNghiep: values.ngheNghiep ?? '',
+  cmndCccd: values.cmndCccd ?? '',
+  ngayCap: toDateInputValue(values.ngayCap),
+  noiCap: values.noiCap ?? '',
+  quanHeChuHo: values.quanHeChuHo ?? '',
+  ghiChu: values.ghiChu ?? ''
+});
+
+const DEFAULT_FORM_VALUES = mapDtoToFormValues();
+
+const optionalStringSchema = yup.string()
+  .transform((value, originalValue) => {
+    if (originalValue === '' || originalValue === undefined || originalValue === null) {
+      return null;
+    }
+    return typeof originalValue === 'string' ? originalValue.trim() : originalValue;
+  })
+  .nullable();
+
+const requiredTrimmedString = (message) => yup.string().trim().required(message);
+
+const dateStringSchema = yup.string()
+  .required('Vui lòng nhập ngày theo định dạng YYYY-MM-DD')
+  .matches(DATE_REG_EXP, 'Ngày không hợp lệ (YYYY-MM-DD)')
+  .test('not-future', 'Ngày không được là ngày trong tương lai', (value) => {
+    if (!value || !DATE_REG_EXP.test(value)) return false;
+    return new Date(value) <= new Date();
+  });
+
 const schema = yup.object().shape({
-  hoKhauId: yup.number().typeError('Vui lòng chọn hộ khẩu').required('Vui lòng chọn hộ khẩu'),
-  hoTen: yup.string().required('Vui lòng nhập họ tên'),
-  ngaySinh: yup.date()
-    .required('Vui lòng nhập ngày sinh')
-    .max(new Date(), 'Ngày sinh không được là ngày trong tương lai')
-    .typeError('Ngày sinh không hợp lệ'),
-  gioiTinh: yup.string().required('Vui lòng chọn giới tính'),
-  danToc: yup.string().required('Vui lòng nhập dân tộc'),
-  quocTich: yup.string().required('Vui lòng nhập quốc tịch'),
-  ngheNghiep: yup.string().required('Vui lòng nhập nghề nghiệp'),
-  cmndCccd: yup.string()
-    .nullable()
+  hoKhauId: yup.number()
     .transform((value, originalValue) => {
-      console.log('cmndCccd transform - original:', originalValue, 'transformed:', value === '' ? null : value);
-      return value === '' || value === undefined ? null : value;
-    })
-    .when(['ngaySinh'], {
-      is: (ngaySinh) => {
-        const age = calculateAge(ngaySinh);
-        console.log('cmndCccd validation - age:', age, 'ngaySinh:', ngaySinh);
-        return age >= 14;
-      },
-      then: (schema) => schema
-        .matches(/^\d{9,12}$/, 'CMND/CCCD phải có 9-12 chữ số')
-        .required('Người từ 14 tuổi trở lên phải có CMND/CCCD'),
-      otherwise: (schema) => schema.optional()
-    }),
-  ngayCap: yup.mixed()
-    .nullable()
-    .transform((value, originalValue) => {
-      // Transform empty string to null to prevent date parsing issues
-      console.log('ngayCap transform - original:', originalValue, 'type:', typeof originalValue);
       if (originalValue === '' || originalValue === undefined || originalValue === null) {
-        console.log('ngayCap transform - returning null for empty value');
+        return undefined;
+      }
+      const parsed = Number(originalValue);
+      return Number.isNaN(parsed) ? undefined : parsed;
+    })
+    .typeError('Vui lòng chọn hộ khẩu hợp lệ')
+    .required('Vui lòng chọn hộ khẩu'),
+  hoTen: requiredTrimmedString('Vui lòng nhập họ tên'),
+  ngaySinh: dateStringSchema,
+  gioiTinh: yup.string()
+    .oneOf(['Nam', 'Nữ', 'Khác'], 'Giới tính không hợp lệ')
+    .required('Vui lòng chọn giới tính'),
+  danToc: requiredTrimmedString('Vui lòng nhập dân tộc'),
+  quocTich: requiredTrimmedString('Vui lòng nhập quốc tịch'),
+  ngheNghiep: requiredTrimmedString('Vui lòng nhập nghề nghiệp'),
+  cmndCccd: yup.string()
+    .transform((value, originalValue) => {
+      if (originalValue === '' || originalValue === undefined || originalValue === null) {
         return null;
       }
-      console.log('ngayCap transform - returning:', originalValue);
-      return originalValue;
+      return typeof originalValue === 'string' ? originalValue.trim() : originalValue;
     })
-    .when(['ngaySinh'], {
-      is: (ngaySinh) => {
-        const age = calculateAge(ngaySinh);
-        console.log('ngayCap validation - age:', age, 'ngaySinh:', ngaySinh);
-        return age >= 14;
-      },
-      then: (schema) => schema
-        .required('Người từ 14 tuổi trở lên phải có ngày cấp CMND/CCCD')
-        .test('is-valid-date', 'Ngày cấp không hợp lệ', function(value) {
-          if (!value) return false; // Required field
-          const date = new Date(value);
-          return !isNaN(date.getTime()); // Check if valid date
-        })
-        .test('min-age-14', 'Ngày cấp phải sau ngày sinh ít nhất 14 năm', function(value) {
-          const { ngaySinh } = this.parent;
-          if (!ngaySinh || !value) return true;
-          const birthDate = new Date(ngaySinh);
-          const issueDate = new Date(value);
-          if (isNaN(issueDate.getTime())) return false; // Invalid date
-          const minIssueDate = new Date(birthDate);
-          minIssueDate.setFullYear(birthDate.getFullYear() + 14);
-          return issueDate >= minIssueDate;
-        })
-        .test('max-today', 'Ngày cấp không được là ngày trong tương lai', function(value) {
-          if (!value) return true;
-          const issueDate = new Date(value);
-          if (isNaN(issueDate.getTime())) return false;
-          return issueDate <= new Date();
-        }),
-      otherwise: (schema) => schema.optional()
-    }),
-  noiCap: yup.string()
     .nullable()
-    .transform((value, originalValue) => {
-      console.log('noiCap transform - original:', originalValue, 'transformed:', value === '' ? null : value);
-      return value === '' || value === undefined ? null : value;
-    })
-    .when(['ngaySinh'], {
-      is: (ngaySinh) => {
-        const age = calculateAge(ngaySinh);
-        console.log('noiCap validation - age:', age);
-        return age >= 14;
-      },
-      then: (schema) => schema.required('Người từ 14 tuổi trở lên phải có nơi cấp CMND/CCCD'),
-      otherwise: (schema) => schema.optional()
+    .test('cccd-format', 'CMND/CCCD phải có 9-12 chữ số', (value) => {
+      if (!value) return true;
+      return /^\d{9,12}$/.test(value);
     }),
-  quanHeChuHo: yup.string().required('Vui lòng nhập quan hệ với chủ hộ'),
-  ghiChu: yup.string()
+  ngayCap: yup.string()
+    .transform((value, originalValue) => {
+      if (originalValue === '' || originalValue === undefined || originalValue === null) {
+        return null;
+      }
+      return typeof originalValue === 'string' ? originalValue.trim() : originalValue;
+    })
+    .nullable()
+    .test('ngayCap-format', 'Ngày cấp không hợp lệ (YYYY-MM-DD)', (value) => {
+      if (!value) return true;
+      return DATE_REG_EXP.test(value);
+    })
+    .test('ngayCap-not-future', 'Ngày cấp không được là ngày trong tương lai', (value) => {
+      if (!value || !DATE_REG_EXP.test(value)) return true;
+      return new Date(value) <= new Date();
+    }),
+  noiCap: optionalStringSchema,
+  quanHeChuHo: requiredTrimmedString('Vui lòng chọn quan hệ với chủ hộ'),
+  ghiChu: optionalStringSchema
 });
 
 const genderOptions = [
   { value: 'Nam', label: 'Nam' },
-  { value: 'Nữ', label: 'Nữ' }
+  { value: 'Nữ', label: 'Nữ' },
+  { value: 'Khác', label: 'Khác' }
 ];
 
 const relationshipOptions = [
@@ -126,51 +176,43 @@ const relationshipOptions = [
   { value: 'Khác', label: 'Khác' }
 ];
 
-export const CitizenForm = ({ initialValues, onSubmit, householdOptions = [] }) => {
+export const CitizenForm = ({
+  initialValues = null,
+  onSubmit,
+  formId,
+  showActions = true,
+  onCancel,
+  submitLabel = 'Lưu thay đổi'
+}) => {
   const [submitError, setSubmitError] = useState(null);
   const [households, setHouseholds] = useState([]);
-  const [loadingHouseholds, setLoadingHouseholds] = useState(true);
   
   const { register, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: initialValues,
+    defaultValues: { ...DEFAULT_FORM_VALUES },
     mode: 'onSubmit'
   });
-
-  // Log validation errors whenever they change
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      console.log('=== FORM VALIDATION ERRORS ===');
-      console.log('Errors:', errors);
-      console.log('Fields with errors:', Object.keys(errors));
-    }
-  }, [errors]);
 
   // Update form values when initialValues changes (edit mode)
   useEffect(() => {
     if (initialValues) {
-      // Convert date strings to YYYY-MM-DD format for date inputs
-      const formattedValues = {
-        ...initialValues,
-        ngaySinh: initialValues.ngaySinh ? 
-          (initialValues.ngaySinh.split('T')[0]) : '',
-        ngayCap: initialValues.ngayCap ? 
-          (initialValues.ngayCap.split('T')[0]) : ''
-      };
-      reset(formattedValues);
+      reset(mapDtoToFormValues(initialValues));
+    } else {
+      reset({ ...DEFAULT_FORM_VALUES });
     }
   }, [initialValues, reset]);
 
   const ngaySinh = watch('ngaySinh');
+  const selectedHoKhauId = watch('hoKhauId');
   const age = calculateAge(ngaySinh);
-  const showCccdFields = age >= 14;
+  const showCccdFields = age >= MIN_CCCD_AGE;
 
   // Fetch households for autocomplete
   useEffect(() => {
     const fetchHouseholds = async () => {
       try {
         const response = await householdApi.getAll();
-        const householdList = response.data || [];
+        const householdList = Array.isArray(response) ? response : response?.data || [];
         
         // Transform to autocomplete format: [soHoKhau] - [tenChuHo] - [diaChi]
         const options = householdList.map(h => ({
@@ -181,8 +223,6 @@ export const CitizenForm = ({ initialValues, onSubmit, householdOptions = [] }) 
         setHouseholds(options);
       } catch (error) {
         console.error('Error fetching households:', error);
-      } finally {
-        setLoadingHouseholds(false);
       }
     };
     
@@ -191,90 +231,72 @@ export const CitizenForm = ({ initialValues, onSubmit, householdOptions = [] }) 
 
   // Clear CCCD fields when age < 14
   useEffect(() => {
-    if (age < 14) {
-      setValue('cmndCccd', '');
-      setValue('ngayCap', '');
-      setValue('noiCap', '');
+    if (age > 0 && age < MIN_CCCD_AGE) {
+      setValue('cmndCccd', '', { shouldValidate: true });
+      setValue('ngayCap', '', { shouldValidate: true });
+      setValue('noiCap', '', { shouldValidate: true });
     }
   }, [age, setValue]);
 
-  const onSubmitHandler = async (data) => {
-    console.log('\n=== CITIZEN FORM SUBMIT HANDLER CALLED ===');
-    console.log('onSubmitHandler ENTRY - data received:', data);
-    console.log('Current form errors:', errors);
-    console.log('isSubmitting:', isSubmitting);
-    
-    // Clear previous errors
+  const onSubmitHandler = async (formValues) => {
+    console.log('CITIZEN_FORM_VALUES', formValues);
     setSubmitError(null);
-    
-    console.log('Raw form data:', data);
-    console.log('Calculated age from ngaySinh:', age);
-    console.log('Age >= 14:', age >= 14);
-    console.log('Raw ngayCap value:', data.ngayCap, 'Type:', typeof data.ngayCap);
-    
-    // Transform ngayCap properly - ensure null for age < 14, valid YYYY-MM-DD for age >= 14
-    let transformedNgayCap = null;
-    if (age >= 14 && data.ngayCap) {
-      // Only process ngayCap if age >= 14 and value exists
-      if (data.ngayCap instanceof Date) {
-        transformedNgayCap = data.ngayCap.toISOString().split('T')[0];
-      } else if (typeof data.ngayCap === 'string' && data.ngayCap.trim() !== '') {
-        // Validate it's a proper date string
-        const testDate = new Date(data.ngayCap);
-        if (!isNaN(testDate.getTime())) {
-          transformedNgayCap = data.ngayCap;
-        } else {
-          console.warn('ngayCap is invalid date string:', data.ngayCap);
-          transformedNgayCap = null;
-        }
-      }
+
+    const normalizedNgaySinh = formatDateForApi(formValues.ngaySinh);
+    const currentAge = calculateAge(normalizedNgaySinh);
+    const normalizedHoKhauId = normalizeId(formValues.hoKhauId);
+
+    if (!normalizedHoKhauId) {
+      setSubmitError('Vui lòng chọn hộ khẩu hợp lệ từ danh sách');
+      return;
     }
-    console.log('Transformed ngayCap:', transformedNgayCap);
-    
-    // Transform data: giữ camelCase format (backend expect camelCase, không phải snake_case!)
-    const submitData = {
-      hoKhauId: parseInt(data.hoKhauId, 10), // Convert string to number
-      hoTen: data.hoTen,
-      ngaySinh: data.ngaySinh instanceof Date 
-        ? data.ngaySinh.toISOString().split('T')[0]
-        : data.ngaySinh,
-      gioiTinh: data.gioiTinh,
-      danToc: data.danToc,
-      quocTich: data.quocTich,
-      ngheNghiep: data.ngheNghiep,
-      cmndCccd: age >= 14 ? (data.cmndCccd || null) : null,
-      ngayCap: transformedNgayCap, // Use the safely transformed value
-      noiCap: age >= 14 ? (data.noiCap || null) : null,
-      quanHeChuHo: data.quanHeChuHo,
-      ghiChu: data.ghiChu || ''
+
+    const hoKhauExists = households.some((option) => String(option.value) === String(normalizedHoKhauId));
+    if (!hoKhauExists) {
+      setSubmitError('Hộ khẩu đã chọn không tồn tại trong danh sách hiện tại');
+      return;
+    }
+
+    const payload = {
+      hoKhauId: normalizedHoKhauId,
+      hoTen: trimString(formValues.hoTen) || '',
+      ngaySinh: normalizedNgaySinh,
+      gioiTinh: formValues.gioiTinh,
+      danToc: trimString(formValues.danToc) || '',
+      quocTich: trimString(formValues.quocTich) || '',
+      ngheNghiep: trimString(formValues.ngheNghiep) || '',
+      quanHeChuHo: trimString(formValues.quanHeChuHo) || '',
+      ghiChu: trimToNull(formValues.ghiChu)
     };
-    
-    console.log('Final payload to API:', submitData);
-    console.log('CCCD fields (should be null for age < 14):', {
-      cmndCccd: submitData.cmndCccd,
-      ngayCap: submitData.ngayCap,
-      noiCap: submitData.noiCap
-    });
-    
+
+    if (currentAge >= MIN_CCCD_AGE) {
+      payload.cmndCccd = trimToNull(formValues.cmndCccd);
+      payload.ngayCap = formatDateForApi(formValues.ngayCap);
+      payload.noiCap = trimToNull(formValues.noiCap);
+    } else {
+      payload.cmndCccd = null;
+      payload.ngayCap = null;
+      payload.noiCap = null;
+    }
+
     try {
-      console.log('Calling onSubmit prop with submitData...');
-      await onSubmit(submitData);
-      console.log('onSubmit completed successfully!');
+      await onSubmit(payload);
     } catch (err) {
-      console.error('=== SUBMIT ERROR ===');
-      console.error('Error object:', err);
-      console.error('Error response:', err.response);
-      console.error('Error message:', err.message);
       const errorMessage = err.response?.data?.message || err.message || 'Lỗi khi lưu dữ liệu';
       setSubmitError(errorMessage);
-      console.error('Submit error set to:', errorMessage);
     }
-    
-    console.log('=== SUBMIT HANDLER EXIT ===\n');
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      window.history.back();
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmitHandler)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(onSubmitHandler)} className="space-y-6">
       {submitError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -304,7 +326,7 @@ export const CitizenForm = ({ initialValues, onSubmit, householdOptions = [] }) 
               setValue={setValue}
               error={errors.hoKhauId}
               placeholder="Tìm kiếm theo số hộ khẩu, tên chủ hộ hoặc địa chỉ..."
-              defaultValue={initialValues?.hoKhauId}
+              defaultValue={selectedHoKhauId ?? ''}
               required
             />
           </div>
@@ -454,33 +476,31 @@ export const CitizenForm = ({ initialValues, onSubmit, householdOptions = [] }) 
       </div>
 
       {/* Action buttons */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-        <button
-          type="button"
-          onClick={() => {
-            console.log('Cancel button clicked');
-            window.history.back();
-          }}
-          className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-        >
-          Hủy
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          onClick={() => console.log('Submit button clicked, isSubmitting:', isSubmitting)}
-          className={`px-6 py-2.5 rounded-lg transition-colors font-medium flex items-center gap-2 ${
-            isSubmitting 
-              ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
-        </button>
-      </div>
+      {showActions && (
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`px-6 py-2.5 rounded-lg transition-colors font-medium flex items-center gap-2 ${
+              isSubmitting 
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            {isSubmitting ? 'Đang lưu...' : submitLabel}
+          </button>
+        </div>
+      )}
     </form>
   );
 };

@@ -24,7 +24,7 @@ import java.util.List;
 @Tag(name = "Hộ Khẩu", description = "API quản lý hộ khẩu")
 public class HoKhauController {
 
-    private final HoKhauService service;
+    private final HoKhauService hoKhauService;
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
@@ -33,7 +33,7 @@ public class HoKhauController {
             @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
     })
     public ResponseEntity<List<HoKhauResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+        return ResponseEntity.ok(hoKhauService.getAll());
     }
 
     @GetMapping("/{id}")
@@ -44,7 +44,7 @@ public class HoKhauController {
             @ApiResponse(responseCode = "404", description = "Không tìm thấy hộ khẩu")
     })
     public ResponseEntity<HoKhauResponseDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getById(id));
+        return ResponseEntity.ok(hoKhauService.getById(id));
     }
 
     @PostMapping
@@ -58,7 +58,7 @@ public class HoKhauController {
     public ResponseEntity<HoKhauResponseDto> create(
             @Valid @RequestBody HoKhauRequestDto dto, 
             Authentication auth) {
-        HoKhauResponseDto created = service.create(dto, auth);
+        HoKhauResponseDto created = hoKhauService.create(dto, auth);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -75,7 +75,7 @@ public class HoKhauController {
             @PathVariable Long id, 
             @RequestBody HoKhauUpdateDto dto, 
             Authentication auth) {
-        HoKhauResponseDto updated = service.update(id, dto, auth);
+        HoKhauResponseDto updated = hoKhauService.update(id, dto, auth);
         return ResponseEntity.ok(updated);
     }
 
@@ -89,6 +89,6 @@ public class HoKhauController {
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, Authentication auth) {
-        service.delete(id, auth);
+        hoKhauService.delete(id, auth);
     }
 }

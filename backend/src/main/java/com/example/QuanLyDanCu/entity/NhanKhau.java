@@ -2,8 +2,10 @@ package com.example.QuanLyDanCu.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "nhan_khau")
@@ -67,32 +69,20 @@ public class NhanKhau {
     private LocalDate tamTruDen;
 
     // ===== Khóa ngoại (để dạng Long theo code hiện tại của bạn) =====
-    @Column(name = "ho_khau_id")
-    private Long hoKhauId;
+        @Column(name = "ho_khau_id")
+        private Long hoKhauId;
 
-    @Column(name = "created_by")
-    private Long createdBy;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(
+            name = "ho_khau_id",
+            insertable = false,
+            updatable = false,
+            foreignKey = @ForeignKey(
+                name = "fk_nhan_khau_ho_khau",
+                foreignKeyDefinition = "FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id) ON DELETE CASCADE"
+            )
+        )
+        @OnDelete(action = OnDeleteAction.CASCADE)
+        private HoKhau hoKhau;
 
-    @Column(name = "updated_by")
-    private Long updatedBy;
-
-    // ===== Audit =====
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    // ===== Auto timestamps =====
-    @PrePersist
-    protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        if (createdAt == null) createdAt = now;
-        if (updatedAt == null) updatedAt = now;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

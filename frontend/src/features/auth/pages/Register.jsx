@@ -2,6 +2,27 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import authApi from "../../../api/authApi";
 
+const SuccessModal = ({ open, onClose }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+        <div className="text-4xl mb-3">🎉</div>
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">Đăng ký thành công</h3>
+        <p className="text-sm text-gray-600 mb-6">
+          Tài khoản đã được tạo. Bạn có thể đăng nhập ngay bây giờ.
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full bg-teal-500 text-white py-2 rounded-xl font-semibold hover:bg-teal-600"
+        >
+          Đóng và chuyển đến đăng nhập
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const Register = () => {
   const navigate = useNavigate();
 
@@ -17,6 +38,7 @@ const Register = () => {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,18 +52,25 @@ const Register = () => {
     e.preventDefault();
     setError("");
 
+    const username = formData.username.trim();
+    const password = formData.password;
+    const confirmPassword = formData.confirmPassword;
+    const hoTen = formData.hoTen.trim();
+    const email = formData.email.trim();
+    const soDienThoai = formData.soDienThoai.trim();
+
     // Validation
-    if (formData.password !== formData.confirmPassword) {
+    if (password !== confirmPassword) {
       setError("Mật khẩu xác nhận không khớp");
       return;
     }
 
-    if (formData.password.length < 6) {
+    if (password.length < 6) {
       setError("Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
 
-    if (formData.username.length < 3 || formData.username.length > 50) {
+    if (username.length < 3 || username.length > 50) {
       setError("Tên đăng nhập phải từ 3-50 ký tự");
       return;
     }
@@ -49,39 +78,26 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Chuẩn bị payload - Backend expect English field names!
       const payload = {
-        username: formData.username,
-        password: formData.password,
-        role: formData.role,
-        hoTen: formData.hoTen
+        username,
+        password,
+        role: formData.role
       };
 
-      // Chỉ thêm email và soDienThoai nếu user nhập
-      if (formData.email && formData.email.trim()) {
-        payload.email = formData.email;
+      if (hoTen) {
+        payload.hoTen = hoTen;
       }
-      if (formData.soDienThoai && formData.soDienThoai.trim()) {
-        payload.soDienThoai = formData.soDienThoai;
+      if (email) {
+        payload.email = email;
+      }
+      if (soDienThoai) {
+        payload.soDienThoai = soDienThoai;
       }
 
-      console.log("Sending payload:", payload); // Debug
-
-      const response = await authApi.register(payload);
-      
-      // API trả về "Đăng ký thành công" khi thành công (status 201)
-      if (response.status === 201 || response.data) {
-        alert("Đăng ký thành công! Vui lòng đăng nhập.");
-        navigate("/login");
-      }
+      await authApi.register(payload);
+      setError("");
+      setShowSuccessModal(true);
     } catch (err) {
-      console.error("Register error:", err);
-      console.error("Response status:", err.response?.status);
-      console.error("Response data:", err.response?.data);
-      console.error("Response headers:", err.response?.headers);
-      console.error("Full error:", JSON.stringify(err.response, null, 2));
-      
-      // Xử lý các loại lỗi từ API
       if (err.response?.data) {
         const errorData = err.response.data;
         
@@ -102,8 +118,14 @@ const Register = () => {
     }
   };
 
+  const handleCloseModal = () => {
+    setShowSuccessModal(false);
+    navigate("/login");
+  };
+
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen relative">
+      <SuccessModal open={showSuccessModal} onClose={handleCloseModal} />
       {/* --- Bên trái: logo / hình minh họa --- */}
       <div className="flex-1 bg-white flex justify-center items-center border-r">
         <div className="flex space-x-3 items-end">
@@ -138,10 +160,9 @@ const Register = () => {
               <input
                 type="text"
                 name="hoTen"
-                placeholder="Họ và tên *"
+                placeholder="Họ và tên"
                 value={formData.hoTen}
                 onChange={handleChange}
-                required
                 className="w-full border-b border-gray-400 focus:outline-none focus:border-teal-400 py-2 text-gray-700"
               />
             </div>
@@ -178,7 +199,7 @@ const Register = () => {
               >
                 <option value="ADMIN">ADMIN</option>
                 <option value="TOTRUONG">TỔ TRƯỞNG</option>
-                <option value="KETOAN">KẾ TOÁN</option>
+                <option value="USER">NGƯỜI DÙNG</option>
               </select>
             </div>
 

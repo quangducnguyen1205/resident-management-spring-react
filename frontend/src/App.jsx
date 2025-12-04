@@ -30,6 +30,8 @@ import FeePeriodDetail from "./features/fee-period/pages/Detail";
 // Fee Collection pages
 import FeeCollectionList from "./features/fee-collection/pages/List";
 import FeeCollectionDetail from "./features/fee-collection/pages/Detail";
+import OverviewByPeriod from "./features/fee-collection/pages/OverviewByPeriod";
+import FeePeriodOverviewEntry from "./features/fee-collection/pages/FeePeriodOverviewEntry";
 
 // Statistics pages
 import StatisticsOverview from "./features/statistics/pages/Overview";
@@ -77,6 +79,8 @@ export default function App() {
             {/* Fee Collection routes - Flat structure */}
             <Route path="/fee-collection" element={<FeeCollectionList />} />
             <Route path="/fee-collection/new" element={<FeeCollectionDetail />} />
+            <Route path="/fee-collection/periods" element={<FeePeriodOverviewEntry />} />
+            <Route path="/fee-collection/overview/:dotThuPhiId" element={<OverviewByPeriod />} />
             <Route path="/fee-collection/:id" element={<FeeCollectionDetail />} />
 
             {/* Statistics routes */}

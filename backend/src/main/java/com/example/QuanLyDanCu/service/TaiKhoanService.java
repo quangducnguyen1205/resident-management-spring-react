@@ -2,9 +2,10 @@ package com.example.QuanLyDanCu.service;
 
 import com.example.QuanLyDanCu.dto.response.TaiKhoanResponseDto;
 import com.example.QuanLyDanCu.entity.TaiKhoan;
+import com.example.QuanLyDanCu.exception.BusinessException;
+import com.example.QuanLyDanCu.exception.NotFoundException;
 import com.example.QuanLyDanCu.repository.TaiKhoanRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,21 +29,21 @@ public class TaiKhoanService {
     public void delete(Long id, Authentication auth) {
         // Get the account to delete
         TaiKhoan account = repo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản id = " + id));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tài khoản id = " + id));
 
         // Get current user
         String currentUsername = auth.getName();
         TaiKhoan currentUser = repo.findByTenDangNhap(currentUsername)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản hiện tại"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tài khoản hiện tại"));
 
         // Cannot delete yourself
         if (account.getId().equals(currentUser.getId())) {
-            throw new IllegalArgumentException("Không thể xóa chính tài khoản của bạn!");
+            throw new BusinessException("Không thể xóa chính tài khoản của bạn");
         }
 
         // Cannot delete admin accounts
         if ("ADMIN".equals(account.getVaiTro())) {
-            throw new IllegalArgumentException("Không thể xóa tài khoản quản trị viên!");
+            throw new BusinessException("Không thể xóa tài khoản quản trị viên");
         }
 
         repo.deleteById(id);

@@ -22,7 +22,7 @@ import java.util.List;
 @SecurityRequirement(name = "Bearer Authentication")
 public class TaiKhoanController {
     
-    private final TaiKhoanService service;
+    private final TaiKhoanService taiKhoanService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -32,7 +32,7 @@ public class TaiKhoanController {
             @ApiResponse(responseCode = "403", description = "Không có quyền truy cập")
     })
     public ResponseEntity<List<TaiKhoanResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+        return ResponseEntity.ok(taiKhoanService.getAll());
     }
 
     @DeleteMapping("/{id}")
@@ -45,7 +45,7 @@ public class TaiKhoanController {
             @ApiResponse(responseCode = "404", description = "Không tìm thấy tài khoản")
     })
     public ResponseEntity<String> delete(@PathVariable Long id, Authentication auth) {
-        service.delete(id, auth);
+        taiKhoanService.delete(id, auth);
         return ResponseEntity.ok("Xóa tài khoản thành công");
     }
 }

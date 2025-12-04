@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useMemo, useId } from 'react';
 import { HouseholdForm } from './HouseholdForm';
 
 export const HouseholdModal = ({ isOpen, onClose, onSave, household }) => {
   if (!isOpen) return null;
+
+  const initialValues = useMemo(() => household || null, [household]);
+  const householdFormId = useId();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -20,9 +23,29 @@ export const HouseholdModal = ({ isOpen, onClose, onSave, household }) => {
         </div>
 
         <HouseholdForm
-          initialValues={household || {}}
+          key={initialValues?.id || 'new-household'}
+          initialValues={initialValues || undefined}
           onSubmit={onSave}
+          formId={householdFormId}
+          showActions={false}
         />
+
+        <div className="mt-6 flex justify-end gap-3 border-t pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            form={householdFormId}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          >
+            Lưu thay đổi
+          </button>
+        </div>
       </div>
     </div>
   );

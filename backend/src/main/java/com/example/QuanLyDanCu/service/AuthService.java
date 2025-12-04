@@ -4,6 +4,7 @@ import com.example.QuanLyDanCu.dto.request.LoginRequestDto;
 import com.example.QuanLyDanCu.dto.request.RegisterRequestDto;
 import com.example.QuanLyDanCu.dto.response.LoginResponseDto;
 import com.example.QuanLyDanCu.entity.TaiKhoan;
+import com.example.QuanLyDanCu.exception.BadRequestException;
 import com.example.QuanLyDanCu.repository.TaiKhoanRepository;
 import com.example.QuanLyDanCu.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class AuthService {
     public String register(RegisterRequestDto dto) {
         // Check if username already exists
         if (repo.findByTenDangNhap(dto.getUsername()).isPresent()) {
-            throw new RuntimeException("Tên đăng nhập đã tồn tại!");
+            throw new BadRequestException("Tên đăng nhập đã tồn tại");
         }
 
         TaiKhoan tk = TaiKhoan.builder()
@@ -43,7 +44,7 @@ public class AuthService {
     public LoginResponseDto login(LoginRequestDto dto) {
         Optional<TaiKhoan> acc = repo.findByTenDangNhap(dto.getUsername());
         if (acc.isEmpty() || !encoder.matches(dto.getPassword(), acc.get().getMatKhau())) {
-            throw new RuntimeException("Sai tên đăng nhập hoặc mật khẩu!");
+            throw new BadRequestException("Sai tên đăng nhập hoặc mật khẩu");
         }
         
         TaiKhoan user = acc.get();
