@@ -79,3 +79,8 @@ docker/
 **/.env.production
 .env.docker
 .env.production
+
+/frontend/
+/backend/test/
+/backend/docs/
+/backend/queries/

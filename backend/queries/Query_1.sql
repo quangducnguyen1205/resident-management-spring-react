@@ -1,1 +1,0 @@
-alter table tai_khoan drop column trang_thai;
