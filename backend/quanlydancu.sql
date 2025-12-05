@@ -44,7 +44,7 @@ CREATE TABLE nhan_khau (
     tam_tru_tu DATE,
     tam_tru_den DATE,
     ho_khau_id BIGINT,
-    trang_thai VARCHAR(20),
+    trang_thai VARCHAR(20) DEFAULT 'THUONG_TRU',
     CONSTRAINT fk_nhankhau_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id) ON DELETE CASCADE
 );
 

@@ -9,6 +9,7 @@ import com.example.QuanLyDanCu.enums.BienDongType;
 import com.example.QuanLyDanCu.exception.BadRequestException;
 import com.example.QuanLyDanCu.exception.BusinessException;
 import com.example.QuanLyDanCu.exception.NotFoundException;
+import com.example.QuanLyDanCu.repository.HoKhauRepository;
 import com.example.QuanLyDanCu.repository.NhanKhauRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -25,16 +26,17 @@ import java.time.LocalDate;
 @Service
 @RequiredArgsConstructor
 public class NhanKhauService {
-
+    private final HoKhauRepository hoKhauRepo;
     private final NhanKhauRepository nhanKhauRepo;
     private final BienDongService bienDongService;
     private final ThuPhiHoKhauService thuPhiHoKhauService;
+
 
     // ========== DTO-based methods ==========
 
     // Lấy tất cả nhân khẩu (DTO)
     public List<NhanKhauResponseDto> getAll() {
-        return nhanKhauRepo.findAll().stream()
+        return nhanKhauRepo.findAllByOrderByIdAsc().stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -45,10 +47,25 @@ public class NhanKhauService {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy nhân khẩu id = " + id));
         return toResponseDTO(nk);
     }
+    // Lấy tất cả nhân khẩu theo ID hộ khẩu (DTO)
+    public List<NhanKhauResponseDto> getAllByHoKhauId(Long id) {
+        if (id == null) {
+            return java.util.Collections.emptyList();
+        }
+
+        List<NhanKhau> nhanKhaus = nhanKhauRepo.findByHoKhauIdOrderByIdAsc(id);
+        return nhanKhaus.stream().map(this::toResponseDTO).collect(Collectors.toList());
+    }
 
     // Thêm nhân khẩu mới (DTO)
     @Transactional
     public NhanKhauResponseDto create(NhanKhauRequestDto dto, Authentication auth) {
+        if (dto.getHoKhauId() == null) {
+            throw new BadRequestException("Hộ khẩu không được để trống");
+        }
+        if (!hoKhauRepo.existsById(dto.getHoKhauId())) {
+            throw new NotFoundException("Không tìm thấy hộ khẩu id = " + dto.getHoKhauId());
+        }
         // CCCD validation based on age
         validateCccdByAge(dto.getNgaySinh(), dto.getCmndCccd(), dto.getNgayCap(), dto.getNoiCap());
 
@@ -71,7 +88,7 @@ public class NhanKhauService {
         NhanKhau saved = nhanKhauRepo.save(nk);
         
         bienDongService.log(
-            BienDongType.THAY_DOI_THONG_TIN,
+            BienDongType.THEM_MOI_THONG_TIN,
             "Tạo nhân khẩu mới: " + saved.getHoTen(),
             saved.getHoKhauId(),
             saved.getId());
@@ -225,7 +242,7 @@ public class NhanKhauService {
             ? BienDongType.KHAI_TU
             : BienDongType.THAY_DOI_THONG_TIN;
         String content = deletionType == BienDongType.KHAI_TU
-            ? "Khai tử nhân khẩu khi xóa hồ sơ: " + nk.getHoTen()
+            ? "Xóa hồ sơ nhân khẩu đã qua đời: " + nk.getHoTen()
             : "Xóa nhân khẩu " + nk.getHoTen();
         bienDongService.log(deletionType, content, hoKhauId, null);
         
@@ -341,6 +358,12 @@ public class NhanKhauService {
         if (keyword == null || keyword.isBlank()) return java.util.Collections.emptyList();
         return nhanKhauRepo.findByHoTenContainingIgnoreCase(keyword.trim());
     }
+    public List<NhanKhauResponseDto> searchDtoByName(String keyword) {
+        return searchByName(keyword).stream()
+                .map(this::toResponseDTO)
+                .toList();
+    }
+
 
     // Thống kê giới tính (toàn bộ)
     public java.util.Map<String, Object> statsGender() {
@@ -419,16 +442,6 @@ public class NhanKhauService {
             return;
         }
         thuPhiHoKhauService.recalculateForHousehold(hoKhauId);
-    }
-
-    // Lấy tất cả nhân khẩu theo ID hộ khẩu (DTO)
-    public List<NhanKhauResponseDto> getAllByHoKhauId(Long id) {
-        if (id == null) {
-            return java.util.Collections.emptyList();
-        }
-
-        List<NhanKhau> nhanKhaus = nhanKhauRepo.findByHoKhauId(id);
-        return nhanKhaus.stream().map(this::toResponseDTO).collect(Collectors.toList());
     }
 
     // --- helper ---

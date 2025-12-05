@@ -1,6 +1,7 @@
 package com.example.QuanLyDanCu.controller;
 
 import com.example.QuanLyDanCu.dto.request.DangKyTamTruTamVangRequestDto;
+import com.example.QuanLyDanCu.dto.request.KhaiTuRequestDto;
 import com.example.QuanLyDanCu.dto.request.NhanKhauRequestDto;
 import com.example.QuanLyDanCu.dto.request.NhanKhauUpdateDto;
 import com.example.QuanLyDanCu.dto.response.NhanKhauResponseDto;
@@ -167,13 +168,20 @@ public class NhanKhauController {
     // --- KHAI TỬ ---
     @PutMapping("/{id}/khaitu")
     @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG')")
+    @Operation(summary = "Khai tử nhân khẩu", description = "Cập nhật trạng thái khai tử cho nhân khẩu")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Khai tử thành công"),
+            @ApiResponse(responseCode = "400", description = "Lý do khai tử không hợp lệ hoặc nhân khẩu không tồn tại")
+    })
     public ResponseEntity<NhanKhauResponseDto> khaiTu(
+            @Parameter(description = "ID nhân khẩu", example = "1")
             @PathVariable Long id,
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody KhaiTuRequestDto request,
             Authentication auth) {
 
-        String lyDo = body.get("lyDo") != null ? body.get("lyDo").toString() : null;
-        return ResponseEntity.ok(nhanKhauService.khaiTu(id, lyDo, auth));
+        return ResponseEntity.ok(
+                nhanKhauService.khaiTu(id, request.getLyDo(), auth)
+        );
     }
 
     // Search theo tên
@@ -181,14 +189,13 @@ public class NhanKhauController {
     @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
     @Operation(summary = "Tìm kiếm nhân khẩu theo tên", description = "Tìm kiếm nhân khẩu có tên chứa từ khóa")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Tìm kiếm thành công")
+            @ApiResponse(responseCode = "200", description = "Tìm kiếm thành công")
     })
-    public ResponseEntity<List<NhanKhau>> searchByName(
+    public ResponseEntity<List<NhanKhauResponseDto>> searchByName(
             @Parameter(description = "Từ khóa tìm kiếm", example = "Nguyen")
             @RequestParam("q") String q) {
-        return ResponseEntity.ok(nhanKhauService.searchByName(q));
+        return ResponseEntity.ok(nhanKhauService.searchDtoByName(q));
     }
-
     // Thống kê giới tính
     @GetMapping("/stats/gender")
     @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")

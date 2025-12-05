@@ -1,5 +1,0 @@
-{
-  "users": [
-    { "id": 1, "email": "admin@example.com", "password": "123456", "token": "abcd1234" }
-  ]
-}

@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface HoKhauRepository extends JpaRepository<HoKhau, Long> { 
     List<HoKhau> findAllByOrderByIdAsc();
+    boolean existsBySoHoKhau(String soHoKhau);
 }
