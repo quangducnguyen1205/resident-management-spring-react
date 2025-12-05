@@ -27,6 +27,4 @@ public class TaiKhoanResponseDto {
     @Schema(description = "Ngày tạo", example = "2025-01-01T10:00:00")
     private LocalDateTime ngayTao;
 
-    @Schema(description = "Trạng thái tài khoản", example = "ACTIVE")
-    private String trangThai;
 }

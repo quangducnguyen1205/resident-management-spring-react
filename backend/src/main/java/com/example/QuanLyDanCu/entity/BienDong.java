@@ -30,11 +30,11 @@ public class BienDong {
     private LocalDateTime thoiGian;         // TIMESTAMP
 
     // FK dạng Long
-        @Column(name = "ho_khau_id")
-        private Long hoKhauId;
+    @Column(name = "ho_khau_id")
+    private Long hoKhauId;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
             name = "ho_khau_id",
             insertable = false,
             updatable = false,
@@ -42,12 +42,25 @@ public class BienDong {
                 name = "fk_bien_dong_ho_khau",
                 foreignKeyDefinition = "FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id) ON DELETE CASCADE"
             )
-        )
-        @OnDelete(action = OnDeleteAction.CASCADE)
-        private HoKhau hoKhau;
+    )
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private HoKhau hoKhau;
 
     @Column(name = "nhan_khau_id")
     private Long nhanKhauId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "nhan_khau_id",
+            insertable = false,
+            updatable = false,
+            foreignKey = @ForeignKey(
+                    name = "fk_biendong_nhankhau",
+                    foreignKeyDefinition = "FOREIGN KEY (nhan_khau_id) REFERENCES nhan_khau(id) ON DELETE CASCADE"
+            )
+    )
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private NhanKhau nhanKhau;
+
 
     @PrePersist
     void onCreate() {

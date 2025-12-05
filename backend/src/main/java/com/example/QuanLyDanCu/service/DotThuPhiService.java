@@ -51,12 +51,14 @@ public class DotThuPhiService {
                 throw new BadRequestException("Định mức phải là số dương cho phí bắt buộc");
             }
         } else if (dto.getLoai() == LoaiThuPhi.TU_NGUYEN) {
-            // For voluntary fees, default to 0 if not provided
+            // Tự nguyện: định mức luôn = 0, nếu nhập khác 0 → báo lỗi
             if (dinhMuc == null) {
-                dinhMuc = BigDecimal.ZERO;
+                dinhMuc = BigDecimal.ZERO; // tự set = 0 nếu client không gửi
+            } else if (dinhMuc.compareTo(BigDecimal.ZERO) != 0) {
+                throw new BadRequestException("Định mức cho phí tự nguyện phải bằng 0");
             }
         }
-        
+
         DotThuPhi entity = DotThuPhi.builder()
                 .tenDot(dto.getTenDot())
                 .loai(dto.getLoai())

@@ -51,7 +51,5 @@ public class ThuPhiHoKhauResponseDto {
     @Schema(description = "Ghi chú", example = "Đã thanh toán đủ")
     private String ghiChu;
 
-    @Schema(description = "ID người thu")
-    private Long collectedBy;
 
 }

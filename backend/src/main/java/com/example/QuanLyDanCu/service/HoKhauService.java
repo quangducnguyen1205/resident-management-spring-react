@@ -47,6 +47,10 @@ public class HoKhauService {
     // Thêm hộ khẩu mới (DTO)
     @Transactional
     public HoKhauResponseDto create(HoKhauRequestDto dto, Authentication auth) {
+        // Kiểm tra trùng số hộ khẩu
+        if (hoKhauRepo.existsBySoHoKhau(dto.getSoHoKhau())) {
+            throw new BusinessException("Số hộ khẩu " + dto.getSoHoKhau() + " đã tồn tại");
+        }
         HoKhau hk = HoKhau.builder()
                 .soHoKhau(dto.getSoHoKhau())
                 .tenChuHo(dto.getTenChuHo())
@@ -57,7 +61,7 @@ public class HoKhauService {
         HoKhau saved = hoKhauRepo.save(hk);
         
         bienDongService.log(
-            BienDongType.THAY_DOI_THONG_TIN,
+            BienDongType.THEM_MOI_THONG_TIN,
             "Tạo hộ khẩu mới: " + saved.getSoHoKhau(),
             saved.getId(),
             null);

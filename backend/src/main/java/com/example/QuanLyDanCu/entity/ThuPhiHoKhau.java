@@ -64,7 +64,4 @@ public class ThuPhiHoKhau {
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
 
-    @Column(name = "collected_by")
-    private Long collectedBy;
-
 }

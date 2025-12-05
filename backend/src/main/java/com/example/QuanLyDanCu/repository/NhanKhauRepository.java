@@ -15,6 +15,9 @@ public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
 
     // --- Tìm nhân khẩu theo hộ khẩu
     List<NhanKhau> findByHoKhauId(Long hoKhauId);
+    List<NhanKhau> findAllByOrderByIdAsc();
+    List<NhanKhau> findByHoKhauIdOrderByIdAsc(Long hoKhauId);
+
 
     @Query("""
             SELECT COUNT(n)

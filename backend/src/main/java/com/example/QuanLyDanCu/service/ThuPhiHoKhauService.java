@@ -170,7 +170,6 @@ public class ThuPhiHoKhauService {
                         .trangThai(trangThai)
                         .ngayThu(null)
                         .ghiChu(null)
-                        .collectedBy(null)
                         .build();
             }
 
@@ -330,7 +329,6 @@ public class ThuPhiHoKhauService {
                 .trangThai(trangThai)
                 .ngayThu(dto.getNgayThu())
                 .ghiChu(dto.getGhiChu())
-                .collectedBy(currentUser.getId())
                 .build();
         
         ThuPhiHoKhau saved = repo.save(entity);
@@ -619,7 +617,6 @@ public class ThuPhiHoKhauService {
                 .trangThai(entity.getTrangThai())
                 .ngayThu(entity.getNgayThu())
                 .ghiChu(entity.getGhiChu())
-                .collectedBy(entity.getCollectedBy())
                 .build();
     }
 }

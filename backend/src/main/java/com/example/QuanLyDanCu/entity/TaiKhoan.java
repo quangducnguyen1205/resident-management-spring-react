@@ -20,5 +20,4 @@ public class TaiKhoan {
     private String hoTen;
     private String email;
     private LocalDateTime ngayTao;
-    private String trangThai;
 }

@@ -57,7 +57,6 @@ public class TaiKhoanService {
                 .hoTen(entity.getHoTen())
                 .email(entity.getEmail())
                 .ngayTao(entity.getNgayTao())
-                .trangThai(entity.getTrangThai())
                 .build();
     }
 }

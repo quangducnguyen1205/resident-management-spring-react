@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 public enum BienDongType {
     CHUYEN_DEN,
     CHUYEN_DI,
+    THEM_MOI_THONG_TIN,
     TACH_HO,
     NHAP_HO,
     SINH,
