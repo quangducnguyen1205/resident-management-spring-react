@@ -1,0 +1,305 @@
+import { useState, useEffect } from "react";
+import { getAllHoKhau } from "../../../api/hoKhauApi";
+import {
+  getAllNhanKhau,
+  getGenderStats,
+  getAgeStats,
+} from "../../../api/nhanKhauApi";
+import NoPermission from "../NoPermission";
+import "./DashboardPage.css";
+
+function DashboardPage() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [stats, setStats] = useState({
+    totalHoKhau: 0,
+    totalNhanKhau: 0,
+    genderStats: null,
+    ageStats: null,
+  });
+  const role = localStorage.getItem("role");
+
+  const allowedRoles = ["ADMIN", "TOTRUONG", "KETOAN"];
+
+  if (!allowedRoles.includes(role)) {
+    return <NoPermission />;
+  }
+
+  useEffect(() => {
+    loadAllStats();
+  }, []);
+
+  const loadAllStats = async () => {
+    try {
+      setLoading(true);
+      const [hoKhaus, nhanKhaus, genderStats, ageStats] = await Promise.all([
+        getAllHoKhau(),
+        getAllNhanKhau(),
+        getGenderStats(),
+        getAgeStats(),
+      ]);
+
+      setStats({
+        totalHoKhau: hoKhaus?.length || 0,
+        totalNhanKhau: nhanKhaus?.length || 0,
+        genderStats,
+        ageStats,
+      });
+    } catch (err) {
+      console.error("Lỗi khi tải thống kê:", err);
+      setError(err.response?.data?.message || "Không thể tải thống kê");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculatePercentage = (value, total) => {
+    if (!total || total === 0) return 0;
+    return ((value / total) * 100).toFixed(1);
+  };
+
+  if (loading) {
+    return <div className="page-loading">Đang tải thống kê...</div>;
+  }
+
+  // Lấy dữ liệu giới tính từ byGender object
+  const getGenderValue = (genderStats, key) => {
+    if (!genderStats || !genderStats.byGender) return 0;
+    return genderStats.byGender[key] || 0;
+  };
+
+  // Lấy dữ liệu độ tuổi
+  const getAgeValue = (ageStats, key) => {
+    if (!ageStats || !ageStats[key]) return 0;
+    return ageStats[key].soNguoi || 0;
+  };
+
+  const genderTotal = stats.genderStats?.total || stats.totalNhanKhau;
+  const ageTotal = stats.ageStats?.total || stats.totalNhanKhau;
+
+  return (
+    <div className="dashboard-page">
+      <div className="dashboard-header">
+        <h1 className="page-title">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline', marginRight: '8px'}}>
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Tổng Quan
+        </h1>
+        <button className="btn-refresh" onClick={loadAllStats}>
+          🔄 Làm mới
+        </button>
+      </div>
+
+      {error && <div className="error-message">{error}</div>}
+
+      {/* Tổng quan */}
+      <div className="stats-overview">
+        <div className="stat-card">
+          <div className="stat-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Tổng số hộ khẩu</div>
+            <div className="stat-value">{stats.totalHoKhau}</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Tổng số nhân khẩu</div>
+            <div className="stat-value">{stats.totalNhanKhau}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Thống kê giới tính */}
+      {stats.genderStats && stats.genderStats.byGender && (
+        <div className="stats-section">
+          <h2 className="section-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline', marginRight: '8px'}}>
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+              <polyline points="17 6 23 6 23 12"></polyline>
+            </svg>
+            Thống Kê Theo Giới Tính
+          </h2>
+          <div className="gender-stats">
+            <div className="gender-item">
+              <div className="gender-label">Nam</div>
+              <div className="gender-bar-container">
+                <div
+                  className="gender-bar male"
+                  style={{
+                    width: `${Math.max(
+                      10,
+                      calculatePercentage(getGenderValue(stats.genderStats, "Nam"), genderTotal)
+                    )}%`,
+                  }}
+                >
+                  <span className="gender-count">
+                    {getGenderValue(stats.genderStats, "Nam")} (
+                    {calculatePercentage(
+                      getGenderValue(stats.genderStats, "Nam"),
+                      genderTotal
+                    )}
+                    %)
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="gender-item">
+              <div className="gender-label">Nữ</div>
+              <div className="gender-bar-container">
+                <div
+                  className="gender-bar female"
+                  style={{
+                    width: `${Math.max(
+                      10,
+                      calculatePercentage(getGenderValue(stats.genderStats, "Nữ"), genderTotal)
+                    )}%`,
+                  }}
+                >
+                  <span className="gender-count">
+                    {getGenderValue(stats.genderStats, "Nữ")} (
+                    {calculatePercentage(
+                      getGenderValue(stats.genderStats, "Nữ"),
+                      genderTotal
+                    )}
+                    %)
+                  </span>
+                </div>
+              </div>
+            </div>
+            {getGenderValue(stats.genderStats, "Khác") > 0 && (
+              <div className="gender-item">
+                <div className="gender-label">Khác</div>
+                <div className="gender-bar-container">
+                  <div
+                    className="gender-bar other"
+                    style={{
+                      width: `${Math.max(
+                        10,
+                        calculatePercentage(
+                          getGenderValue(stats.genderStats, "Khác"),
+                          genderTotal
+                        )
+                      )}%`,
+                    }}
+                  >
+                    <span className="gender-count">
+                      {getGenderValue(stats.genderStats, "Khác")} (
+                      {calculatePercentage(
+                        getGenderValue(stats.genderStats, "Khác"),
+                        genderTotal
+                      )}
+                      %)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Thống kê độ tuổi */}
+      {stats.ageStats && (
+        <div className="stats-section">
+          <h2 className="section-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display: 'inline', marginRight: '8px'}}>
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Thống Kê Theo Độ Tuổi
+          </h2>
+          <div className="age-stats">
+            <div className="age-item">
+              <div className="age-label">Đi học (≤16 tuổi)</div>
+              <div className="age-bar-container">
+                <div
+                  className="age-bar school"
+                  style={{
+                    width: `${Math.max(
+                      10,
+                      calculatePercentage(getAgeValue(stats.ageStats, "diHoc"), ageTotal)
+                    )}%`,
+                  }}
+                >
+                  <span className="age-count">
+                    {getAgeValue(stats.ageStats, "diHoc")} (
+                    {calculatePercentage(
+                      getAgeValue(stats.ageStats, "diHoc"),
+                      ageTotal
+                    )}
+                    %)
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="age-item">
+              <div className="age-label">Đi làm (17-59 tuổi)</div>
+              <div className="age-bar-container">
+                <div
+                  className="age-bar working"
+                  style={{
+                    width: `${Math.max(
+                      10,
+                      calculatePercentage(getAgeValue(stats.ageStats, "diLam"), ageTotal)
+                    )}%`,
+                  }}
+                >
+                  <span className="age-count">
+                    {getAgeValue(stats.ageStats, "diLam")} (
+                    {calculatePercentage(
+                      getAgeValue(stats.ageStats, "diLam"),
+                      ageTotal
+                    )}
+                    %)
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="age-item">
+              <div className="age-label">Về hưu (≥60 tuổi)</div>
+              <div className="age-bar-container">
+                <div
+                  className="age-bar retired"
+                  style={{
+                    width: `${Math.max(
+                      10,
+                      calculatePercentage(getAgeValue(stats.ageStats, "veHuu"), ageTotal)
+                    )}%`,
+                  }}
+                >
+                  <span className="age-count">
+                    {getAgeValue(stats.ageStats, "veHuu")} (
+                    {calculatePercentage(
+                      getAgeValue(stats.ageStats, "veHuu"),
+                      ageTotal
+                    )}
+                    %)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default DashboardPage;

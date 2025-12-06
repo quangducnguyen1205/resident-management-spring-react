@@ -210,17 +210,16 @@ public class NhanKhauController {
     // Thống kê theo tuổi (thiếu nhi/đi làm/về hưu)
     @GetMapping("/stats/age")
     @PreAuthorize("hasAnyAuthority('ADMIN','TOTRUONG','KETOAN')")
-    @Operation(summary = "Thống kê theo độ tuổi", description = "Thống kê nhân khẩu theo nhóm tuổi: thiếu nhi, người đi làm, người về hưu")
+    @Operation(
+            summary = "Thống kê theo độ tuổi",
+            description = "Thống kê nhân khẩu theo 3 nhóm: Đi học (≤16 tuổi), Đi làm (17–59 tuổi), Về hưu (≥60 tuổi)"
+    )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Thống kê thành công")
+            @ApiResponse(responseCode = "200", description = "Thống kê thành công")
     })
-    public ResponseEntity<Map<String, Object>> statsByAge(
-            @Parameter(description = "Độ tuổi thiếu nhi (mặc định 16)", example = "18")
-            @RequestParam(value = "underAge", required = false) Integer underAge,
-            @Parameter(description = "Độ tuổi về hưu (mặc định 60)", example = "60")
-            @RequestParam(value = "retireAge", required = false) Integer retireAge
-    ) {
-        return ResponseEntity.ok(nhanKhauService.statsByAge(underAge, retireAge));
+    public ResponseEntity<Map<String, Object>> statsByAge() {
+        return ResponseEntity.ok(nhanKhauService.statsByAge());
     }
+
 
 }
