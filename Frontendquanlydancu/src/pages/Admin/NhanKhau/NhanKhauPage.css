@@ -295,23 +295,34 @@
 .action-buttons {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  align-items: center;
+  gap: 6px;
+  align-items: stretch;
+  min-width: 120px;
+  width: 130px;
+  margin: 0 auto;
+}
+
+.action-buttons button {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  text-align: center;
 }
 
 .btn-edit {
-  padding: 5px 10px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
   color: #333;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.3s;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
-  width: 100%;
 }
 
 .btn-edit:hover {
@@ -320,18 +331,17 @@
 }
 
 .btn-tamtru {
-  padding: 5px 10px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.3s;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
-  width: 100%;
 }
 
 .btn-tamtru:hover {
@@ -340,18 +350,17 @@
 }
 
 .btn-cancel-tamtru {
-  padding: 5px 10px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.3s;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
-  width: 100%;
 }
 
 .btn-cancel-tamtru:hover {
@@ -360,18 +369,17 @@
 }
 
 .btn-tamvang {
-  padding: 5px 10px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.3s;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
-  width: 100%;
 }
 
 .btn-tamvang:hover {
@@ -380,18 +388,17 @@
 }
 
 .btn-cancel-tamvang {
-  padding: 5px 10px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.3s;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
-  width: 100%;
 }
 
 .btn-cancel-tamvang:hover {
@@ -400,18 +407,17 @@
 }
 
 .btn-khaitu {
-  padding: 5px 10px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.3s;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
-  width: 100%;
 }
 
 .btn-khaitu:hover {
@@ -420,18 +426,17 @@
 }
 
 .btn-delete {
-  padding: 5px 10px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.3s;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
-  width: 100%;
 }
 
 .btn-delete:hover {
