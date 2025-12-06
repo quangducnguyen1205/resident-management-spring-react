@@ -18,7 +18,10 @@ function TaiKhoanPage() {
     role: "TOTRUONG",
     hoTen: "",
     email: "",
+    soDienThoai: "",
   });
+  const [validationErrors, setValidationErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
   const role = localStorage.getItem("role");
   const currentUsername = localStorage.getItem("username");
 
@@ -50,29 +53,63 @@ function TaiKhoanPage() {
       role: "TOTRUONG",
       hoTen: "",
       email: "",
+      soDienThoai: "",
     });
+    setValidationErrors({});
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setValidationErrors({});
+    setSubmitError("");
+  };
+
+  // Hàm validate dữ liệu tài khoản
+  const validateForm = () => {
+    const errors = {};
+    
+    // Validate email
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Email không hợp lệ";
+    }
+    
+    // Validate số điện thoại
+    if (formData.soDienThoai && !/^\d{10,11}$/.test(formData.soDienThoai)) {
+      errors.soDienThoai = "Số điện thoại phải từ 10 đến 11 số";
+    }
+    
+    return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setSubmitError("");
+      return;
+    }
+    setValidationErrors({});
+    setSubmitError("");
+    
     try {
       await createTaiKhoan(
         formData.username,
         formData.password,
         formData.role,
         formData.hoTen,
-        formData.email
+        formData.email,
+        formData.soDienThoai
       );
       alert("Tạo tài khoản thành công!");
       handleCloseModal();
       loadAccounts();
     } catch (err) {
-      alert(err.response?.data?.message || "Có lỗi xảy ra!");
+      const errorMsg = err.response?.data?.message || "Có lỗi xảy ra!";
+      setSubmitError(errorMsg);
     }
   };
 
@@ -187,6 +224,11 @@ function TaiKhoanPage() {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="modal-form">
+              {submitError && (
+                <div className="error-message" style={{ marginBottom: "20px" }}>
+                  {submitError}
+                </div>
+              )}
               <div className="form-group">
                 <label>
                   Tên đăng nhập <span className="required">*</span>
@@ -251,6 +293,23 @@ function TaiKhoanPage() {
                     setFormData({ ...formData, email: e.target.value })
                   }
                 />
+                {validationErrors.email && (
+                  <span className="error-message">{validationErrors.email}</span>
+                )}
+              </div>
+              <div className="form-group">
+                <label>Số điện thoại</label>
+                <input
+                  type="text"
+                  placeholder="10-11 số"
+                  value={formData.soDienThoai}
+                  onChange={(e) =>
+                    setFormData({ ...formData, soDienThoai: e.target.value })
+                  }
+                />
+                {validationErrors.soDienThoai && (
+                  <span className="error-message">{validationErrors.soDienThoai}</span>
+                )}
               </div>
               <div className="form-actions">
                 <button type="button" className="btn-cancel" onClick={handleCloseModal}>

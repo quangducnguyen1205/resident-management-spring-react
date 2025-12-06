@@ -64,6 +64,14 @@ public class NhanKhauService {
         if (!hoKhauRepo.existsById(dto.getHoKhauId())) {
             throw new NotFoundException("Không tìm thấy hộ khẩu id = " + dto.getHoKhauId());
         }
+        
+        // Kiểm tra CCCD không trùng lặp
+        if (dto.getCmndCccd() != null && !dto.getCmndCccd().isEmpty()) {
+            if (nhanKhauRepo.existsByCmndCccd(dto.getCmndCccd())) {
+                throw new BadRequestException("Căn cước công dân đã tồn tại");
+            }
+        }
+        
         // CCCD validation based on age
         validateCccdByAge(dto.getNgaySinh(), dto.getCmndCccd(), dto.getNgayCap(), dto.getNoiCap());
 

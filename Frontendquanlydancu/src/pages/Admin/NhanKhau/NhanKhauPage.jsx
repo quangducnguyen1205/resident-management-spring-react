@@ -45,6 +45,8 @@ function NhanKhauPage() {
     ngayKetThuc: "",
     lyDo: "",
   });
+  const [validationErrors, setValidationErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
   const role = localStorage.getItem("role");
 
   const allowedRoles = ["ADMIN", "TOTRUONG", "KETOAN"];
@@ -153,6 +155,20 @@ function NhanKhauPage() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingItem(null);
+    setValidationErrors({});
+    setSubmitError("");
+  };
+
+  // Hàm validate dữ liệu nhân khẩu
+  const validateForm = () => {
+    const errors = {};
+    
+    // Validate CCCD
+    if (formData.cmndCccd && !/^\d{12}$/.test(formData.cmndCccd)) {
+      errors.cmndCccd = "Căn cước công dân phải gồm 12 số";
+    }
+    
+    return errors;
   };
 
   const handleOpenActionModal = (item, type) => {
@@ -174,6 +190,17 @@ function NhanKhauPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setSubmitError("");
+      return;
+    }
+    setValidationErrors({});
+    setSubmitError("");
+    
     try {
       const submitData = {
         ...formData,
@@ -191,7 +218,8 @@ function NhanKhauPage() {
       handleCloseModal();
       loadNhanKhaus();
     } catch (err) {
-      alert(err.response?.data?.message || "Có lỗi xảy ra!");
+      const errorMsg = err.response?.data?.message || "Có lỗi xảy ra!";
+      setSubmitError(errorMsg);
     }
   };
 
@@ -444,6 +472,11 @@ function NhanKhauPage() {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="modal-form">
+              {submitError && (
+                <div className="error-message" style={{ marginBottom: "20px" }}>
+                  {submitError}
+                </div>
+              )}
               <div className="form-row">
                 <div className="form-group">
                   <label>Họ tên <span className="required">*</span></label>
@@ -514,6 +547,9 @@ function NhanKhauPage() {
                     value={formData.cmndCccd}
                     onChange={(e) => setFormData({ ...formData, cmndCccd: e.target.value })}
                   />
+                  {validationErrors.cmndCccd && (
+                    <span className="error-message">{validationErrors.cmndCccd}</span>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Ngày cấp</label>

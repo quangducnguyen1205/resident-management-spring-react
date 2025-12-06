@@ -591,6 +591,18 @@
   min-height: 80px;
 }
 
+.form-group .error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 6px;
+  margin-bottom: 0;
+  font-size: 12px;
+  border-left: 3px solid #dc3545;
+  display: block;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -42,7 +43,8 @@ public class NhanKhauRequestDto {
     @Schema(description = "Nghề nghiệp", example = "Kỹ sư")
     private String ngheNghiep;
 
-    @Schema(description = "Số CMND/CCCD", example = "001234567890")
+    @Schema(description = "Số CMND/CCCD (12 chữ số)", example = "001234567890")
+    @Pattern(regexp = "^\\d{12}$", message = "Căn cước công dân phải gồm 12 số")
     private String cmndCccd;
 
     @Schema(description = "Ngày cấp CMND/CCCD", example = "2020-01-15")

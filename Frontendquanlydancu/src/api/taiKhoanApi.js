@@ -18,15 +18,17 @@ export const getAllTaiKhoan = async () => {
  * @param {string} role - "TOTRUONG" hoặc "KETOAN"
  * @param {string} hoTen - Họ tên (optional)
  * @param {string} email - Email (optional)
+ * @param {string} soDienThoai - Số điện thoại (optional)
  * @returns {Promise<any>}
  */
-export const createTaiKhoan = async (username, password, role, hoTen = "", email = "") => {
+export const createTaiKhoan = async (username, password, role, hoTen = "", email = "", soDienThoai = "") => {
   const response = await apiClient.post("/tai-khoan", {
     username,
     password,
     role,
     hoTen: hoTen || undefined,
     email: email || undefined,
+    soDienThoai: soDienThoai || undefined,
   });
   return response.data;
 };

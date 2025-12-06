@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
     // --- Search theo tên hoặc CCCD (contains, không phân biệt hoa-thường)
@@ -18,6 +19,8 @@ public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
     List<NhanKhau> findAllByOrderByIdAsc();
     List<NhanKhau> findByHoKhauIdOrderByIdAsc(Long hoKhauId);
 
+    // --- Kiểm tra CCCD có tồn tại không (trả về boolean để tránh lỗi unique result)
+    boolean existsByCmndCccd(String cmndCccd);
 
     @Query("""
             SELECT COUNT(n)
