@@ -15,6 +15,26 @@ import { getAllHoKhau, updateHoKhau } from "../../../api/hoKhauApi";
 import NoPermission from "../NoPermission";
 import "./NhanKhauPage.css";
 
+// Tính tuổi từ ngày sinh (yyyy-MM-dd)
+const calculateAge = (dateStr) => {
+  if (!dateStr) return null;
+  const birth = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
+};
+
+const parseDate = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
 function NhanKhauPage() {
   const [nhanKhaus, setNhanKhaus] = useState([]);
   const [hoKhaus, setHoKhaus] = useState([]);
@@ -48,6 +68,9 @@ function NhanKhauPage() {
   const [validationErrors, setValidationErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
   const role = localStorage.getItem("role");
+
+  const age = useMemo(() => calculateAge(formData.ngaySinh), [formData.ngaySinh]);
+  const isUnder14 = age !== null && age < 14;
 
   // Các hộ khẩu đã có chủ hộ (dùng để chặn chọn thêm "Chủ hộ")
   const hoKhauHasChuHo = useMemo(() => {
@@ -170,15 +193,75 @@ function NhanKhauPage() {
     setSubmitError("");
   };
 
+  // Nếu người được chọn < 14 tuổi, tự xóa dữ liệu CCCD và xóa lỗi liên quan
+  useEffect(() => {
+    if (!isUnder14) return;
+    setFormData((prev) => {
+      if (!prev.cmndCccd && !prev.ngayCap && !prev.noiCap) return prev;
+      return { ...prev, cmndCccd: "", ngayCap: "", noiCap: "" };
+    });
+    setValidationErrors((prev) => {
+      if (!prev.cmndCccd && !prev.ngayCap && !prev.noiCap) return prev;
+      const next = { ...prev };
+      delete next.cmndCccd;
+      delete next.ngayCap;
+      delete next.noiCap;
+      return next;
+    });
+  }, [isUnder14]);
+
   // Hàm validate dữ liệu nhân khẩu
   const validateForm = () => {
     const errors = {};
-    
-    // Validate CCCD
-    if (formData.cmndCccd && !/^\d{12}$/.test(formData.cmndCccd)) {
-      errors.cmndCccd = "Căn cước công dân phải gồm 12 số";
+
+    const birthDate = parseDate(formData.ngaySinh);
+    if (!birthDate) {
+      errors.ngaySinh = "Ngày sinh không hợp lệ";
+      return errors;
     }
-    
+
+    if (age !== null && age < 14) {
+      const hasCccdData =
+        (formData.cmndCccd && formData.cmndCccd.trim() !== "") ||
+        formData.ngayCap ||
+        (formData.noiCap && formData.noiCap.trim() !== "");
+      if (hasCccdData) {
+        const msg = "Người dưới 14 tuổi không được nhập thông tin CMND/CCCD";
+        errors.cmndCccd = msg;
+        errors.ngayCap = msg;
+        errors.noiCap = msg;
+      }
+      return errors;
+    }
+
+    if (age !== null && age >= 14) {
+      if (!formData.cmndCccd || formData.cmndCccd.trim() === "") {
+        errors.cmndCccd = "Người từ 14 tuổi trở lên phải nhập CMND/CCCD";
+      } else if (!/^\d{12}$/.test(formData.cmndCccd)) {
+        errors.cmndCccd = "CMND/CCCD phải gồm 12 chữ số";
+      }
+
+      const issuanceDate = parseDate(formData.ngayCap);
+      if (!formData.ngayCap) {
+        errors.ngayCap = "Người từ 14 tuổi trở lên phải nhập ngày cấp";
+      } else if (!issuanceDate) {
+        errors.ngayCap = "Ngày cấp không hợp lệ";
+      } else {
+        const minIssuance = new Date(birthDate);
+        minIssuance.setFullYear(minIssuance.getFullYear() + 14);
+        const today = new Date();
+        if (issuanceDate < minIssuance) {
+          errors.ngayCap = `Ngày cấp phải sau ngày sinh ít nhất 14 năm (từ ${minIssuance.toLocaleDateString("vi-VN")})`;
+        } else if (issuanceDate > today) {
+          errors.ngayCap = "Ngày cấp không được lớn hơn hôm nay";
+        }
+      }
+
+      if (!formData.noiCap || formData.noiCap.trim() === "") {
+        errors.noiCap = "Người từ 14 tuổi trở lên phải nhập nơi cấp";
+      }
+    }
+
     return errors;
   };
 
@@ -223,11 +306,15 @@ function NhanKhauPage() {
     }
 
     try {
+      const cleanedCmndCccd = formData.cmndCccd?.trim() || null;
+      const cleanedNoiCap = formData.noiCap?.trim() || null;
       const submitData = {
         ...formData,
+        cmndCccd: isUnder14 ? null : cleanedCmndCccd,
+        noiCap: isUnder14 ? null : cleanedNoiCap,
         hoKhauId: Number(formData.hoKhauId),
         ngaySinh: formData.ngaySinh || null,
-        ngayCap: formData.ngayCap || null,
+        ngayCap: isUnder14 ? null : formData.ngayCap || null,
       };
       if (editingItem) {
         // Cập nhật nhân khẩu
@@ -584,6 +671,8 @@ function NhanKhauPage() {
                     type="text"
                     value={formData.cmndCccd}
                     onChange={(e) => setFormData({ ...formData, cmndCccd: e.target.value })}
+                    disabled={isUnder14}
+                    placeholder={isUnder14 ? "Dưới 14 tuổi không nhập" : "Nhập 12 chữ số"}
                   />
                   {validationErrors.cmndCccd && (
                     <span className="error-message">{validationErrors.cmndCccd}</span>
@@ -595,7 +684,11 @@ function NhanKhauPage() {
                     type="date"
                     value={formData.ngayCap}
                     onChange={(e) => setFormData({ ...formData, ngayCap: e.target.value })}
+                    disabled={isUnder14}
                   />
+                  {validationErrors.ngayCap && (
+                    <span className="error-message">{validationErrors.ngayCap}</span>
+                  )}
                 </div>
               </div>
               <div className="form-group">
@@ -604,7 +697,12 @@ function NhanKhauPage() {
                   type="text"
                   value={formData.noiCap}
                   onChange={(e) => setFormData({ ...formData, noiCap: e.target.value })}
+                  disabled={isUnder14}
+                  placeholder={isUnder14 ? "Dưới 14 tuổi không nhập" : "Nhập nơi cấp"}
                 />
+                {validationErrors.noiCap && (
+                  <span className="error-message">{validationErrors.noiCap}</span>
+                )}
               </div>
               <div className="form-row">
                 <div className="form-group">

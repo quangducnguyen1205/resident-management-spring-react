@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   getAllHoKhau,
   getHoKhauById,
@@ -13,6 +13,26 @@ import {
 } from "../../../api/nhanKhauApi";
 import NoPermission from "../NoPermission";
 import "./HoKhauPage.css";
+
+// Helpers: tính tuổi và parse date an toàn
+const calculateAge = (dateStr) => {
+  if (!dateStr) return null;
+  const birth = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
+};
+
+const parseDate = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
 
 function HoKhauPage() {
   const [hoKhaus, setHoKhaus] = useState([]);
@@ -41,6 +61,9 @@ function HoKhauPage() {
   const [validationErrors, setValidationErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const role = localStorage.getItem("role");
+
+  const chuHoAge = useMemo(() => calculateAge(chuHoData.ngaySinh), [chuHoData.ngaySinh]);
+  const chuHoUnder14 = chuHoAge !== null && chuHoAge < 14;
 
   // Kiểm tra quyền: ADMIN, TOTRUONG có thể tạo/sửa/xóa, KETOAN chỉ xem
   const allowedRoles = ["ADMIN", "TOTRUONG", "KETOAN"];
@@ -136,6 +159,77 @@ function HoKhauPage() {
     setValidationErrors({});
   };
 
+  // Dưới 14 tuổi: tự xóa các trường CCCD và xóa lỗi liên quan
+  useEffect(() => {
+    if (!chuHoUnder14) return;
+    setChuHoData((prev) => {
+      if (!prev.cmndCccd && !prev.ngayCap && !prev.noiCap) return prev;
+      return { ...prev, cmndCccd: "", ngayCap: "", noiCap: "" };
+    });
+    setValidationErrors((prev) => {
+      if (!prev.cmndCccd && !prev.ngayCap && !prev.noiCap) return prev;
+      const next = { ...prev };
+      delete next.cmndCccd;
+      delete next.ngayCap;
+      delete next.noiCap;
+      return next;
+    });
+  }, [chuHoUnder14]);
+
+  // Validate thông tin chủ hộ theo tuổi/CCCD (khớp backend)
+  const validateChuHo = () => {
+    const errors = {};
+    const birthDate = parseDate(chuHoData.ngaySinh);
+    if (!birthDate) {
+      errors.ngaySinh = "Ngày sinh không hợp lệ";
+      return errors;
+    }
+
+    if (chuHoAge !== null && chuHoAge < 14) {
+      const hasCccdData =
+        (chuHoData.cmndCccd && chuHoData.cmndCccd.trim() !== "") ||
+        chuHoData.ngayCap ||
+        (chuHoData.noiCap && chuHoData.noiCap.trim() !== "");
+      if (hasCccdData) {
+        const msg = "Người dưới 14 tuổi không được nhập CMND/CCCD";
+        errors.cmndCccd = msg;
+        errors.ngayCap = msg;
+        errors.noiCap = msg;
+      }
+      return errors;
+    }
+
+    if (chuHoAge !== null && chuHoAge >= 14) {
+      if (!chuHoData.cmndCccd || chuHoData.cmndCccd.trim() === "") {
+        errors.cmndCccd = "Người từ 14 tuổi trở lên phải nhập CMND/CCCD";
+      } else if (!/^\d{12}$/.test(chuHoData.cmndCccd)) {
+        errors.cmndCccd = "CMND/CCCD phải gồm 12 chữ số";
+      }
+
+      const issuanceDate = parseDate(chuHoData.ngayCap);
+      if (!chuHoData.ngayCap) {
+        errors.ngayCap = "Người từ 14 tuổi trở lên phải nhập ngày cấp";
+      } else if (!issuanceDate) {
+        errors.ngayCap = "Ngày cấp không hợp lệ";
+      } else {
+        const minIssuance = new Date(birthDate);
+        minIssuance.setFullYear(minIssuance.getFullYear() + 14);
+        const today = new Date();
+        if (issuanceDate < minIssuance) {
+          errors.ngayCap = `Ngày cấp phải sau ngày sinh ít nhất 14 năm (từ ${minIssuance.toLocaleDateString("vi-VN")})`;
+        } else if (issuanceDate > today) {
+          errors.ngayCap = "Ngày cấp không được lớn hơn hôm nay";
+        }
+      }
+
+      if (!chuHoData.noiCap || chuHoData.noiCap.trim() === "") {
+        errors.noiCap = "Người từ 14 tuổi trở lên phải nhập nơi cấp";
+      }
+    }
+
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -169,10 +263,7 @@ function HoKhauPage() {
         alert("Cập nhật hộ khẩu thành công!");
       } else {
         // Validate dữ liệu nhân khẩu chủ hộ
-        const errors = {};
-        if (chuHoData.cmndCccd && !/^\d{12}$/.test(chuHoData.cmndCccd)) {
-          errors.cmndCccd = "Căn cước công dân phải gồm 12 số";
-        }
+        const errors = validateChuHo();
         setValidationErrors(errors);
         if (Object.keys(errors).length > 0) {
           setIsSubmitting(false);
@@ -189,13 +280,17 @@ function HoKhauPage() {
             throw new Error("Không xác định được ID hộ khẩu vừa tạo");
           }
 
+          const cleanedCmnd = chuHoData.cmndCccd?.trim() || null;
+          const cleanedNoiCap = chuHoData.noiCap?.trim() || null;
           await createNhanKhau({
             ...chuHoData,
             hoTen: formData.tenChuHo,
             hoKhauId,
             quanHeChuHo: "Chủ hộ",
             ngaySinh: chuHoData.ngaySinh || null,
-            ngayCap: chuHoData.ngayCap || null,
+            cmndCccd: chuHoUnder14 ? null : cleanedCmnd,
+            ngayCap: chuHoUnder14 ? null : chuHoData.ngayCap || null,
+            noiCap: chuHoUnder14 ? null : cleanedNoiCap,
           });
           alert("Tạo hộ khẩu và chủ hộ thành công!");
         } catch (err) {
@@ -397,6 +492,9 @@ function HoKhauPage() {
                       }
                       required
                     />
+                    {validationErrors.ngaySinh && (
+                      <span className="error-message">{validationErrors.ngaySinh}</span>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Giới tính</label>
@@ -455,6 +553,8 @@ function HoKhauPage() {
                       onChange={(e) =>
                         setChuHoData({ ...chuHoData, cmndCccd: e.target.value })
                       }
+                      disabled={chuHoUnder14}
+                      placeholder={chuHoUnder14 ? "Dưới 14 tuổi không nhập" : "Nhập 12 chữ số"}
                     />
                     {validationErrors.cmndCccd && (
                       <span className="error-message">{validationErrors.cmndCccd}</span>
@@ -468,7 +568,11 @@ function HoKhauPage() {
                       onChange={(e) =>
                         setChuHoData({ ...chuHoData, ngayCap: e.target.value })
                       }
+                      disabled={chuHoUnder14}
                     />
+                    {validationErrors.ngayCap && (
+                      <span className="error-message">{validationErrors.ngayCap}</span>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Nơi cấp</label>
@@ -478,7 +582,12 @@ function HoKhauPage() {
                       onChange={(e) =>
                         setChuHoData({ ...chuHoData, noiCap: e.target.value })
                       }
+                      disabled={chuHoUnder14}
+                      placeholder={chuHoUnder14 ? "Dưới 14 tuổi không nhập" : "Nhập nơi cấp"}
                     />
+                    {validationErrors.noiCap && (
+                      <span className="error-message">{validationErrors.noiCap}</span>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Quan hệ với chủ hộ</label>
