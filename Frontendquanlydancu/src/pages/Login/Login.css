@@ -1,0 +1,377 @@
+/* Background chiếm đúng màn hình và KHÔNG scroll */
+.login-background {
+  background: url("/bg.jpg") no-repeat center center/cover;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  overflow: hidden;
+}
+
+/* Card vừa màn hình, không tràn */
+.login-card {
+  background: white;
+  width: 75vw;
+  max-width: 850px;
+  max-height: 80vh;
+  display: flex;
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bên trái */
+.login-left {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 30px;
+  background: linear-gradient(135deg, #1e56a0 0%, #133e73 100%);
+}
+
+.login-logo {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 15px rgba(0, 220, 255, 0.8)) drop-shadow(0 0 30px rgba(0, 220, 255, 0.6)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  box-shadow: 0 0 40px rgba(0, 220, 255, 0.7), 0 0 60px rgba(0, 220, 255, 0.4), 0 0 80px rgba(0, 220, 255, 0.2);
+  animation: float 3s ease-in-out infinite, rotate 6s linear infinite, scalePulse 1.5s ease-in-out infinite, glowIntense 2s ease-in-out infinite, brightnessFlash 2.5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotateZ(0deg);
+  }
+  100% {
+    transform: rotateZ(360deg);
+  }
+}
+
+@keyframes scalePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes glowIntense {
+  0%, 100% {
+    filter: drop-shadow(0 0 15px rgba(0, 220, 255, 0.8)) drop-shadow(0 0 30px rgba(0, 220, 255, 0.6)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    box-shadow: 0 0 40px rgba(0, 220, 255, 0.7), 0 0 60px rgba(0, 220, 255, 0.4), 0 0 80px rgba(0, 220, 255, 0.2);
+  }
+  50% {
+    filter: drop-shadow(0 0 25px rgba(0, 220, 255, 1)) drop-shadow(0 0 45px rgba(0, 220, 255, 0.9)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    box-shadow: 0 0 60px rgba(0, 220, 255, 0.9), 0 0 90px rgba(0, 220, 255, 0.7), 0 0 120px rgba(0, 220, 255, 0.4);
+  }
+}
+
+@keyframes brightnessFlash {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.5);
+  }
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+}
+
+.login-title-left {
+  color: white;
+  font-weight: 700;
+  font-size: 28px;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+/* Bên phải */
+.login-right {
+  width: 60%;
+  padding: 40px 30px;
+  background: white;
+}
+
+.login-title {
+  text-align: center;
+  background: linear-gradient(90deg, #1e56a0, #00d4ff, #1e56a0);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 36px;
+  margin-bottom: 30px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  animation: gradientShift 3s ease-in-out infinite;
+  text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+  filter: drop-shadow(0 2px 8px rgba(30, 86, 160, 0.4));
+}
+
+/* Label */
+.login-label {
+  font-weight: 700;
+  background: linear-gradient(135deg, #1e56a0, #00a8cc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+  display: block;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Input */
+.login-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 2px solid #e0e0e0;
+  font-size: 15px;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #f9f9f9 0%, #ffffff 100%);
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #00d4ff;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.15),
+              0 0 20px rgba(0, 212, 255, 0.3),
+              0 4px 12px rgba(30, 86, 160, 0.2);
+  transform: translateY(-2px);
+}
+
+/* WRAPPER + ICON MẮT */
+.input-wrapper {
+  width: 100%;
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.input-wrapper .login-input {
+  width: 100%;
+  padding-right: 40px; /* chừa chỗ icon */
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
+
+/* Icon mắt */
+.eye-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 20px;
+  color: #999;
+  user-select: none;
+  background: transparent;
+  padding: 8px 6px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-icon:hover {
+  color: #1e56a0;
+  background: rgba(30, 86, 160, 0.1);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.eye-icon:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* Button */
+.login-btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #1e56a0 0%, #00d4ff 50%, #1e56a0 100%);
+  background-size: 200% auto;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: block;
+  margin: 25px auto 0 auto;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4),
+              0 0 40px rgba(0, 212, 255, 0.2),
+              inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  animation: buttonGlow 3s ease-in-out infinite;
+}
+
+.login-btn::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transform: rotate(45deg);
+  animation: shine 3s infinite;
+}
+
+@keyframes buttonGlow {
+  0%, 100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+.login-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(0, 212, 255, 0.6),
+              0 0 60px rgba(0, 212, 255, 0.4),
+              inset 0 1px 3px rgba(255, 255, 255, 0.5);
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+}
+
+.login-btn:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.5),
+              0 0 30px rgba(0, 212, 255, 0.3);
+}
+
+/* RADIO GROUP */
+.role-group {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background-image: linear-gradient(white, white),
+                    linear-gradient(135deg, #1e56a0, #00d4ff);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 4px 15px rgba(30, 86, 160, 0.1),
+              inset 0 1px 3px rgba(255, 255, 255, 0.8);
+}
+
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.role-option:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(30, 86, 160, 0.1));
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.2);
+}
+
+.role-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #00d4ff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.role-option input[type="radio"]:checked {
+  filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.8));
+  transform: scale(1.1);
+}
+
+.role-text {
+  font-size: 16px;
+  color: #555;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  letter-spacing: 0.3px;
+}
+
+.role-option:hover .role-text {
+  color: #1e56a0;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.role-option:has(input[type="radio"]:checked) .role-text {
+  color: #1e56a0;
+  font-weight: 700;
+  background: linear-gradient(135deg, #1e56a0, #00d4ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Lỗi đăng nhập */
+.login-error {
+  color: #d9534f;
+  margin-top: -5px;
+  margin-bottom: 5px;
+  font-size: 14px;
+  text-align: center;
+}

@@ -16,9 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.time.LocalDate;
@@ -66,6 +64,14 @@ public class NhanKhauService {
         if (!hoKhauRepo.existsById(dto.getHoKhauId())) {
             throw new NotFoundException("Không tìm thấy hộ khẩu id = " + dto.getHoKhauId());
         }
+        
+        // Kiểm tra CCCD không trùng lặp
+        if (dto.getCmndCccd() != null && !dto.getCmndCccd().isEmpty()) {
+            if (nhanKhauRepo.existsByCmndCccd(dto.getCmndCccd())) {
+                throw new BadRequestException("Căn cước công dân đã tồn tại");
+            }
+        }
+        
         // CCCD validation based on age
         validateCccdByAge(dto.getNgaySinh(), dto.getCmndCccd(), dto.getNgayCap(), dto.getNoiCap());
 
@@ -382,59 +388,47 @@ public class NhanKhauService {
     }
 
     // Thống kê theo tuổi: thiếu nhi / đi làm / về hưu
-    public java.util.Map<String, Object> statsByAge(java.lang.Integer underAge, java.lang.Integer retireAge) {
-        int ua = (underAge == null || underAge <= 0) ? 16 : underAge;      // mặc định thiếu nhi <16
-        int ra = (retireAge == null || retireAge <= ua) ? 60 : retireAge;  // mặc định về hưu >=60
+    public Map<String, Object> statsByAge() {
 
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.LocalDate cutoffChild  = today.minusYears(ua);
-        java.time.LocalDate cutoffRetire = today.minusYears(ra);
+        LocalDate now = LocalDate.now();
 
-        var rows = nhanKhauRepo.countByAgeBuckets(cutoffChild, cutoffRetire);
+        long diHoc = 0;
+        long diLam = 0;
+        long veHuu = 0;
 
-        java.util.Map<String, Long> totals = new java.util.LinkedHashMap<>();
-        java.util.Map<String, java.util.Map<String, Long>> byGender = new java.util.LinkedHashMap<>();
-        for (String b : new String[]{"CHILD", "WORKING", "RETIRED"}) {
-            totals.put(b, 0L);
-            byGender.put(b, new java.util.LinkedHashMap<>());
+        List<NhanKhau> all = nhanKhauRepo.findAll();
+
+        for (NhanKhau nk : all) {
+            if (nk.getNgaySinh() == null) continue;
+
+            int age = java.time.Period.between(nk.getNgaySinh(), now).getYears();
+
+            if (age <= 16) {
+                diHoc++;
+            } else if (age < 60) {
+                diLam++;
+            } else {
+                veHuu++;
+            }
         }
 
-        long grand = 0;
-        for (var r : rows) {
-            String bucket = r.getBucket();
-            String gender = r.getGioiTinh() == null ? "Không xác định" : r.getGioiTinh();
-            long c = r.getTotal();
-            totals.put(bucket, totals.get(bucket) + c);
-            var gmap = byGender.get(bucket);
-            gmap.put(gender, gmap.getOrDefault(gender, 0L) + c);
-            grand += c;
-        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("total", all.size());
 
-        java.util.Map<String, Object> buckets = new java.util.LinkedHashMap<>();
-        buckets.put("thieuNhi", java.util.Map.of(
-                "label", "Thiếu nhi (< " + ua + ")",
-                "total", totals.get("CHILD"),
-                "byGender", byGender.get("CHILD")
+        result.put("diHoc", Map.of(
+                "label", "Đi học (≤16 tuổi)",
+                "soNguoi", diHoc
         ));
-        buckets.put("diLam", java.util.Map.of(
-                "label", "Người đi làm (" + ua + "–" + (ra - 1) + ")",
-                "total", totals.get("WORKING"),
-                "byGender", byGender.get("WORKING")
+        result.put("diLam", Map.of(
+                "label", "Đi làm (17–59 tuổi)",
+                "soNguoi", diLam
         ));
-        buckets.put("veHuu", java.util.Map.of(
-                "label", "Người về hưu (≥ " + ra + ")",
-                "total", totals.get("RETIRED"),
-                "byGender", byGender.get("RETIRED")
+        result.put("veHuu", Map.of(
+                "label", "Về hưu (≥60 tuổi)",
+                "soNguoi", veHuu
         ));
 
-        java.util.Map<String, Object> out = new java.util.LinkedHashMap<>();
-        out.put("underAge", ua);
-        out.put("retireAge", ra);
-        out.put("cutoffChildBirthdayAfter", cutoffChild);
-        out.put("cutoffRetireBirthdayAfter", cutoffRetire);
-        out.put("total", grand);
-        out.put("buckets", buckets);
-        return out;
+        return result;
     }
 
     private void triggerFeeRecalculation(Long hoKhauId) {

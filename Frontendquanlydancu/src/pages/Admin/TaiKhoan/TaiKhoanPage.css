@@ -1,0 +1,294 @@
+.tai-khoan-page {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  color: #1e56a0;
+  margin: 0;
+  font-size: 24px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-add {
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.btn-add:hover {
+  background: #218838;
+}
+
+.btn-refresh {
+  padding: 8px 16px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.btn-refresh:hover {
+  background: #138496;
+}
+
+.page-loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.tai-khoan-page .table-container {
+  overflow-x: auto;
+}
+
+.tai-khoan-page .data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tai-khoan-page .data-table th {
+  background: #1e56a0;
+  color: white;
+  padding: 14px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tai-khoan-page .data-table th:last-child {
+  border-right: none;
+}
+
+.tai-khoan-page .data-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  border-right: 1px solid #f0f0f0;
+}
+
+.tai-khoan-page .data-table td:last-child {
+  border-right: none;
+}
+
+.tai-khoan-page .data-table tr:hover {
+  background: #f5f5f5;
+}
+
+.empty-message {
+  text-align: center;
+  color: #999;
+  padding: 40px;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-ADMIN {
+  background: #dc3545;
+  color: white;
+}
+
+.role-TOTRUONG {
+  background: #28a745;
+  color: white;
+}
+
+.role-KETOAN {
+  background: #ffc107;
+  color: #333;
+}
+
+.btn-delete {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  transition: all 0.3s;
+  min-width: 110px;
+  min-height: 38px;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+  display: block;
+  margin: 0 auto;
+}
+
+.btn-delete:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #1e56a0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #999;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.modal-form {
+  padding: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.required {
+  color: #dc3545;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #1e56a0;
+  box-shadow: 0 0 0 3px rgba(30, 86, 160, 0.1);
+}
+
+.form-group .error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 6px;
+  margin-bottom: 0;
+  font-size: 12px;
+  border-left: 3px solid #dc3545;
+  display: block;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  padding: 10px 20px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-cancel:hover {
+  background: #5a6268;
+}
+
+.btn-submit {
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-submit:hover {
+  background: #218838;
+}

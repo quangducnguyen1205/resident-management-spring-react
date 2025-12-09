@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
     // --- Search theo tên hoặc CCCD (contains, không phân biệt hoa-thường)
@@ -18,6 +19,8 @@ public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
     List<NhanKhau> findAllByOrderByIdAsc();
     List<NhanKhau> findByHoKhauIdOrderByIdAsc(Long hoKhauId);
 
+    // --- Kiểm tra CCCD có tồn tại không (trả về boolean để tránh lỗi unique result)
+    boolean existsByCmndCccd(String cmndCccd);
 
     @Query("""
             SELECT COUNT(n)
@@ -39,33 +42,4 @@ public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
            GROUP BY n.gioiTinh
            """)
     List<GenderCount> countByGioiTinh();
-
-    // --- Projection cho thống kê theo nhóm tuổi + giới tính
-    interface AgeBucketGenderCount {
-        String getBucket();   // "CHILD" | "WORKING" | "RETIRED"
-        String getGioiTinh(); // Nam/Nữ/Khác/null
-        Long getTotal();
-    }
-
-    @Query(nativeQuery = true, value = """
-        WITH age_bucket AS (
-          SELECT
-            id,
-            CASE
-              WHEN ngay_sinh > :cutoffChild  THEN 'CHILD'
-              WHEN ngay_sinh > :cutoffRetire THEN 'WORKING'
-              ELSE 'RETIRED'
-            END AS bucket,
-            gioi_tinh
-          FROM nhan_khau
-          WHERE ngay_sinh IS NOT NULL
-        )
-        SELECT bucket, gioi_tinh AS gioiTinh, COUNT(*) AS total
-        FROM age_bucket
-        GROUP BY bucket, gioi_tinh
-        """)
-    List<AgeBucketGenderCount> countByAgeBuckets(
-            @Param("cutoffChild") LocalDate cutoffChild,
-            @Param("cutoffRetire") LocalDate cutoffRetire
-    );
 }

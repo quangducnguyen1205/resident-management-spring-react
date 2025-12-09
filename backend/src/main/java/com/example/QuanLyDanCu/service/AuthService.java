@@ -26,6 +26,13 @@ public class AuthService {
         if (repo.findByTenDangNhap(dto.getUsername()).isPresent()) {
             throw new BadRequestException("Tên đăng nhập đã tồn tại");
         }
+        
+        // Check if email already exists
+        if (dto.getEmail() != null && !dto.getEmail().isEmpty()) {
+            if (repo.existsByEmail(dto.getEmail())) {
+                throw new BadRequestException("Email đã tồn tại");
+            }
+        }
 
         TaiKhoan tk = TaiKhoan.builder()
                 .tenDangNhap(dto.getUsername())

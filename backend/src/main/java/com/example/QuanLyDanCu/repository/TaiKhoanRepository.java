@@ -6,4 +6,7 @@ import java.util.Optional;
 
 public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, Long> {
     Optional<TaiKhoan> findByTenDangNhap(String tenDangNhap);
+    
+    // Kiểm tra email có tồn tại không (trả về boolean để tránh lỗi unique result)
+    boolean existsByEmail(String email);
 }
