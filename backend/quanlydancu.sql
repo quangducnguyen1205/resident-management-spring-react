@@ -8,8 +8,7 @@ CREATE TABLE tai_khoan (
     vai_tro VARCHAR(50),
     ho_ten VARCHAR(255),
     email VARCHAR(255),
-    ngay_tao TIMESTAMP,
-    trang_thai VARCHAR(20)
+    ngay_tao TIMESTAMP
 );
 
 -- ========================

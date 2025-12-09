@@ -102,6 +102,21 @@
   font-size: 14px;
 }
 
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 10px 0 18px;
+}
+
+.search-group input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 220px;
+}
+
 .period-info {
   display: flex;
   align-items: center;

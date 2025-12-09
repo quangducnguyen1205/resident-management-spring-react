@@ -67,20 +67,28 @@ function DotThuPhiPage() {
 
     if (isSubmitting) return;
 
-    // Client-side validation
-    // 1. Check date range: ngayKetThuc >= ngayBatDau
+    // Validation bắt buộc
+    if (!formData.tenDot || !formData.loai || !formData.ngayBatDau || !formData.ngayKetThuc) {
+      alert("Vui lòng nhập đầy đủ các trường bắt buộc (*)");
+      return;
+    }
+
+    // Kiểm tra ngày
     if (formData.ngayKetThuc < formData.ngayBatDau) {
       alert("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu");
       return;
     }
 
-    // 2. Check dinhMuc for BAT_BUOC: must be > 0
+    // Định mức chỉ áp dụng cho BAT_BUOC
+    let dinhMucValue = 0;
     if (formData.loai === "BAT_BUOC") {
-      const dinhMucValue = Number(formData.dinhMuc);
-      if (!formData.dinhMuc || dinhMucValue <= 0) {
-        alert("Định mức phải lớn hơn 0 cho đợt bắt buộc");
+      dinhMucValue = Number(formData.dinhMuc);
+      if (!formData.dinhMuc || Number.isNaN(dinhMucValue) || dinhMucValue <= 0) {
+        alert("Định mức phải lớn hơn 0");
         return;
       }
+    } else {
+      dinhMucValue = 0;
     }
 
     try {
@@ -91,7 +99,7 @@ function DotThuPhiPage() {
         loai: formData.loai,
         ngayBatDau: formData.ngayBatDau,
         ngayKetThuc: formData.ngayKetThuc,
-        dinhMuc: formData.dinhMuc ? Number(formData.dinhMuc) : 0,
+        dinhMuc: dinhMucValue,
         ghiChu: formData.ghiChu || null,
       };
 
@@ -209,7 +217,7 @@ function DotThuPhiPage() {
                 ×
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="modal-form">
+            <form onSubmit={handleSubmit} className="modal-form" noValidate>
               <div className="form-group">
                 <label>
                   Tên đợt <span className="required">*</span>
@@ -270,34 +278,31 @@ function DotThuPhiPage() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>
-                  Định mức (VNĐ/người/tháng){" "}
-                  {formData.loai === "BAT_BUOC" && (
-                    <span className="required">*</span>
-                  )}
-                </label>
-                <input
-                  type="number"
-                  value={formData.dinhMuc}
-                  onChange={(e) =>
-                    setFormData({ ...formData, dinhMuc: e.target.value })
-                  }
-                  min="0"
-                  step="1000"
-                  placeholder={
-                    formData.loai === "BAT_BUOC"
-                      ? "Nhập định mức (bắt buộc)"
-                      : "Nhập định mức gợi ý (không bắt buộc)"
-                  }
-                  required={formData.loai === "BAT_BUOC"}
-                />
-                {formData.loai === "TU_NGUYEN" && (
+              {formData.loai === "BAT_BUOC" && (
+                <div className="form-group">
+                  <label>
+                    Định mức (VNĐ/người/tháng) <span className="required">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.dinhMuc}
+                    onChange={(e) =>
+                      setFormData({ ...formData, dinhMuc: e.target.value })
+                    }
+                    min="0"
+                    step="1000"
+                    placeholder="Nhập định mức (bắt buộc)"
+                  />
+                </div>
+              )}
+
+              {formData.loai === "TU_NGUYEN" && (
+                <div className="form-group">
                   <small className="field-hint">
-                    Đối với phí tự nguyện, định mức chỉ là gợi ý, không bắt buộc.
+                    Phí tự nguyện không có định mức cố định. Mỗi hộ sẽ chọn số tiền khi thu.
                   </small>
-                )}
-              </div>
+                </div>
+              )}
 
               <div className="form-group">
                 <label>Ghi chú</label>

@@ -21,10 +21,12 @@ function ThuPhiHoKhauPage() {
   const [thuPhiRecords, setThuPhiRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState(""); // "thu_phi_bat_buoc" | "create_tu_nguyen" | "edit_tu_nguyen"
+  const [modalMode, setModalMode] = useState(""); // "thu_phi_bat_buoc" | "create_tu_nguyen" | "edit_tu_nguyen" | "edit_bat_buoc"
   const [editingItem, setEditingItem] = useState(null);
   const [calculatedData, setCalculatedData] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -100,6 +102,8 @@ function ThuPhiHoKhauPage() {
       ]);
       setOverview(overviewData);
       setThuPhiRecords(recordsData || []);
+      setStatusFilter("ALL");
+      setSearchTerm("");
     } catch (err) {
       setError(err.response?.data?.message || "Không thể tải dữ liệu thu phí");
     } finally {
@@ -139,27 +143,34 @@ function ThuPhiHoKhauPage() {
   // ========== MANDATORY FEE (BAT_BUOC) HANDLERS ==========
 
   const handleOpenThuPhiBatBuoc = async (hoKhauItem) => {
-    try {
-      setIsSubmitting(true);
-      const calcData = await calculateThuPhi(hoKhauItem.hoKhauId, selectedDotId);
-      setCalculatedData({
-        ...calcData,
-        hoKhauId: hoKhauItem.hoKhauId,
-        soHoKhau: hoKhauItem.soHoKhau,
-        tenChuHo: hoKhauItem.tenChuHo,
-      });
-      setBatBuocFormData({
-        ngayThu: getDefaultDate(),
-        ghiChu: "",
-      });
-      setModalMode("thu_phi_bat_buoc");
-      setShowModal(true);
-    } catch (err) {
-      alert(err.response?.data?.message || "Không thể tính phí cho hộ khẩu này");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  try {
+    setIsSubmitting(true);
+    const calcData = await calculateThuPhi(hoKhauItem.hoKhauId, selectedDotId);
+
+    // Chuẩn hoá dữ liệu từ API calculate -> state dùng trong UI
+    setCalculatedData({
+      hoKhauId: hoKhauItem.hoKhauId,
+      soHoKhau: hoKhauItem.soHoKhau,
+      tenChuHo: hoKhauItem.tenChuHo,
+      soNguoi: calcData.memberCount ?? 0,
+      soThang: calcData.soThang ?? 0,
+      dinhMuc: calcData.dinhMuc ?? 0,
+      tongPhi: calcData.totalFee ?? 0,
+      // formula: calcData.formula, // nếu sau này muốn show công thức
+    });
+
+    setBatBuocFormData({
+      ngayThu: getDefaultDate(),
+      ghiChu: "",
+    });
+    setModalMode("thu_phi_bat_buoc");
+    setShowModal(true);
+  } catch (err) {
+    alert(err.response?.data?.message || "Không thể tính phí cho hộ khẩu này");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleSubmitBatBuoc = async (e) => {
     e.preventDefault();
@@ -192,6 +203,69 @@ function ThuPhiHoKhauPage() {
     }
   };
 
+  const handleOpenEditBatBuoc = (item) => {
+    setEditingItem(item);
+    setCalculatedData({
+      hoKhauId: item.hoKhauId,
+      soHoKhau: item.soHoKhau,
+      tenChuHo: item.tenChuHo,
+      tongPhi: item.tongPhi,
+      soNguoi: item.soNguoi,
+      soThang: item.soThang,
+      dinhMuc: selectedDot?.dinhMuc,
+    });
+    setBatBuocFormData({
+      ngayThu: item.ngayThu ? item.ngayThu.split("T")[0] : getDefaultDate(),
+      ghiChu: item.ghiChu || "",
+    });
+    setModalMode("edit_bat_buoc");
+    setShowModal(true);
+  };
+
+  const handleSubmitEditBatBuoc = async (e) => {
+    e.preventDefault();
+
+    if (!batBuocFormData.ngayThu) {
+      alert("Vui lòng chọn ngày thu");
+      return;
+    }
+
+    if (!isDateInPeriod(batBuocFormData.ngayThu)) {
+      alert("Ngày thu phải nằm trong khoảng thời gian của đợt thu phí");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await updateThuPhiHoKhau(editingItem.id, {
+        hoKhauId: editingItem.hoKhauId,
+        dotThuPhiId: editingItem.dotThuPhiId,
+        ngayThu: batBuocFormData.ngayThu,
+        ghiChu: batBuocFormData.ghiChu || "",
+      });
+      alert("Cập nhật thu phí thành công");
+      handleCloseModal();
+      loadDataForDot(selectedDotId);
+    } catch (err) {
+      alert(err.response?.data?.message || "Có lỗi xảy ra khi cập nhật");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteBatBuoc = async (item) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa khoản thu này?")) {
+      return;
+    }
+    try {
+      await deleteThuPhiHoKhau(item.id);
+      alert("Đã xóa khoản thu");
+      loadDataForDot(selectedDotId);
+    } catch (err) {
+      alert(err.response?.data?.message || "Có lỗi xảy ra khi xóa");
+    }
+  };
+
   // ========== VOLUNTARY FEE (TU_NGUYEN) HANDLERS ==========
 
   const handleOpenCreateTuNguyen = () => {
@@ -221,6 +295,11 @@ function ThuPhiHoKhauPage() {
   const handleSubmitTuNguyen = async (e) => {
     e.preventDefault();
 
+    if (!formData.hoKhauId) {
+      alert("Vui lòng chọn hộ khẩu");
+      return;
+    }
+
     if (!formData.ngayThu) {
       alert("Vui lòng chọn ngày thu");
       return;
@@ -233,8 +312,8 @@ function ThuPhiHoKhauPage() {
 
     if (modalMode === "create_tu_nguyen") {
       const tongPhiValue = Number(formData.tongPhi);
-      if (!tongPhiValue || tongPhiValue <= 0) {
-        alert("Số tiền phải lớn hơn 0");
+      if (!formData.tongPhi || Number.isNaN(tongPhiValue) || tongPhiValue <= 0) {
+        alert("Vui lòng nhập số tiền hợp lệ lớn hơn 0");
         return;
       }
 
@@ -306,37 +385,80 @@ function ThuPhiHoKhauPage() {
   // ========== RENDER HELPERS ==========
 
   const renderOverviewCards = () => {
-    if (!overview) return null;
+    if (!selectedDot) return null;
+
+    if (selectedDot.loai === "BAT_BUOC") {
+      const totalHouseholds = overview?.tongHo || 0;
+      const paid = overview?.soHoDaNop || 0;
+      const unpaid = overview?.soHoChuaNop || 0;
+      const totalMoney = overview?.tongDaThu || 0;
+
+      return (
+        <div className="overview-cards">
+          <div className="overview-card">
+            <div className="overview-icon">🏠</div>
+            <div className="overview-content">
+              <div className="overview-label">Tổng số hộ</div>
+              <div className="overview-value">{totalHouseholds}</div>
+            </div>
+          </div>
+          <div className="overview-card overview-success">
+            <div className="overview-icon">✅</div>
+            <div className="overview-content">
+              <div className="overview-label">Đã thu</div>
+              <div className="overview-value">{paid}</div>
+            </div>
+          </div>
+          <div className="overview-card overview-warning">
+            <div className="overview-icon">⏳</div>
+            <div className="overview-content">
+              <div className="overview-label">Chưa thu</div>
+              <div className="overview-value">{unpaid}</div>
+            </div>
+          </div>
+          <div className="overview-card overview-info">
+            <div className="overview-icon">💰</div>
+            <div className="overview-content">
+              <div className="overview-label">Tổng tiền đã thu</div>
+              <div className="overview-value">
+                {Number(totalMoney || 0).toLocaleString("vi-VN")} đ
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // TU_NGUYEN summary computed from list
+    const totalPayments = thuPhiRecords.length;
+    const totalAmount = thuPhiRecords.reduce((sum, item) => sum + (item.tongPhi || 0), 0);
 
     return (
       <div className="overview-cards">
         <div className="overview-card">
-          <div className="overview-icon">🏠</div>
+          <div className="overview-icon">🧾</div>
           <div className="overview-content">
-            <div className="overview-label">Tổng số hộ</div>
-            <div className="overview-value">{overview.tongSoHo || 0}</div>
+            <div className="overview-label">Số khoản thu</div>
+            <div className="overview-value">{totalPayments}</div>
           </div>
         </div>
         <div className="overview-card overview-success">
-          <div className="overview-icon">✅</div>
-          <div className="overview-content">
-            <div className="overview-label">Đã thu</div>
-            <div className="overview-value">{overview.daThu || 0}</div>
-          </div>
-        </div>
-        <div className="overview-card overview-warning">
-          <div className="overview-icon">⏳</div>
-          <div className="overview-content">
-            <div className="overview-label">Chưa thu</div>
-            <div className="overview-value">{overview.chuaThu || 0}</div>
-          </div>
-        </div>
-        <div className="overview-card overview-info">
           <div className="overview-icon">💰</div>
           <div className="overview-content">
             <div className="overview-label">Tổng tiền đã thu</div>
             <div className="overview-value">
-              {(overview.tongTien || 0).toLocaleString("vi-VN")} đ
+              {Number(totalAmount || 0).toLocaleString("vi-VN")} đ
+            </div>
+          </div>
+        </div>
+        <div className="overview-card overview-info">
+          <div className="overview-icon">📅</div>
+          <div className="overview-content">
+            <div className="overview-label">Khoảng thời gian</div>
+            <div className="overview-value" style={{ fontSize: "14px" }}>
+              {selectedDot
+                ? `${new Date(selectedDot.ngayBatDau).toLocaleDateString("vi-VN")} - ${new Date(selectedDot.ngayKetThuc).toLocaleDateString("vi-VN")}`
+                : ""}
             </div>
           </div>
         </div>
@@ -345,11 +467,48 @@ function ThuPhiHoKhauPage() {
   };
 
   const renderBatBuocTable = () => {
-    // For mandatory fees, use overview.danhSachHoKhau which includes virtual CHUA_NOP
-    const households = overview?.danhSachHoKhau || [];
+    const households = overview?.households || [];
+
+    const filteredHouseholds = households.filter((hk) => {
+      const matchStatus =
+        statusFilter === "ALL" ||
+        (statusFilter === "DA_NOP" && hk.trangThai === "DA_NOP") ||
+        (statusFilter === "CHUA_NOP" && hk.trangThai === "CHUA_NOP");
+
+      const keyword = searchTerm.trim().toLowerCase();
+      const matchKeyword =
+        keyword.length === 0 ||
+        (hk.soHoKhau || "").toLowerCase().includes(keyword) ||
+        (hk.tenChuHo || "").toLowerCase().includes(keyword);
+
+      return matchStatus && matchKeyword;
+    });
 
     return (
       <div className="table-container">
+        <div className="filters-row">
+          <div className="filter-group">
+            <label>Trạng thái:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="dot-select"
+            >
+              <option value="ALL">Tất cả</option>
+              <option value="DA_NOP">Đã nộp</option>
+              <option value="CHUA_NOP">Chưa nộp</option>
+            </select>
+          </div>
+          <div className="filter-group search-group">
+            <label>Tìm kiếm:</label>
+            <input
+              type="text"
+              placeholder="Số hộ khẩu hoặc tên chủ hộ"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
         <table className="data-table">
           <thead>
             <tr>
@@ -364,14 +523,14 @@ function ThuPhiHoKhauPage() {
             </tr>
           </thead>
           <tbody>
-            {households.length === 0 ? (
+            {filteredHouseholds.length === 0 ? (
               <tr>
                 <td colSpan={canEdit ? 8 : 7} className="empty-message">
                   Không có dữ liệu
                 </td>
               </tr>
             ) : (
-              households.map((hk, index) => (
+              filteredHouseholds.map((hk, index) => (
                 <tr key={hk.hoKhauId || index}>
                   <td style={{ textAlign: "center" }}>{index + 1}</td>
                   <td>{hk.soHoKhau || "-"}</td>
@@ -403,7 +562,20 @@ function ThuPhiHoKhauPage() {
                           Thu phí
                         </button>
                       ) : (
-                        <span className="text-muted">-</span>
+                        <div className="action-buttons">
+                          <button
+                            className="btn-edit"
+                            onClick={() => handleOpenEditBatBuoc(hk)}
+                          >
+                            Xem / chỉnh sửa
+                          </button>
+                          <button
+                            className="btn-delete"
+                            onClick={() => handleDeleteBatBuoc(hk)}
+                          >
+                            Xóa
+                          </button>
+                        </div>
                       )}
                     </td>
                   )}
@@ -572,6 +744,108 @@ function ThuPhiHoKhauPage() {
       );
     }
 
+    if (modalMode === "edit_bat_buoc" && editingItem) {
+      return (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Xem / chỉnh sửa</h2>
+              <button className="modal-close" onClick={handleCloseModal}>
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleSubmitEditBatBuoc} className="modal-form">
+              <div className="info-display">
+                <div className="info-row">
+                  <span className="info-label">Hộ khẩu:</span>
+                  <span className="info-value">
+                    {editingItem.soHoKhau} - {editingItem.tenChuHo}
+                  </span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Số người:</span>
+                  <span className="info-value">{editingItem.soNguoi || "-"}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Định mức:</span>
+                  <span className="info-value">
+                    {selectedDot?.dinhMuc
+                      ? selectedDot.dinhMuc.toLocaleString("vi-VN") + " đ/người/tháng"
+                      : "-"}
+                  </span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Số tháng:</span>
+                  <span className="info-value">{editingItem.soThang || "-"}</span>
+                </div>
+                <div className="info-row info-highlight">
+                  <span className="info-label">Tổng phí:</span>
+                  <span className="info-value">
+                    {editingItem.tongPhi
+                      ? editingItem.tongPhi.toLocaleString("vi-VN") + " đ"
+                      : "-"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>
+                  Ngày thu <span className="required">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={batBuocFormData.ngayThu}
+                  onChange={(e) =>
+                    setBatBuocFormData({ ...batBuocFormData, ngayThu: e.target.value })
+                  }
+                  min={selectedDot?.ngayBatDau?.split("T")[0]}
+                  max={selectedDot?.ngayKetThuc?.split("T")[0]}
+                  required
+                />
+                <span className="field-hint">
+                  Trong khoảng: {selectedDot?.ngayBatDau ? new Date(selectedDot.ngayBatDau).toLocaleDateString("vi-VN") : ""} 
+                  {" - "}
+                  {selectedDot?.ngayKetThuc ? new Date(selectedDot.ngayKetThuc).toLocaleDateString("vi-VN") : ""}
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label>Ghi chú</label>
+                <textarea
+                  value={batBuocFormData.ghiChu}
+                  onChange={(e) =>
+                    setBatBuocFormData({ ...batBuocFormData, ghiChu: e.target.value })
+                  }
+                  rows="3"
+                  placeholder="Nhập ghi chú (nếu có)"
+                />
+              </div>
+
+              <div className="form-actions" style={{ justifyContent: "space-between" }}>
+                <div>
+                  <button
+                    type="button"
+                    className="btn-delete"
+                    onClick={() => handleDeleteBatBuoc(editingItem)}
+                  >
+                    Xóa
+                  </button>
+                </div>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button type="button" className="btn-cancel" onClick={handleCloseModal}>
+                    Hủy
+                  </button>
+                  <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Đang xử lý..." : "Lưu thay đổi"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
     if (modalMode === "create_tu_nguyen" || modalMode === "edit_tu_nguyen") {
       const isEdit = modalMode === "edit_tu_nguyen";
 
@@ -584,7 +858,7 @@ function ThuPhiHoKhauPage() {
                 ×
               </button>
             </div>
-            <form onSubmit={handleSubmitTuNguyen} className="modal-form">
+            <form onSubmit={handleSubmitTuNguyen} className="modal-form" noValidate>
               <div className="form-group">
                 <label>
                   Hộ khẩu <span className="required">*</span>

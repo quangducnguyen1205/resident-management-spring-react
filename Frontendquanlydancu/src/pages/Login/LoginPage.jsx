@@ -1,7 +1,18 @@
+// Frontendquanlydancu/src/pages/Login/LoginPage.jsx
 import { useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import "./Login.css";
 
 function LoginPage() {
+  const navigate = useNavigate();
+
+  // Nếu đã đăng nhập rồi thì không cho ở lại /login nữa
+  const existingToken = localStorage.getItem("token");
+  const existingRole = localStorage.getItem("role");
+  if (existingToken && existingRole) {
+    return <Navigate to="/admin" replace />;
+  }
+
   const [showPass, setShowPass] = useState(false);
   const [role, setRole] = useState("ADMIN"); // vai trò user chọn trên UI
   const [username, setUsername] = useState("");
@@ -39,7 +50,7 @@ function LoginPage() {
 
       const data = await res.json(); // { token, username, role } từ backend
 
-      // 🔍 Kiểm tra role backend trả về có khớp với role user chọn hay không
+      // Kiểm tra role backend trả về có khớp với role user chọn hay không
       if (data.role !== role) {
         setError("Vui lòng chọn đúng vai trò.");
         return; // KHÔNG lưu token, coi như đăng nhập không hợp lệ
@@ -51,8 +62,8 @@ function LoginPage() {
       localStorage.setItem("role", data.role);
 
       console.log("Đăng nhập thành công:", data);
-      // Redirect về trang admin
-      window.location.href = "/admin";
+      // Redirect về trang admin bằng React Router (không reload toàn trang)
+      navigate("/admin", { replace: true });
     } catch (err) {
       console.error(err);
       setError(err.message);
