@@ -62,43 +62,69 @@ curl -X POST http://localhost:8080/api/auth/login \
   -d '{"tenDangNhap":"admin","matKhau":"admin123"}'
 ```
 
-#### Tạo đợt thu phí
+#### Tạo đợt thu phí bắt buộc
 ```bash
 curl -X POST http://localhost:8080/api/dot-thu-phi \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
-        "tenDot": "Thu phí quản lý tháng 1/2025",
-        "loai": "QUAN_LY",
+        "tenDot": "Phí vệ sinh Q1/2025",
+        "loai": "BAT_BUOC",
         "ngayBatDau": "2025-01-01",
-        "ngayKetThuc": "2025-01-31",
-        "dinhMuc": 50000
+        "ngayKetThuc": "2025-03-31",
+        "dinhMuc": 6000
       }'
 ```
 
-#### Ghi nhận thu phí
+#### Tạo đợt thu phí tự nguyện
 ```bash
+curl -X POST http://localhost:8080/api/dot-thu-phi \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+        "tenDot": "Ủng hộ Tết 2025",
+        "loai": "TU_NGUYEN",
+        "ngayBatDau": "2025-01-01",
+        "ngayKetThuc": "2025-12-31"
+      }'
+```
+
+#### Ghi nhận thu phí bắt buộc
+```bash
+# tongPhi được tính tự động = soNguoi × dinhMuc × soThang
 curl -X POST http://localhost:8080/api/thu-phi-ho-khau \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
         "hoKhauId": 1,
         "dotThuPhiId": 1,
-        "soTienDaThu": 50000,
-        "tongPhi": 50000,
         "ngayThu": "2025-01-15",
         "ghiChu": "Đã thanh toán đủ"
       }'
 ```
 
+#### Ghi nhận thu phí tự nguyện
+```bash
+# tongPhi bắt buộc phải gửi trong request, giá trị > 0
+curl -X POST http://localhost:8080/api/thu-phi-ho-khau \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+        "hoKhauId": 1,
+        "dotThuPhiId": 2,
+        "tongPhi": 500000,
+        "ngayThu": "2025-01-20",
+        "ghiChu": "Ủng hộ Tết"
+      }'
+```
+
 ## 🔑 Tài khoản mặc định
-| Username | Password | Role   | Mô tả                    |
-|----------|----------|--------|-------------------------|
-| admin    | admin123 | ADMIN  | Quản trị hệ thống       |
-| ketoan01 | admin123 | KETOAN | Kế toán (quản lý phí)   |
-| ketoan02 | admin123 | KETOAN | Kế toán (quản lý phí)   |
-| user01   | admin123 | USER   | Người dùng thông thường |
-| user02   | admin123 | USER   | Người dùng thông thường |
+| Username  | Password | Role     | Mô tả                              |
+|-----------|----------|----------|------------------------------------|
+| admin     | admin123 | ADMIN    | Quản trị hệ thống (toàn quyền)     |
+| totruong1 | admin123 | TOTRUONG | Tổ trưởng (quản lý hộ khẩu/nhân khẩu) |
+| ketoan01  | admin123 | KETOAN   | Kế toán (quản lý thu phí)          |
+| ketoan02  | admin123 | KETOAN   | Kế toán (quản lý thu phí)          |
 
 ## 🏗️ Cấu trúc dự án
 ```
@@ -152,11 +178,14 @@ backend/
 - **Swagger UI trắng:** bảo đảm `SecurityConfig` permit `/swagger-ui/**` và `/v3/api-docs/**`
 - **Test thất bại:** xác nhận container Docker đang healthy (`docker compose ps`) và schema mới nhất đã được áp dụng
 
-## 🔒 Phân quyền mặc định
-- `ADMIN`: toàn quyền
-- `TOTRUONG`: quản lý hộ khẩu và thu phí
-- `KETOAN`: xem + ghi nhận thu phí
-- `USER`: truy cập giới hạn (đọc dữ liệu được phép)
+## 🔒 Phân quyền theo vai trò
+| Vai trò   | Hộ khẩu / Nhân khẩu       | Đợt thu phí           | Thu phí hộ khẩu       |
+|-----------|---------------------------|----------------------|----------------------|
+| ADMIN     | Xem / Tạo / Sửa / Xóa     | Xem / Tạo / Sửa / Xóa | Xem / Tạo / Sửa / Xóa |
+| TOTRUONG  | Xem / Tạo / Sửa / Xóa     | Xem                  | Xem                  |
+| KETOAN    | Xem                       | Xem / Tạo / Sửa / Xóa | Xem / Tạo / Sửa / Xóa |
+
+> **Lưu ý:** TOTRUONG chỉ quản lý hộ khẩu và nhân khẩu, không có quyền tạo/sửa/xóa đợt thu phí hay ghi nhận thu phí.
 ```sql  "tenDangNhap": "admin",
 
 CREATE DATABASE quanlydancu;  "matKhau": "password"

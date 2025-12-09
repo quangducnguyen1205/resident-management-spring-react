@@ -225,13 +225,27 @@
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 14px;
   box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.field-hint {
+  display: block;
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .form-actions {

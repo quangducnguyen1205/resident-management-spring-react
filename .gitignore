@@ -79,3 +79,6 @@ docker/
 **/.env.production
 .env.docker
 .env.production
+
+
+/frontend/
