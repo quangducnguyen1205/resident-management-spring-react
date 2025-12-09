@@ -86,3 +86,7 @@ docker/
 /Frontendquanlydancu/nginx.conf
 /Frontendquanlydancu/src/router/AppRouter.jsx
 /Frontendquanlydancu/src/pages/Login/LoginPage.jsx
+/frontend/
+/backend/test/
+/backend/docs/
+/backend/queries/

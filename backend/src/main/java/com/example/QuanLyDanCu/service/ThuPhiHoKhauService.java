@@ -340,59 +340,6 @@ public class ThuPhiHoKhauService {
     }
 
     /**
-     * Cập nhật bản ghi thu phí
-     * 
-     * CHỈ CHO PHÉP CẬP NHẬT:
-     * - ngayThu
-     * - ghiChu
-     * 
-     * KHÔNG CHO PHÉP THAY ĐỔI:
-     * - hoKhauId
-     * - dotThuPhiId
-     * - soNguoi
-     * - tongPhi
-     * - trangThai
-     */
-    @Transactional
-    public ThuPhiHoKhauResponseDto update(Long id, ThuPhiHoKhauRequestDto dto, Authentication auth) {
-        ThuPhiHoKhau existing = repo.findById(id)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bản ghi thu phí với ID = " + id));
-        
-        // Validate: Cannot change household or fee period
-        if (dto.getHoKhauId() != null && !dto.getHoKhauId().equals(existing.getHoKhau().getId())) {
-            throw new BadRequestException("Không thể thay đổi hộ khẩu sau khi đã tạo bản ghi!");
-        }
-        
-        if (dto.getDotThuPhiId() != null && !dto.getDotThuPhiId().equals(existing.getDotThuPhi().getId())) {
-            throw new BadRequestException("Không thể thay đổi đợt thu phí sau khi đã tạo bản ghi!");
-        }
-        
-        // Update allowed fields only
-        boolean changed = false;
-        
-        if (dto.getNgayThu() != null && !dto.getNgayThu().equals(existing.getNgayThu())) {
-            validatePaymentDate(dto.getNgayThu(), existing.getDotThuPhi());
-            existing.setNgayThu(dto.getNgayThu());
-            changed = true;
-        }
-        
-        if (dto.getGhiChu() != null && !dto.getGhiChu().equals(existing.getGhiChu())) {
-            existing.setGhiChu(dto.getGhiChu());
-            changed = true;
-        }
-        
-        if (!changed) {
-            throw new BadRequestException("Không có thông tin nào được thay đổi!");
-        }
-        
-        ThuPhiHoKhau updated = repo.save(existing);
-        
-        log.info("Updated fee record id={}", id);
-        
-        return toResponseDto(updated);
-    }
-
-    /**
      * Xóa bản ghi thu phí
      */
     @Transactional

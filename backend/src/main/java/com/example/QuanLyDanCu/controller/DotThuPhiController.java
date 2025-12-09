@@ -65,8 +65,8 @@ public class DotThuPhiController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
-    @Operation(summary = "Xóa đợt thu phí", description = "Xóa một đợt thu phí (yêu cầu quyền ADMIN hoặc KETOAN)")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @Operation(summary = "Xóa đợt thu phí", description = "Xóa một đợt thu phí (yêu cầu quyền ADMIN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Xóa thành công", content = @Content),
             @ApiResponse(responseCode = "403", description = "Không có quyền truy cập", content = @Content),

@@ -115,20 +115,6 @@ public class ThuPhiHoKhauController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
-        @Operation(summary = "Cập nhật thu phí", description = "Cập nhật thông tin thu phí hộ khẩu (yêu cầu quyền ADMIN hoặc KETOAN). Chỉ hỗ trợ chỉnh sửa ngày thu và ghi chú.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Cập nhật thành công",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ThuPhiHoKhauResponseDto.class))),
-            @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Không có quyền truy cập (chỉ ADMIN hoặc KETOAN)", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Không tìm thấy thu phí", content = @Content)
-    })
-    public ResponseEntity<ThuPhiHoKhauResponseDto> update(@PathVariable Long id, @Valid @RequestBody ThuPhiHoKhauRequestDto dto, Authentication auth) {
-        return ResponseEntity.ok(thuPhiHoKhauService.update(id, dto, auth));
-    }
-
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN','KETOAN')")
     @Operation(summary = "Xóa thu phí", description = "Xóa một bản ghi thu phí (yêu cầu quyền ADMIN hoặc KETOAN)")
