@@ -1,3 +1,4 @@
+// Frontendquanlydancu/src/router/AppRouter.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "../pages/Login/LoginPage";
 import AdminLayout from "../pages/Admin/AdminLayout";
@@ -14,19 +15,10 @@ function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Trang login - redirect nếu đã đăng nhập */}
-        <Route
-          path="/login"
-          element={
-            localStorage.getItem("token") ? (
-              <Navigate to="/admin" replace />
-            ) : (
-              <LoginPage />
-            )
-          }
-        />
+        {/* Trang login – logic redirect nếu đã đăng nhập sẽ xử lý bên trong LoginPage */}
+        <Route path="/login" element={<LoginPage />} />
 
-        {/* Trang admin với layout chung */}
+        {/* Khu vực /admin có bảo vệ */}
         <Route
           path="/admin"
           element={
@@ -35,10 +27,9 @@ function AppRouter() {
             </ProtectedRoute>
           }
         >
-          {/* Redirect mặc định về trang dashboard */}
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          {/* Khi vào đúng /admin thì đẩy sang /admin/dashboard  */}
+          <Route index element={<Navigate to="dashboard" replace />} />
 
-          {/* Các trang quản lý */}
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="tai-khoan" element={<TaiKhoanPage />} />
           <Route path="ho-khau" element={<HoKhauPage />} />
@@ -48,10 +39,10 @@ function AppRouter() {
           <Route path="thu-phi-ho-khau" element={<ThuPhiHoKhauPage />} />
         </Route>
 
-        {/* Redirect root về login */}
+        {/* Root → /login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* 404 */}
+        {/* 404 → /login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
@@ -59,4 +50,3 @@ function AppRouter() {
 }
 
 export default AppRouter;
-

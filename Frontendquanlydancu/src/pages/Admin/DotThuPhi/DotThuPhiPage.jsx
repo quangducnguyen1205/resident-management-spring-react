@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  getAllDotThuPhi,
-  getDotThuPhiById,
-  createDotThuPhi,
-  deleteDotThuPhi,
-} from "../../../api/dotThuPhiApi";
+import { getAllDotThuPhi, createDotThuPhi } from "../../../api/dotThuPhiApi";
 import NoPermission from "../NoPermission";
 import "./DotThuPhiPage.css";
 
@@ -13,16 +8,21 @@ function DotThuPhiPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     tenDot: "",
     loai: "BAT_BUOC",
     ngayBatDau: "",
     ngayKetThuc: "",
     dinhMuc: "",
+    ghiChu: "",
   });
+
   const role = localStorage.getItem("role");
 
+  // Permissions: ADMIN, TOTRUONG, KETOAN can view
   const allowedRoles = ["ADMIN", "KETOAN", "TOTRUONG"];
+  // Only ADMIN and KETOAN can create new periods (TOTRUONG is view-only)
   const canEdit = role === "ADMIN" || role === "KETOAN";
 
   if (!allowedRoles.includes(role)) {
@@ -36,6 +36,7 @@ function DotThuPhiPage() {
   const loadDotThuPhis = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await getAllDotThuPhi();
       setDotThuPhis(data || []);
     } catch (err) {
@@ -52,6 +53,7 @@ function DotThuPhiPage() {
       ngayBatDau: "",
       ngayKetThuc: "",
       dinhMuc: "",
+      ghiChu: "",
     });
     setShowModal(true);
   };
@@ -62,31 +64,74 @@ function DotThuPhiPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) return;
+
+    // Validation bắt buộc
+    if (!formData.tenDot || !formData.loai || !formData.ngayBatDau || !formData.ngayKetThuc) {
+      alert("Vui lòng nhập đầy đủ các trường bắt buộc (*)");
+      return;
+    }
+
+    // Kiểm tra ngày
+    if (formData.ngayKetThuc < formData.ngayBatDau) {
+      alert("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu");
+      return;
+    }
+
+    // Định mức chỉ áp dụng cho BAT_BUOC
+    let dinhMucValue = 0;
+    if (formData.loai === "BAT_BUOC") {
+      dinhMucValue = Number(formData.dinhMuc);
+      if (!formData.dinhMuc || Number.isNaN(dinhMucValue) || dinhMucValue <= 0) {
+        alert("Định mức phải lớn hơn 0");
+        return;
+      }
+    } else {
+      dinhMucValue = 0;
+    }
+
     try {
+      setIsSubmitting(true);
+
       const submitData = {
-        ...formData,
-        dinhMuc: formData.dinhMuc ? Number(formData.dinhMuc) : 0,
+        tenDot: formData.tenDot,
+        loai: formData.loai,
+        ngayBatDau: formData.ngayBatDau,
+        ngayKetThuc: formData.ngayKetThuc,
+        dinhMuc: dinhMucValue,
+        ghiChu: formData.ghiChu || null,
       };
+
       await createDotThuPhi(submitData);
-      alert("Tạo đợt thu phí thành công!");
+      alert("Tạo đợt thu phí thành công");
       handleCloseModal();
       loadDotThuPhis();
     } catch (err) {
-      alert(err.response?.data?.message || "Có lỗi xảy ra!");
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Có lỗi xảy ra khi tạo đợt thu phí";
+      alert(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa đợt thu phí này?")) {
-      return;
+  /**
+   * Format định mức display
+   * - For BAT_BUOC: always show formatted number + " đ"
+   * - For TU_NGUYEN: show value if exists, otherwise "-"
+   */
+  const formatDinhMuc = (dinhMuc, loai) => {
+    if (loai === "BAT_BUOC") {
+      return dinhMuc ? `${dinhMuc.toLocaleString("vi-VN")} đ` : "0 đ";
     }
-    try {
-      await deleteDotThuPhi(id);
-      alert("Xóa đợt thu phí thành công!");
-      loadDotThuPhis();
-    } catch (err) {
-      alert(err.response?.data?.message || "Có lỗi xảy ra!");
+    // TU_NGUYEN: dinhMuc is optional (suggestion only)
+    if (dinhMuc && dinhMuc > 0) {
+      return `${dinhMuc.toLocaleString("vi-VN")} đ`;
     }
+    return "-";
   };
 
   if (loading) {
@@ -117,55 +162,44 @@ function DotThuPhiPage() {
             <tr>
               <th>STT</th>
               <th>Tên đợt</th>
-              <th>Loại phí</th>
-              <th>Định mức (VNĐ)</th>
+              <th>Loại</th>
               <th>Ngày bắt đầu</th>
               <th>Ngày kết thúc</th>
-              {canEdit && <th>Thao tác</th>}
+              <th>Định mức</th>
+              <th>Ghi chú</th>
             </tr>
           </thead>
           <tbody>
             {dotThuPhis.length === 0 ? (
               <tr>
-                <td colSpan={canEdit ? 7 : 6} className="empty-message">
+                <td colSpan={7} className="empty-message">
                   Chưa có đợt thu phí nào
                 </td>
               </tr>
             ) : (
               dotThuPhis.map((dtp, index) => (
                 <tr key={dtp.id}>
-                  <td>{index + 1}</td>
+                  <td style={{ textAlign: "center" }}>{index + 1}</td>
                   <td>{dtp.tenDot || "-"}</td>
-                  <td>
+                  <td style={{ textAlign: "center" }}>
                     <span className={`loai-badge loai-${dtp.loai}`}>
                       {dtp.loai === "BAT_BUOC" ? "Bắt buộc" : "Tự nguyện"}
                     </span>
                   </td>
-                  <td>
-                    {dtp.dinhMuc
-                      ? dtp.dinhMuc.toLocaleString("vi-VN")
-                      : "0"} đ
-                  </td>
-                  <td>
+                  <td style={{ textAlign: "center" }}>
                     {dtp.ngayBatDau
                       ? new Date(dtp.ngayBatDau).toLocaleDateString("vi-VN")
                       : "-"}
                   </td>
-                  <td>
+                  <td style={{ textAlign: "center" }}>
                     {dtp.ngayKetThuc
                       ? new Date(dtp.ngayKetThuc).toLocaleDateString("vi-VN")
                       : "-"}
                   </td>
-                  {canEdit && (
-                    <td>
-                      <button
-                        className="btn-delete"
-                        onClick={() => handleDelete(dtp.id)}
-                      >
-                        Xóa
-                      </button>
-                    </td>
-                  )}
+                  <td style={{ textAlign: "right" }}>
+                    {formatDinhMuc(dtp.dinhMuc, dtp.loai)}
+                  </td>
+                  <td>{dtp.ghiChu || "-"}</td>
                 </tr>
               ))
             )}
@@ -173,8 +207,8 @@ function DotThuPhiPage() {
         </table>
       </div>
 
-      {/* Modal thêm */}
-      {showModal && (
+      {/* Modal thêm đợt thu phí - only render if canEdit */}
+      {canEdit && showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -183,7 +217,7 @@ function DotThuPhiPage() {
                 ×
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="modal-form">
+            <form onSubmit={handleSubmit} className="modal-form" noValidate>
               <div className="form-group">
                 <label>
                   Tên đợt <span className="required">*</span>
@@ -194,9 +228,11 @@ function DotThuPhiPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, tenDot: e.target.value })
                   }
+                  placeholder="Nhập tên đợt thu phí"
                   required
                 />
               </div>
+
               <div className="form-group">
                 <label>
                   Loại phí <span className="required">*</span>
@@ -212,6 +248,7 @@ function DotThuPhiPage() {
                   <option value="TU_NGUYEN">Tự nguyện</option>
                 </select>
               </div>
+
               <div className="form-row">
                 <div className="form-group">
                   <label>
@@ -240,24 +277,59 @@ function DotThuPhiPage() {
                   />
                 </div>
               </div>
+
+              {formData.loai === "BAT_BUOC" && (
+                <div className="form-group">
+                  <label>
+                    Định mức (VNĐ/người/tháng) <span className="required">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.dinhMuc}
+                    onChange={(e) =>
+                      setFormData({ ...formData, dinhMuc: e.target.value })
+                    }
+                    min="0"
+                    step="1000"
+                    placeholder="Nhập định mức (bắt buộc)"
+                  />
+                </div>
+              )}
+
+              {formData.loai === "TU_NGUYEN" && (
+                <div className="form-group">
+                  <small className="field-hint">
+                    Phí tự nguyện không có định mức cố định. Mỗi hộ sẽ chọn số tiền khi thu.
+                  </small>
+                </div>
+              )}
+
               <div className="form-group">
-                <label>Định mức (VNĐ)</label>
-                <input
-                  type="number"
-                  value={formData.dinhMuc}
+                <label>Ghi chú</label>
+                <textarea
+                  value={formData.ghiChu}
                   onChange={(e) =>
-                    setFormData({ ...formData, dinhMuc: e.target.value })
+                    setFormData({ ...formData, ghiChu: e.target.value })
                   }
-                  min="0"
-                  step="1000"
+                  rows="3"
+                  placeholder="Nhập ghi chú (không bắt buộc)"
                 />
               </div>
+
               <div className="form-actions">
-                <button type="button" className="btn-cancel" onClick={handleCloseModal}>
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={handleCloseModal}
+                >
                   Hủy
                 </button>
-                <button type="submit" className="btn-submit">
-                  Thêm mới
+                <button
+                  type="submit"
+                  className="btn-submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Đang xử lý..." : "Thêm mới"}
                 </button>
               </div>
             </form>
