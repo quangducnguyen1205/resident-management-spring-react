@@ -41,11 +41,7 @@ export const searchNhanKhau = async (keyword) => {
  * @returns {Promise<NhanKhauResponseDto>}
  */
 export const createNhanKhau = async (data) => {
-  const payload = {
-    ...data,
-    queQuan: data?.queQuan,
-  };
-  const response = await apiClient.post("/nhan-khau", payload);
+  const response = await apiClient.post("/nhan-khau", data);
   return response.data;
 };
 
@@ -57,11 +53,7 @@ export const createNhanKhau = async (data) => {
  * @returns {Promise<NhanKhauResponseDto>}
  */
 export const updateNhanKhau = async (id, data) => {
-  const payload = {
-    ...data,
-    queQuan: data?.queQuan,
-  };
-  const response = await apiClient.put(`/nhan-khau/${id}`, payload);
+  const response = await apiClient.put(`/nhan-khau/${id}`, data);
   return response.data;
 };
 

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   createThuPhiHoKhau,
-  updateThuPhiHoKhau,
   deleteThuPhiHoKhau,
   calculateThuPhi,
   getThuPhiOverview,
@@ -26,7 +25,7 @@ function ThuPhiHoKhauPage() {
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState(""); // "thu_phi_bat_buoc" | "create_tu_nguyen" | "edit_tu_nguyen" | "edit_bat_buoc"
+  const [modalMode, setModalMode] = useState(""); // "thu_phi_bat_buoc" | "create_tu_nguyen" | "view_bat_buoc"
   const [editingItem, setEditingItem] = useState(null);
   const [calculatedData, setCalculatedData] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -203,54 +202,10 @@ function ThuPhiHoKhauPage() {
     }
   };
 
-  const handleOpenEditBatBuoc = (item) => {
+  const handleOpenViewBatBuoc = (item) => {
     setEditingItem(item);
-    setCalculatedData({
-      hoKhauId: item.hoKhauId,
-      soHoKhau: item.soHoKhau,
-      tenChuHo: item.tenChuHo,
-      tongPhi: item.tongPhi,
-      soNguoi: item.soNguoi,
-      soThang: item.soThang,
-      dinhMuc: selectedDot?.dinhMuc,
-    });
-    setBatBuocFormData({
-      ngayThu: item.ngayThu ? item.ngayThu.split("T")[0] : getDefaultDate(),
-      ghiChu: item.ghiChu || "",
-    });
-    setModalMode("edit_bat_buoc");
+    setModalMode("view_bat_buoc");
     setShowModal(true);
-  };
-
-  const handleSubmitEditBatBuoc = async (e) => {
-    e.preventDefault();
-
-    if (!batBuocFormData.ngayThu) {
-      alert("Vui lòng chọn ngày thu");
-      return;
-    }
-
-    if (!isDateInPeriod(batBuocFormData.ngayThu)) {
-      alert("Ngày thu phải nằm trong khoảng thời gian của đợt thu phí");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      await updateThuPhiHoKhau(editingItem.id, {
-        hoKhauId: editingItem.hoKhauId,
-        dotThuPhiId: editingItem.dotThuPhiId,
-        ngayThu: batBuocFormData.ngayThu,
-        ghiChu: batBuocFormData.ghiChu || "",
-      });
-      alert("Cập nhật thu phí thành công");
-      handleCloseModal();
-      loadDataForDot(selectedDotId);
-    } catch (err) {
-      alert(err.response?.data?.message || "Có lỗi xảy ra khi cập nhật");
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleDeleteBatBuoc = async (item) => {
@@ -280,18 +235,6 @@ function ThuPhiHoKhauPage() {
     setShowModal(true);
   };
 
-  const handleOpenEditTuNguyen = (item) => {
-    setEditingItem(item);
-    setFormData({
-      hoKhauId: item.hoKhauId || "",
-      ngayThu: item.ngayThu ? item.ngayThu.split("T")[0] : "",
-      tongPhi: item.tongPhi ? item.tongPhi.toString() : "",
-      ghiChu: item.ghiChu || "",
-    });
-    setModalMode("edit_tu_nguyen");
-    setShowModal(true);
-  };
-
   const handleSubmitTuNguyen = async (e) => {
     e.preventDefault();
 
@@ -310,47 +253,28 @@ function ThuPhiHoKhauPage() {
       return;
     }
 
-    if (modalMode === "create_tu_nguyen") {
-      const tongPhiValue = Number(formData.tongPhi);
-      if (!formData.tongPhi || Number.isNaN(tongPhiValue) || tongPhiValue <= 0) {
-        alert("Vui lòng nhập số tiền hợp lệ lớn hơn 0");
-        return;
-      }
+    const tongPhiValue = Number(formData.tongPhi);
+    if (!formData.tongPhi || Number.isNaN(tongPhiValue) || tongPhiValue <= 0) {
+      alert("Vui lòng nhập số tiền hợp lệ lớn hơn 0");
+      return;
+    }
 
-      try {
-        setIsSubmitting(true);
-        await createThuPhiHoKhau({
-          hoKhauId: Number(formData.hoKhauId),
-          dotThuPhiId: Number(selectedDotId),
-          ngayThu: formData.ngayThu,
-          tongPhi: tongPhiValue,
-          ghiChu: formData.ghiChu || "",
-        });
-        alert("Thêm khoản thu thành công");
-        handleCloseModal();
-        loadDataForDot(selectedDotId);
-      } catch (err) {
-        alert(err.response?.data?.message || "Có lỗi xảy ra");
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else if (modalMode === "edit_tu_nguyen" && editingItem) {
-      try {
-        setIsSubmitting(true);
-        await updateThuPhiHoKhau(editingItem.id, {
-          hoKhauId: editingItem.hoKhauId,
-          dotThuPhiId: editingItem.dotThuPhiId,
-          ngayThu: formData.ngayThu,
-          ghiChu: formData.ghiChu || "",
-        });
-        alert("Cập nhật thành công");
-        handleCloseModal();
-        loadDataForDot(selectedDotId);
-      } catch (err) {
-        alert(err.response?.data?.message || "Có lỗi xảy ra");
-      } finally {
-        setIsSubmitting(false);
-      }
+    try {
+      setIsSubmitting(true);
+      await createThuPhiHoKhau({
+        hoKhauId: Number(formData.hoKhauId),
+        dotThuPhiId: Number(selectedDotId),
+        ngayThu: formData.ngayThu,
+        tongPhi: tongPhiValue,
+        ghiChu: formData.ghiChu || "",
+      });
+      alert("Thêm khoản thu thành công");
+      handleCloseModal();
+      loadDataForDot(selectedDotId);
+    } catch (err) {
+      alert(err.response?.data?.message || "Có lỗi xảy ra");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -518,14 +442,13 @@ function ThuPhiHoKhauPage() {
               <th>Trạng thái</th>
               <th>Tổng phí</th>
               <th>Ngày thu</th>
-              <th>Ghi chú</th>
               {canEdit && <th>Thao tác</th>}
             </tr>
           </thead>
           <tbody>
             {filteredHouseholds.length === 0 ? (
               <tr>
-                <td colSpan={canEdit ? 8 : 7} className="empty-message">
+                <td colSpan={canEdit ? 7 : 6} className="empty-message">
                   Không có dữ liệu
                 </td>
               </tr>
@@ -550,7 +473,6 @@ function ThuPhiHoKhauPage() {
                       ? new Date(hk.ngayThu).toLocaleDateString("vi-VN")
                       : "-"}
                   </td>
-                  <td>{hk.ghiChu || "-"}</td>
                   {canEdit && (
                     <td style={{ textAlign: "center" }}>
                       {hk.trangThai === "CHUA_NOP" ? (
@@ -565,9 +487,9 @@ function ThuPhiHoKhauPage() {
                         <div className="action-buttons">
                           <button
                             className="btn-edit"
-                            onClick={() => handleOpenEditBatBuoc(hk)}
+                            onClick={() => handleOpenViewBatBuoc(hk)}
                           >
-                            Xem / chỉnh sửa
+                            Chi tiết
                           </button>
                           <button
                             className="btn-delete"
@@ -630,12 +552,6 @@ function ThuPhiHoKhauPage() {
                   {canEdit && (
                     <td>
                       <div className="action-buttons">
-                        <button
-                          className="btn-edit"
-                          onClick={() => handleOpenEditTuNguyen(record)}
-                        >
-                          Sửa
-                        </button>
                         <button
                           className="btn-delete"
                           onClick={() => handleDeleteTuNguyen(record)}
@@ -744,81 +660,73 @@ function ThuPhiHoKhauPage() {
       );
     }
 
-    if (modalMode === "edit_bat_buoc" && editingItem) {
+    if (modalMode === "view_bat_buoc" && editingItem) {
+      const dinhMuc = selectedDot?.dinhMuc || 0;
+      const soNguoi = editingItem.soNguoi || 0;
+      const soThang = editingItem.soThang || 0;
+      const tongPhi = editingItem.tongPhi || 0;
+      const hasFormulaData = dinhMuc && soNguoi && soThang && tongPhi;
+      const formulaText = hasFormulaData
+        ? `${dinhMuc.toLocaleString("vi-VN")} × ${soNguoi} × ${soThang} = ${tongPhi.toLocaleString("vi-VN")} đ`
+        : "Không đủ dữ liệu để hiển thị công thức";
+
       return (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Xem / chỉnh sửa</h2>
+              <h2>Chi tiết khoản thu</h2>
               <button className="modal-close" onClick={handleCloseModal}>
                 ×
               </button>
             </div>
-            <form onSubmit={handleSubmitEditBatBuoc} className="modal-form">
-              <div className="info-display">
-                <div className="info-row">
-                  <span className="info-label">Hộ khẩu:</span>
-                  <span className="info-value">
+            <div className="modal-form detail-modal">
+              <div className="detail-grid">
+                <div className="detail-card">
+                  <div className="detail-label">Hộ khẩu</div>
+                  <div className="detail-value strong">
                     {editingItem.soHoKhau} - {editingItem.tenChuHo}
-                  </span>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">Số người:</span>
-                  <span className="info-value">{editingItem.soNguoi || "-"}</span>
+                <div className="detail-card">
+                  <div className="detail-label">Số người</div>
+                  <div className="detail-value">{soNguoi || "-"}</div>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">Định mức:</span>
-                  <span className="info-value">
-                    {selectedDot?.dinhMuc
-                      ? selectedDot.dinhMuc.toLocaleString("vi-VN") + " đ/người/tháng"
+                <div className="detail-card">
+                  <div className="detail-label">Định mức</div>
+                  <div className="detail-value">
+                    {dinhMuc
+                      ? `${dinhMuc.toLocaleString("vi-VN")} đ/người/tháng`
                       : "-"}
-                  </span>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">Số tháng:</span>
-                  <span className="info-value">{editingItem.soThang || "-"}</span>
+                <div className="detail-card">
+                  <div className="detail-label">Số tháng</div>
+                  <div className="detail-value">{soThang || "-"}</div>
                 </div>
-                <div className="info-row info-highlight">
-                  <span className="info-label">Tổng phí:</span>
-                  <span className="info-value">
-                    {editingItem.tongPhi
-                      ? editingItem.tongPhi.toLocaleString("vi-VN") + " đ"
+                <div className="detail-card highlight">
+                  <div className="detail-label">Tổng phí</div>
+                  <div className="detail-value emphasis">
+                    {tongPhi ? `${tongPhi.toLocaleString("vi-VN")} đ` : "-"}
+                  </div>
+                </div>
+                <div className="detail-card">
+                  <div className="detail-label">Ngày thu</div>
+                  <div className="detail-value">
+                    {editingItem.ngayThu
+                      ? new Date(editingItem.ngayThu).toLocaleDateString("vi-VN")
                       : "-"}
-                  </span>
+                  </div>
+                </div>
+                <div className="detail-card">
+                  <div className="detail-label">Ghi chú</div>
+                  <div className="detail-value note">{editingItem.ghiChu || "-"}</div>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>
-                  Ngày thu <span className="required">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={batBuocFormData.ngayThu}
-                  onChange={(e) =>
-                    setBatBuocFormData({ ...batBuocFormData, ngayThu: e.target.value })
-                  }
-                  min={selectedDot?.ngayBatDau?.split("T")[0]}
-                  max={selectedDot?.ngayKetThuc?.split("T")[0]}
-                  required
-                />
-                <span className="field-hint">
-                  Trong khoảng: {selectedDot?.ngayBatDau ? new Date(selectedDot.ngayBatDau).toLocaleDateString("vi-VN") : ""} 
-                  {" - "}
-                  {selectedDot?.ngayKetThuc ? new Date(selectedDot.ngayKetThuc).toLocaleDateString("vi-VN") : ""}
-                </span>
-              </div>
-
-              <div className="form-group">
-                <label>Ghi chú</label>
-                <textarea
-                  value={batBuocFormData.ghiChu}
-                  onChange={(e) =>
-                    setBatBuocFormData({ ...batBuocFormData, ghiChu: e.target.value })
-                  }
-                  rows="3"
-                  placeholder="Nhập ghi chú (nếu có)"
-                />
+              <div className="formula-card">
+                <div className="detail-label">Công thức</div>
+                <div className="formula-text">Định mức × Số người × Số tháng = Tổng phí</div>
+                <div className="formula-value">{formulaText}</div>
               </div>
 
               <div className="form-actions" style={{ justifyContent: "space-between" }}>
@@ -833,27 +741,22 @@ function ThuPhiHoKhauPage() {
                 </div>
                 <div style={{ display: "flex", gap: "10px" }}>
                   <button type="button" className="btn-cancel" onClick={handleCloseModal}>
-                    Hủy
-                  </button>
-                  <button type="submit" className="btn-submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Đang xử lý..." : "Lưu thay đổi"}
+                    Đóng
                   </button>
                 </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       );
     }
 
-    if (modalMode === "create_tu_nguyen" || modalMode === "edit_tu_nguyen") {
-      const isEdit = modalMode === "edit_tu_nguyen";
-
+    if (modalMode === "create_tu_nguyen") {
       return (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{isEdit ? "Sửa khoản thu" : "Thêm khoản thu"}</h2>
+              <h2>Thêm khoản thu</h2>
               <button className="modal-close" onClick={handleCloseModal}>
                 ×
               </button>
@@ -869,7 +772,6 @@ function ThuPhiHoKhauPage() {
                     setFormData({ ...formData, hoKhauId: e.target.value })
                   }
                   required
-                  disabled={isEdit}
                 >
                   <option value="">Chọn hộ khẩu</option>
                   {hoKhaus.map((hk) => (
@@ -896,38 +798,23 @@ function ThuPhiHoKhauPage() {
                     required
                   />
                 </div>
-                {!isEdit && (
-                  <div className="form-group">
-                    <label>
-                      Số tiền (VNĐ) <span className="required">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.tongPhi}
-                      onChange={(e) =>
-                        setFormData({ ...formData, tongPhi: e.target.value })
-                      }
-                      min="1000"
-                      step="1000"
-                      placeholder="Nhập số tiền"
-                      required
-                    />
-                  </div>
-                )}
-              </div>
-
-              {isEdit && (
-                <div className="info-display">
-                  <div className="info-row">
-                    <span className="info-label">Số tiền:</span>
-                    <span className="info-value">
-                      {editingItem?.tongPhi
-                        ? editingItem.tongPhi.toLocaleString("vi-VN") + " đ"
-                        : "-"}
-                    </span>
-                  </div>
+                <div className="form-group">
+                  <label>
+                    Số tiền (VNĐ) <span className="required">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.tongPhi}
+                    onChange={(e) =>
+                      setFormData({ ...formData, tongPhi: e.target.value })
+                    }
+                    min="1000"
+                    step="1000"
+                    placeholder="Nhập số tiền"
+                    required
+                  />
                 </div>
-              )}
+              </div>
 
               <div className="form-group">
                 <label>Ghi chú</label>
@@ -946,7 +833,7 @@ function ThuPhiHoKhauPage() {
                   Hủy
                 </button>
                 <button type="submit" className="btn-submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Đang xử lý..." : isEdit ? "Cập nhật" : "Thêm mới"}
+                  {isSubmitting ? "Đang xử lý..." : "Thêm mới"}
                 </button>
               </div>
             </form>

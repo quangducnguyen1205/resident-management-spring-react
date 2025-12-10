@@ -88,10 +88,8 @@ CREATE TABLE thu_phi_ho_khau (
     trang_thai VARCHAR(20) CHECK (trang_thai IN ('CHUA_NOP', 'DA_NOP')),
     ngay_thu DATE,
     ghi_chu VARCHAR(500),
-    collected_by BIGINT,
     CONSTRAINT fk_thuphi_hokhau FOREIGN KEY (ho_khau_id) REFERENCES ho_khau(id) ON DELETE CASCADE,
-    CONSTRAINT fk_thuphi_dotthuphi FOREIGN KEY (dot_thu_phi_id) REFERENCES dot_thu_phi(id),
-    CONSTRAINT fk_thuphi_collected_by FOREIGN KEY (collected_by) REFERENCES tai_khoan(id)
+    CONSTRAINT fk_thuphi_dotthuphi FOREIGN KEY (dot_thu_phi_id) REFERENCES dot_thu_phi(id)
 );
 
 COMMENT ON COLUMN thu_phi_ho_khau.so_nguoi IS 'Số người trong hộ được tính tại thời điểm ghi nhận';

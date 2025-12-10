@@ -414,6 +414,81 @@
   padding: 20px;
 }
 
+.detail-modal {
+  padding: 20px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.detail-card {
+  background: #f7f9fc;
+  border: 1px solid #e3e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-card.highlight {
+  background: #e8f5e9;
+  border-color: #c8e6c9;
+}
+
+.detail-label {
+  font-weight: 700;
+  color: #1e56a0;
+  font-size: 13px;
+}
+
+.detail-value {
+  color: #333;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.detail-value.strong {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.detail-value.emphasis {
+  color: #28a745;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.detail-value.note {
+  white-space: pre-wrap;
+  color: #444;
+}
+
+.formula-card {
+  background: #fff8e1;
+  border: 1px solid #ffe0a3;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.formula-text {
+  color: #8d6e63;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.formula-value {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: #795548;
+  font-weight: 700;
+}
+
 /* Info Display in Modal */
 .info-display {
   background: #f8f9fa;

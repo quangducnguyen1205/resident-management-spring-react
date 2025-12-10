@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import { getAllDotThuPhi, createDotThuPhi } from "../../../api/dotThuPhiApi";
+import {
+  getAllDotThuPhi,
+  createDotThuPhi,
+  deleteDotThuPhi,
+} from "../../../api/dotThuPhiApi";
 import NoPermission from "../NoPermission";
 import "./DotThuPhiPage.css";
 
@@ -15,10 +19,10 @@ function DotThuPhiPage() {
     ngayBatDau: "",
     ngayKetThuc: "",
     dinhMuc: "",
-    ghiChu: "",
   });
 
   const role = localStorage.getItem("role");
+  const isAdmin = role === "ADMIN";
 
   // Permissions: ADMIN, TOTRUONG, KETOAN can view
   const allowedRoles = ["ADMIN", "KETOAN", "TOTRUONG"];
@@ -53,7 +57,6 @@ function DotThuPhiPage() {
       ngayBatDau: "",
       ngayKetThuc: "",
       dinhMuc: "",
-      ghiChu: "",
     });
     setShowModal(true);
   };
@@ -100,7 +103,6 @@ function DotThuPhiPage() {
         ngayBatDau: formData.ngayBatDau,
         ngayKetThuc: formData.ngayKetThuc,
         dinhMuc: dinhMucValue,
-        ghiChu: formData.ghiChu || null,
       };
 
       await createDotThuPhi(submitData);
@@ -132,6 +134,24 @@ function DotThuPhiPage() {
       return `${dinhMuc.toLocaleString("vi-VN")} đ`;
     }
     return "-";
+  };
+
+  const handleDeleteDotThuPhi = async (dotThuPhi) => {
+    if (!dotThuPhi) return;
+
+    const confirmDelete = window.confirm(
+      "Bạn có chắc chắn muốn xóa đợt thu phí này? Hành động này không thể hoàn tác."
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await deleteDotThuPhi(dotThuPhi.id);
+      alert("Xóa đợt thu phí thành công");
+      loadDotThuPhis();
+    } catch (err) {
+      alert(err.response?.data?.message || "Không thể xóa đợt thu phí");
+    }
   };
 
   if (loading) {
@@ -166,13 +186,13 @@ function DotThuPhiPage() {
               <th>Ngày bắt đầu</th>
               <th>Ngày kết thúc</th>
               <th>Định mức</th>
-              <th>Ghi chú</th>
+              {isAdmin && <th>Thao tác</th>}
             </tr>
           </thead>
           <tbody>
             {dotThuPhis.length === 0 ? (
               <tr>
-                <td colSpan={7} className="empty-message">
+                <td colSpan={isAdmin ? 7 : 6} className="empty-message">
                   Chưa có đợt thu phí nào
                 </td>
               </tr>
@@ -199,7 +219,16 @@ function DotThuPhiPage() {
                   <td style={{ textAlign: "right" }}>
                     {formatDinhMuc(dtp.dinhMuc, dtp.loai)}
                   </td>
-                  <td>{dtp.ghiChu || "-"}</td>
+                  {isAdmin && (
+                    <td style={{ textAlign: "center" }}>
+                      <button
+                        className="btn-delete"
+                        onClick={() => handleDeleteDotThuPhi(dtp)}
+                      >
+                        Xóa đợt thu phí
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
@@ -303,18 +332,6 @@ function DotThuPhiPage() {
                   </small>
                 </div>
               )}
-
-              <div className="form-group">
-                <label>Ghi chú</label>
-                <textarea
-                  value={formData.ghiChu}
-                  onChange={(e) =>
-                    setFormData({ ...formData, ghiChu: e.target.value })
-                  }
-                  rows="3"
-                  placeholder="Nhập ghi chú (không bắt buộc)"
-                />
-              </div>
 
               <div className="form-actions">
                 <button
