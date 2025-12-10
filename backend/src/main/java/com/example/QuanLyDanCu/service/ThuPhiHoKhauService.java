@@ -119,6 +119,9 @@ public class ThuPhiHoKhauService {
 
     private Map<String, Object> buildMandatoryOverview(DotThuPhi dotThuPhi) {
         long soThang = calculateMonths(dotThuPhi.getNgayBatDau(), dotThuPhi.getNgayKetThuc());
+        LocalDate today = LocalDate.now();
+        LocalDate end = dotThuPhi.getNgayKetThuc();
+        LocalDate refDate = end != null && today.isAfter(end) ? end : today;
 
         Map<Long, ThuPhiHoKhau> recordsByHousehold = repo.findByDotThuPhiId(dotThuPhi.getId()).stream()
                 .collect(Collectors.toMap(
@@ -140,44 +143,38 @@ public class ThuPhiHoKhauService {
         BigDecimal tongDaThu = BigDecimal.ZERO;
 
         for (HoKhau hoKhau : households) {
-            int soNguoi = countEligibleMembers(hoKhau.getId());
-            BigDecimal expected = calculateMandatoryAmount(soNguoi, dotThuPhi.getDinhMuc(), soThang);
             ThuPhiHoKhau existing = recordsByHousehold.get(hoKhau.getId());
 
-            ThuPhiHoKhauResponseDto dto;
-            TrangThaiThuPhi trangThai;
-            BigDecimal recordedAmount;
-
             if (existing != null) {
-                dto = toResponseDto(existing);
-                trangThai = existing.getTrangThai();
-                recordedAmount = existing.getTongPhi();
-                soNguoi = existing.getSoNguoi() != null ? existing.getSoNguoi() : soNguoi;
-            } else {
-                trangThai = TrangThaiThuPhi.CHUA_NOP;
-                recordedAmount = expected;
-                dto = ThuPhiHoKhauResponseDto.builder()
-                        .id(null)
-                        .hoKhauId(hoKhau.getId())
-                        .soHoKhau(hoKhau.getSoHoKhau())
-                        .tenChuHo(hoKhau.getTenChuHo())
-                        .dotThuPhiId(dotThuPhi.getId())
-                        .tenDot(dotThuPhi.getTenDot())
-                        .loaiThuPhi(dotThuPhi.getLoai())
-                        .soNguoi(soNguoi)
-                        .soThang(soThang)
-                        .tongPhi(expected)
-                        .trangThai(trangThai)
-                        .ngayThu(null)
-                        .ghiChu(null)
-                        .build();
+                ThuPhiHoKhauResponseDto dto = toResponseDto(existing);
+                BigDecimal paidAmount = existing.getTongPhi() == null ? BigDecimal.ZERO : existing.getTongPhi();
+
+                tongDuKien = tongDuKien.add(paidAmount);
+                tongDaThu = tongDaThu.add(paidAmount);
+
+                rows.add(dto);
+                continue;
             }
 
+            int soNguoi = countEligibleMembers(hoKhau.getId(), refDate);
+            BigDecimal expected = calculateMandatoryAmount(soNguoi, dotThuPhi.getDinhMuc(), soThang);
             tongDuKien = tongDuKien.add(expected);
 
-            if (existing != null) {
-                tongDaThu = tongDaThu.add(recordedAmount == null ? BigDecimal.ZERO : recordedAmount);
-            }
+            ThuPhiHoKhauResponseDto dto = ThuPhiHoKhauResponseDto.builder()
+                    .id(null)
+                    .hoKhauId(hoKhau.getId())
+                    .soHoKhau(hoKhau.getSoHoKhau())
+                    .tenChuHo(hoKhau.getTenChuHo())
+                    .dotThuPhiId(dotThuPhi.getId())
+                    .tenDot(dotThuPhi.getTenDot())
+                    .loaiThuPhi(dotThuPhi.getLoai())
+                    .soNguoi(soNguoi)
+                    .soThang(soThang)
+                    .tongPhi(expected)
+                    .trangThai(TrangThaiThuPhi.CHUA_NOP)
+                    .ngayThu(null)
+                    .ghiChu(null)
+                    .build();
 
             rows.add(dto);
         }
@@ -249,7 +246,11 @@ public class ThuPhiHoKhauService {
             return result;
         }
 
-        int memberCount = countEligibleMembers(hoKhauId);
+        LocalDate today = LocalDate.now();
+        LocalDate end = dotThuPhi.getNgayKetThuc();
+        LocalDate refDate = end != null && today.isAfter(end) ? end : today;
+
+        int memberCount = countEligibleMembers(hoKhauId, refDate);
         BigDecimal dinhMuc = dotThuPhi.getDinhMuc();
         long soThang = calculateMonths(dotThuPhi.getNgayBatDau(), dotThuPhi.getNgayKetThuc());
         BigDecimal totalFee = calculateMandatoryAmount(memberCount, dinhMuc, soThang);
@@ -316,7 +317,10 @@ public class ThuPhiHoKhauService {
             soNguoi = 0;
             tongPhi = normalizeVoluntaryAmount(dto.getTongPhi());
         } else {
-            soNguoi = countEligibleMembers(dto.getHoKhauId());
+            LocalDate ngayThu = dto.getNgayThu();
+            LocalDate end = dotThuPhi.getNgayKetThuc();
+            LocalDate refDate = end != null && ngayThu.isAfter(end) ? end : ngayThu;
+            soNguoi = countEligibleMembers(dto.getHoKhauId(), refDate);
             tongPhi = calculateMandatoryAmount(soNguoi, dotThuPhi.getDinhMuc(), soThang);
         }
         
@@ -364,7 +368,6 @@ public class ThuPhiHoKhauService {
      * - trangThai (giữ nguyên)
      * - ngayThu
      * - ghiChu
-     * - collectedBy
      */
     @Transactional
     public void recalculateForHousehold(Long hoKhauId) {
@@ -381,10 +384,13 @@ public class ThuPhiHoKhauService {
             return;
         }
 
-        int activeMembers = countEligibleMembers(hoKhauId);
+        int activeMembers = countEligibleMembers(hoKhauId, LocalDate.now());
 
         List<ThuPhiHoKhau> toUpdate = new ArrayList<>();
         for (ThuPhiHoKhau record : feeRecords) {
+            if (record.getTrangThai() == TrangThaiThuPhi.DA_NOP) {
+                continue; // giữ nguyên snapshot đã thu
+            }
             if (record.getDotThuPhi().getLoai() == LoaiThuPhi.TU_NGUYEN) {
                 continue;
             }
@@ -466,10 +472,14 @@ public class ThuPhiHoKhauService {
      * - Người đã khai tử (ngay_khai_tu != null)
      */
     private int countEligibleMembers(Long hoKhauId) {
-        if (hoKhauId == null) {
+        return countEligibleMembers(hoKhauId, LocalDate.now());
+    }
+
+    private int countEligibleMembers(Long hoKhauId, LocalDate refDate) {
+        if (hoKhauId == null || refDate == null) {
             return 0;
         }
-        long count = nhanKhauRepo.countActiveMembers(hoKhauId, LocalDate.now());
+        long count = nhanKhauRepo.countActiveMembers(hoKhauId, refDate);
         return (int) count;
     }
 
