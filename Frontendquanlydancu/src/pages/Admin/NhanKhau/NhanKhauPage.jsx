@@ -43,8 +43,10 @@ function NhanKhauPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [actionType, setActionType] = useState(""); // "tamtru", "tamvang", "khaitu"
   const [selectedNhanKhau, setSelectedNhanKhau] = useState(null);
+  const [detailNhanKhau, setDetailNhanKhau] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     hoTen: "",
@@ -52,6 +54,7 @@ function NhanKhauPage() {
     gioiTinh: "Nam",
     danToc: "Kinh",
     quocTich: "Việt Nam",
+    queQuan: "",
     ngheNghiep: "",
     cmndCccd: "",
     ngayCap: "",
@@ -149,6 +152,9 @@ function NhanKhauPage() {
     return hoKhau?.soHoKhau || "-";
   };
 
+  const formatDate = (dateStr) =>
+    dateStr ? new Date(dateStr).toLocaleDateString("vi-VN") : "-";
+
   const handleOpenModal = (item = null) => {
     if (item) {
       setEditingItem(item);
@@ -158,6 +164,7 @@ function NhanKhauPage() {
         gioiTinh: item.gioiTinh || "Nam",
         danToc: item.danToc || "Kinh",
         quocTich: item.quocTich || "Việt Nam",
+        queQuan: item.queQuan || "",
         ngheNghiep: item.ngheNghiep || "",
         cmndCccd: item.cmndCccd || "",
         ngayCap: item.ngayCap ? item.ngayCap.split("T")[0] : "",
@@ -174,6 +181,7 @@ function NhanKhauPage() {
         gioiTinh: "Nam",
         danToc: "Kinh",
         quocTich: "Việt Nam",
+        queQuan: "",
         ngheNghiep: "",
         cmndCccd: "",
         ngayCap: "",
@@ -282,8 +290,52 @@ function NhanKhauPage() {
     setActionType("");
   };
 
+  const handleOpenDetailModal = (item) => {
+    setDetailNhanKhau(item);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setDetailNhanKhau(null);
+  };
+
+  const handleEditFromDetail = () => {
+    if (!detailNhanKhau) return;
+    handleCloseDetailModal();
+    handleOpenModal(detailNhanKhau);
+  };
+
+  const handleActionFromDetail = (type) => {
+    if (!detailNhanKhau) return;
+    handleCloseDetailModal();
+    handleOpenActionModal(detailNhanKhau, type);
+  };
+
+  const handleCancelTamTruFromDetail = () => {
+    if (!detailNhanKhau) return;
+    handleCloseDetailModal();
+    handleCancelTamTru(detailNhanKhau.id);
+  };
+
+  const handleCancelTamVangFromDetail = () => {
+    if (!detailNhanKhau) return;
+    handleCloseDetailModal();
+    handleCancelTamVang(detailNhanKhau.id);
+  };
+
+  const handleDeleteFromDetail = () => {
+    if (!detailNhanKhau) return;
+    handleCloseDetailModal();
+    handleDelete(detailNhanKhau.id);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.queQuan.trim()) {
+      alert("Vui lòng nhập quê quán");
+      return;
+    }
     
     // Validate form
     const errors = validateForm();
@@ -308,10 +360,12 @@ function NhanKhauPage() {
     try {
       const cleanedCmndCccd = formData.cmndCccd?.trim() || null;
       const cleanedNoiCap = formData.noiCap?.trim() || null;
+      const cleanedQueQuan = formData.queQuan.trim();
       const submitData = {
         ...formData,
         cmndCccd: isUnder14 ? null : cleanedCmndCccd,
         noiCap: isUnder14 ? null : cleanedNoiCap,
+        queQuan: cleanedQueQuan,
         hoKhauId: Number(formData.hoKhauId),
         ngaySinh: formData.ngaySinh || null,
         ngayCap: isUnder14 ? null : formData.ngayCap || null,
@@ -449,22 +503,16 @@ function NhanKhauPage() {
               <th>Dân tộc</th>
               <th>Quốc tịch</th>
               <th>Giới tính</th>
-              <th>CMND/CCCD</th>
-              <th>Quan hệ chủ hộ</th>
               <th>Trạng thái</th>
-              <th>Tạm vắng từ</th>
-              <th>Tạm vắng đến</th>
-              <th>Tạm trú từ</th>
-              <th>Tạm trú đến</th>
-              <th>Ghi chú</th>
               <th>Số hộ khẩu</th>
-              {canEdit && <th>Thao tác</th>}
+              <th>Quan hệ chủ hộ</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {nhanKhaus.length === 0 ? (
               <tr>
-                <td colSpan={canEdit ? 16 : 15} className="empty-message">
+                <td colSpan={10} className="empty-message">
                   {searchTerm ? "Không tìm thấy kết quả" : "Chưa có nhân khẩu nào"}
                 </td>
               </tr>
@@ -481,8 +529,6 @@ function NhanKhauPage() {
                   <td>{nk.danToc || "-"}</td>
                   <td>{nk.quocTich || "-"}</td>
                   <td>{nk.gioiTinh || "-"}</td>
-                  <td>{nk.cmndCccd || "-"}</td>
-                  <td>{nk.quanHeChuHo || "-"}</td>
                   <td>
                     <span className={`status-badge status-${nk.trangThaiHienTai || "THUONG_TRU"}`}>
                       {nk.trangThaiHienTai === "TAM_TRU" ? "Tạm trú" :
@@ -490,101 +536,203 @@ function NhanKhauPage() {
                        nk.trangThaiHienTai === "KHAI_TU" ? "Khai tử" : "Thường trú"}
                     </span>
                   </td>
-                  <td>
-                    {nk.tamVangTu
-                      ? new Date(nk.tamVangTu).toLocaleDateString("vi-VN")
-                      : "-"}
-                  </td>
-                  <td>
-                    {nk.tamVangDen
-                      ? new Date(nk.tamVangDen).toLocaleDateString("vi-VN")
-                      : "-"}
-                  </td>
-                  <td>
-                    {nk.tamTruTu
-                      ? new Date(nk.tamTruTu).toLocaleDateString("vi-VN")
-                      : "-"}
-                  </td>
-                  <td>
-                    {nk.tamTruDen
-                      ? new Date(nk.tamTruDen).toLocaleDateString("vi-VN")
-                      : "-"}
-                  </td>
-                  <td className="ghi-chu-cell" title={nk.ghiChu}>
-                    {nk.ghiChu || "-"}
-                  </td>
                   <td>{getSoHoKhau(nk.hoKhauId)}</td>
-                  {canEdit && (
-                    <td>
-                      <div className="action-buttons">
-                        <button
-                          className="btn-edit"
-                          onClick={() => handleOpenModal(nk)}
-                          title="Sửa thông tin"
-                        >
-                          Sửa
-                        </button>
-                        {nk.trangThaiHienTai !== "TAM_TRU" && (
-                          <button
-                            className="btn-tamtru"
-                            onClick={() => handleOpenActionModal(nk, "tamtru")}
-                            title="Đăng ký tạm trú"
-                          >
-                            Tạm trú
-                          </button>
-                        )}
-                        {nk.trangThaiHienTai === "TAM_TRU" && (
-                          <button
-                            className="btn-cancel-tamtru"
-                            onClick={() => handleCancelTamTru(nk.id)}
-                            title="Hủy tạm trú"
-                          >
-                            Hủy TT
-                          </button>
-                        )}
-                        {nk.trangThaiHienTai !== "TAM_VANG" && (
-                          <button
-                            className="btn-tamvang"
-                            onClick={() => handleOpenActionModal(nk, "tamvang")}
-                            title="Đăng ký tạm vắng"
-                          >
-                            Tạm vắng
-                          </button>
-                        )}
-                        {nk.trangThaiHienTai === "TAM_VANG" && (
-                          <button
-                            className="btn-cancel-tamvang"
-                            onClick={() => handleCancelTamVang(nk.id)}
-                            title="Hủy tạm vắng"
-                          >
-                            Hủy TV
-                          </button>
-                        )}
-                        {nk.trangThaiHienTai !== "KHAI_TU" && (
-                          <button
-                            className="btn-khaitu"
-                            onClick={() => handleOpenActionModal(nk, "khaitu")}
-                            title="Khai tử"
-                          >
-                            Khai tử
-                          </button>
-                        )}
-                        <button
-                          className="btn-delete"
-                          onClick={() => handleDelete(nk.id)}
-                          title="Xóa nhân khẩu"
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </td>
-                  )}
+                  <td>{nk.quanHeChuHo || "-"}</td>
+                  <td>
+                    <button
+                      className="btn-detail"
+                      onClick={() => handleOpenDetailModal(nk)}
+                    >
+                      Chi tiết
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Modal chi tiết nhân khẩu */}
+      {showDetailModal && detailNhanKhau && (
+        <div className="modal-overlay" onClick={handleCloseDetailModal}>
+          <div className="nhankhau-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="nhankhau-detail-header">
+              <h2>Chi tiết nhân khẩu</h2>
+              <button className="modal-close" onClick={handleCloseDetailModal}>
+                ×
+              </button>
+            </div>
+
+            <div className="nhankhau-detail-body">
+              <div className="nhankhau-detail-section">
+                <div className="nhankhau-section-title">Thông tin cơ bản</div>
+                <div className="nhankhau-detail-grid">
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Họ tên</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.hoTen || "-"}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Giới tính</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.gioiTinh || "-"}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Ngày sinh</span>
+                    <span className="nhankhau-field-value">{formatDate(detailNhanKhau.ngaySinh)}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Quê quán</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.queQuan || "-"}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Dân tộc</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.danToc || "-"}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Quốc tịch</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.quocTich || "-"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="nhankhau-detail-section">
+                <div className="nhankhau-section-title">Giấy tờ & nghề nghiệp</div>
+                <div className="nhankhau-detail-grid">
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">CMND/CCCD</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.cmndCccd || "-"}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Ngày cấp</span>
+                    <span className="nhankhau-field-value">{formatDate(detailNhanKhau.ngayCap)}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Nơi cấp</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.noiCap || "-"}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Nghề nghiệp</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.ngheNghiep || "-"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="nhankhau-detail-section">
+                <div className="nhankhau-section-title">Hộ khẩu & quan hệ</div>
+                <div className="nhankhau-detail-grid">
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Số hộ khẩu</span>
+                    <span className="nhankhau-field-value">{getSoHoKhau(detailNhanKhau.hoKhauId)}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Quan hệ chủ hộ</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.quanHeChuHo || "-"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="nhankhau-detail-section">
+                <div className="nhankhau-section-title">Trạng thái cư trú</div>
+                <div className="nhankhau-detail-grid">
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Trạng thái hiện tại</span>
+                    <span className="nhankhau-field-value">
+                      <span className={`status-badge status-${detailNhanKhau.trangThaiHienTai || "THUONG_TRU"}`}>
+                        {detailNhanKhau.trangThaiHienTai === "TAM_TRU"
+                          ? "Tạm trú"
+                          : detailNhanKhau.trangThaiHienTai === "TAM_VANG"
+                          ? "Tạm vắng"
+                          : detailNhanKhau.trangThaiHienTai === "KHAI_TU"
+                          ? "Khai tử"
+                          : "Thường trú"}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Tạm vắng từ</span>
+                    <span className="nhankhau-field-value">{formatDate(detailNhanKhau.tamVangTu)}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Tạm vắng đến</span>
+                    <span className="nhankhau-field-value">{formatDate(detailNhanKhau.tamVangDen)}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Tạm trú từ</span>
+                    <span className="nhankhau-field-value">{formatDate(detailNhanKhau.tamTruTu)}</span>
+                  </div>
+                  <div className="nhankhau-field-card">
+                    <span className="nhankhau-field-label">Tạm trú đến</span>
+                    <span className="nhankhau-field-value">{formatDate(detailNhanKhau.tamTruDen)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="nhankhau-detail-section">
+                <div className="nhankhau-section-title">Khác</div>
+                <div className="nhankhau-detail-grid">
+                  <div className="nhankhau-field-card nhankhau-field-full">
+                    <span className="nhankhau-field-label">Ghi chú</span>
+                    <span className="nhankhau-field-value">{detailNhanKhau.ghiChu || "-"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {canEdit && (
+              <div className="nhankhau-detail-footer">
+                <div className="nhankhau-action-buttons">
+                  <button className="btn-edit" onClick={handleEditFromDetail}>
+                    Sửa
+                  </button>
+                  {detailNhanKhau.trangThaiHienTai !== "TAM_TRU" ? (
+                    <button
+                      className="btn-tamtru"
+                      onClick={() => handleActionFromDetail("tamtru")}
+                    >
+                      Tạm trú
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-cancel-tamtru"
+                      onClick={handleCancelTamTruFromDetail}
+                    >
+                      Hủy tạm trú
+                    </button>
+                  )}
+
+                  {detailNhanKhau.trangThaiHienTai !== "TAM_VANG" ? (
+                    <button
+                      className="btn-tamvang"
+                      onClick={() => handleActionFromDetail("tamvang")}
+                    >
+                      Tạm vắng
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-cancel-tamvang"
+                      onClick={handleCancelTamVangFromDetail}
+                    >
+                      Hủy tạm vắng
+                    </button>
+                  )}
+
+                  {detailNhanKhau.trangThaiHienTai !== "KHAI_TU" && (
+                    <button
+                      className="btn-khaitu"
+                      onClick={() => handleActionFromDetail("khaitu")}
+                    >
+                      Khai tử
+                    </button>
+                  )}
+                  <button className="btn-delete" onClick={handleDeleteFromDetail}>
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal thêm/sửa */}
       {showModal && (
@@ -663,6 +811,20 @@ function NhanKhauPage() {
                     onChange={(e) => setFormData({ ...formData, ngheNghiep: e.target.value })}
                   />
                 </div>
+              </div>
+              <div className="form-group">
+                <label>
+                  Quê quán <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.queQuan}
+                  onChange={(e) =>
+                    setFormData({ ...formData, queQuan: e.target.value })
+                  }
+                  placeholder="Nhập quê quán"
+                  required
+                />
               </div>
               <div className="form-row">
                 <div className="form-group">

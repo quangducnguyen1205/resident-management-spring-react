@@ -51,6 +51,7 @@ function HoKhauPage() {
     gioiTinh: "Nam",
     danToc: "Kinh",
     quocTich: "Việt Nam",
+    queQuan: "",
     ngheNghiep: "",
     cmndCccd: "",
     ngayCap: "",
@@ -103,6 +104,7 @@ function HoKhauPage() {
         gioiTinh: "Nam",
         danToc: "Kinh",
         quocTich: "Việt Nam",
+        queQuan: "",
         ngheNghiep: "",
         cmndCccd: "",
         ngayCap: "",
@@ -123,6 +125,7 @@ function HoKhauPage() {
         gioiTinh: "Nam",
         danToc: "Kinh",
         quocTich: "Việt Nam",
+        queQuan: "",
         ngheNghiep: "",
         cmndCccd: "",
         ngayCap: "",
@@ -149,6 +152,7 @@ function HoKhauPage() {
       gioiTinh: "Nam",
       danToc: "Kinh",
       quocTich: "Việt Nam",
+      queQuan: "",
       ngheNghiep: "",
       cmndCccd: "",
       ngayCap: "",
@@ -262,6 +266,11 @@ function HoKhauPage() {
         
         alert("Cập nhật hộ khẩu thành công!");
       } else {
+        if (!chuHoData.queQuan.trim()) {
+          alert("Vui lòng nhập quê quán của chủ hộ");
+          setIsSubmitting(false);
+          return;
+        }
         // Validate dữ liệu nhân khẩu chủ hộ
         const errors = validateChuHo();
         setValidationErrors(errors);
@@ -282,6 +291,7 @@ function HoKhauPage() {
 
           const cleanedCmnd = chuHoData.cmndCccd?.trim() || null;
           const cleanedNoiCap = chuHoData.noiCap?.trim() || null;
+          const cleanedQueQuan = chuHoData.queQuan.trim();
           await createNhanKhau({
             ...chuHoData,
             hoTen: formData.tenChuHo,
@@ -291,6 +301,7 @@ function HoKhauPage() {
             cmndCccd: chuHoUnder14 ? null : cleanedCmnd,
             ngayCap: chuHoUnder14 ? null : chuHoData.ngayCap || null,
             noiCap: chuHoUnder14 ? null : cleanedNoiCap,
+            queQuan: cleanedQueQuan,
           });
           alert("Tạo hộ khẩu và chủ hộ thành công!");
         } catch (err) {
@@ -532,6 +543,20 @@ function HoKhauPage() {
                       onChange={(e) =>
                         setChuHoData({ ...chuHoData, quocTich: e.target.value })
                       }
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      Quê quán <span className="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={chuHoData.queQuan}
+                      onChange={(e) =>
+                        setChuHoData({ ...chuHoData, queQuan: e.target.value })
+                      }
+                      placeholder="Nhập quê quán của chủ hộ"
                       required
                     />
                   </div>

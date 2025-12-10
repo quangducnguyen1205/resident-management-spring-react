@@ -163,7 +163,7 @@ public class NhanKhauService {
         }
         if (dto.getQueQuan() != null && !Objects.equals(existing.getQueQuan(), dto.getQueQuan())) {
             String oldVal = existing.getQueQuan();
-            String newVal = existing.getQueQuan();
+            String newVal = dto.getQueQuan();
             existing.setQueQuan(newVal);
             changed = true;
             addChangeLog(pendingLogs, "quê quán", oldVal, newVal);
