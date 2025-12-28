@@ -220,6 +220,16 @@ public class NhanKhauService {
             addChangeLog(pendingLogs, "ghi chú", oldVal, newVal);
         }
         if (dto.getHoKhauId() != null && !Objects.equals(existing.getHoKhauId(), dto.getHoKhauId())) {
+            // STRICT_RULE_TRANSFER: Kiểm tra trước khi chuyển
+            long livingMembers = nhanKhauRepo.countByHoKhauIdAndTrangThaiNot(oldHoKhauId, "KHAI_TU");
+            if ("Chủ hộ".equalsIgnoreCase(currentQuanHeChuHo)) {
+                if (livingMembers > 1) {
+                    throw new BadRequestException(
+                            "Chủ hộ không được chuyển đi khi hộ còn thành viên khác (Số lượng: " + livingMembers
+                                    + "). Vui lòng chuyển quyền chủ hộ cho người khác trước.");
+                }
+            }
+
             Long newHoKhauId = dto.getHoKhauId();
             existing.setHoKhauId(newHoKhauId);
             changed = true;
@@ -306,6 +316,14 @@ public class NhanKhauService {
 
         if (!Objects.equals(oldHoKhauId, saved.getHoKhauId())) {
             triggerFeeRecalculation(oldHoKhauId);
+
+            // STRICT_RULE_TRANSFER: Nếu hộ cũ không còn ai (sống) -> Xóa Hộ Khẩu
+            long remaining = nhanKhauRepo.countByHoKhauIdAndTrangThaiNot(oldHoKhauId, "KHAI_TU");
+            if (remaining == 0) {
+                // Nếu không còn thành viên sống nào, xóa luôn hộ khẩu (bao gồm record khai tử
+                // nếu có)
+                hoKhauRepo.deleteById(oldHoKhauId);
+            }
         }
 
         triggerFeeRecalculation(saved.getHoKhauId());

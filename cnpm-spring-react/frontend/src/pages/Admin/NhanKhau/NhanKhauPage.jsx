@@ -960,7 +960,6 @@ function NhanKhauPage() {
                     });
                   }}
                   required
-                  disabled={!!editingItem}
                 >
                   <option value="">Chọn hộ khẩu</option>
                   {hoKhaus.map((hk) => (
