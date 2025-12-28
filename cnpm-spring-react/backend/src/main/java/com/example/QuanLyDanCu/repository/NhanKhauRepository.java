@@ -63,4 +63,12 @@ public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
           GROUP BY n.trangThai
       """)
   List<StatusCount> countByTrangThai();
+
+  long countByHoKhauId(Long hoKhauId);
+
+  // Đếm số thành viên chưa bị khai tử (active)
+  long countByHoKhauIdAndTrangThaiNot(Long hoKhauId, String trangThai);
+
+  // Tìm chủ hộ hiện tại của 1 hộ khẩu
+  Optional<NhanKhau> findByHoKhauIdAndQuanHeChuHo(Long hoKhauId, String quanHeChuHo);
 }

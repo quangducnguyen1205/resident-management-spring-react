@@ -25,7 +25,7 @@ public class NhanKhauUpdateDto {
     @Schema(description = "Ngày sinh (yyyy-MM-dd)", example = "1990-05-15")
     private LocalDate ngaySinh;
 
-    @Schema(description = "Giới tính", example = "Nam", allowableValues = {"Nam", "Nữ", "Khác"})
+    @Schema(description = "Giới tính", example = "Nam", allowableValues = { "Nam", "Nữ", "Khác" })
     private String gioiTinh;
 
     @Schema(description = "Dân tộc", example = "Kinh")
@@ -57,4 +57,7 @@ public class NhanKhauUpdateDto {
 
     @Schema(description = "ID hộ khẩu", example = "1")
     private Long hoKhauId;
+
+    @Schema(description = "ID chủ hộ mới (bắt buộc nếu thay đổi chủ hộ hiện tại)", example = "10")
+    private Long newChuHoId;
 }
