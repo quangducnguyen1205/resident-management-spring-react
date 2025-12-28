@@ -141,6 +141,16 @@ public class NhanKhauService {
         // Validate CCCD based on age
         validateCccdByAge(finalNgaySinh, finalCmndCccd, finalNgayCap, finalNoiCap);
 
+        // STRICT_RULE_CHANGE: Không cho phép chỉnh sửa người đã KHAI_TU (trừ khi undo)
+        if ("KHAI_TU".equals(existing.getTrangThai())) {
+            // Nếu người dùng không gửi trangThai mới HOẶC trangThai mới vẫn là KHAI_TU ->
+            // Chặn
+            if (dto.getTrangThai() == null || "KHAI_TU".equals(dto.getTrangThai())) {
+                throw new BadRequestException(
+                        "Không thể chỉnh sửa thông tin của người đã Khai tử. Vui lòng Hủy khai tử nếu muốn cập nhật.");
+            }
+        }
+
         // REVIVAL_LOGIC_CHANGE_STATUS: Undo Khai Tu (Chuyển từ KHAI_TU -> trạng thái
         // khác)
         if (dto.getTrangThai() != null && !"KHAI_TU".equals(dto.getTrangThai())
@@ -148,7 +158,7 @@ public class NhanKhauService {
 
             // Check if household has any active members (excluding this one, as it's still
             // KHAI_TU in DB)
-            long activeCount = nhanKhauRepo.countByHoKhauIdAndTrangThaiNot(existing.getHoKhauId(), "KHAI_TU");
+            long activeCount = nhanKhauRepo.countActiveMembersExcludeStatus(existing.getHoKhauId(), "KHAI_TU");
 
             if (activeCount == 0) {
                 // Scenario A: Household Empty -> Force Owner
@@ -156,7 +166,6 @@ public class NhanKhauService {
                 dto.setQuanHeChuHo("Chủ hộ");
             }
             // Scenario B: has members -> existing logic allows user to pick role or keeps
-            // existing.
         }
 
         // Cập nhật các trường thông tin cá nhân
@@ -253,7 +262,7 @@ public class NhanKhauService {
         }
         if (dto.getHoKhauId() != null && !Objects.equals(existing.getHoKhauId(), dto.getHoKhauId())) {
             // STRICT_RULE_TRANSFER: Kiểm tra trước khi chuyển
-            long livingMembers = nhanKhauRepo.countByHoKhauIdAndTrangThaiNot(oldHoKhauId, "KHAI_TU");
+            long livingMembers = nhanKhauRepo.countActiveMembersExcludeStatus(oldHoKhauId, "KHAI_TU");
             if ("Chủ hộ".equalsIgnoreCase(currentQuanHeChuHo)) {
                 if (livingMembers > 1) {
                     throw new BadRequestException(
@@ -263,6 +272,13 @@ public class NhanKhauService {
             }
 
             Long newHoKhauId = dto.getHoKhauId();
+
+            // STRICT_RULE_TRANSFER: Không được làm Chủ hộ ngay khi chuyển sang hộ mới
+            // Vì hộ mới (đã tồn tại) bắt buộc phải có chủ rồi -> Chỉ được làm Thành viên.
+            if ("Chủ hộ".equalsIgnoreCase(dto.getQuanHeChuHo())) {
+                throw new BadRequestException("Vui lòng chọn mối quan hệ khác (Hộ mới đã có chủ hộ).");
+            }
+
             existing.setHoKhauId(newHoKhauId);
             changed = true;
             pendingLogs.add(nk -> bienDongService.log(
@@ -273,29 +289,31 @@ public class NhanKhauService {
         }
 
         // STRICT_RULE_UPDATE: Nếu đặt người này là "Chủ hộ", phải hủy quyền chủ hộ của
-        // người cũ
+        // người cũ (xử lý cả trường hợp database lỗi có > 1 chủ hộ)
         if ("Chủ hộ".equalsIgnoreCase(dto.getQuanHeChuHo())) {
-            nhanKhauRepo.findByHoKhauIdAndQuanHeChuHo(existing.getHoKhauId(), "Chủ hộ")
-                    .ifPresent(oldOwner -> {
-                        if (!oldOwner.getId().equals(existing.getId())) {
-                            oldOwner.setQuanHeChuHo("Thành viên");
-                            nhanKhauRepo.save(oldOwner);
-                            // Log change for old owner
-                            bienDongService.log(
-                                    BienDongType.THAY_DOI_THONG_TIN,
-                                    "Tự động chuyển thành 'Thành viên' do " + dto.getHoTen() + " làm Chủ hộ mới",
-                                    oldOwner.getHoKhauId(),
-                                    oldOwner.getId());
-                        }
-                    });
+            List<NhanKhau> oldOwners = nhanKhauRepo.findByHoKhauIdAndQuanHeChuHo(existing.getHoKhauId(), "Chủ hộ");
+            for (NhanKhau oldOwner : oldOwners) {
+                if (!oldOwner.getId().equals(existing.getId())) {
+                    oldOwner.setQuanHeChuHo("Thành viên");
+                    nhanKhauRepo.save(oldOwner);
+                    // Log change for old owner
+                    bienDongService.log(
+                            BienDongType.THAY_DOI_THONG_TIN,
+                            "Tự động chuyển thành 'Thành viên' do " + dto.getHoTen() + " làm Chủ hộ mới",
+                            oldOwner.getHoKhauId(),
+                            oldOwner.getId());
+                }
+            }
         }
 
         // SWAP_OWNER_ROLE: Nếu người đang sửa LÀ "Chủ hộ" và họ muốn đổi thành quan hệ
         // khác (Ví dụ: "Thành viên")
         // Thì BẮT BUỘC họ phải chọn một người khác làm "Chủ hộ" mới.
-        // FIX: Sử dụng currentQuanHeChuHo thay vì existing.getQuanHeChuHo() vì existing
-        // object đã bị set newVal ở trên.
-        if ("Chủ hộ".equalsIgnoreCase(currentQuanHeChuHo) && dto.getQuanHeChuHo() != null
+        // FIX: Chỉ áp dụng nếu KHÔNG chuyển hộ (tức là ở lại hộ cũ mà bỏ quyền chủ hộ).
+        // Nếu chuyển hộ, việc "bỏ hộ cũ" đã được xử lý ở logic STRICT_RULE_TRANSFER bên
+        // trên.
+        if (Objects.equals(oldHoKhauId, dto.getHoKhauId())
+                && "Chủ hộ".equalsIgnoreCase(currentQuanHeChuHo) && dto.getQuanHeChuHo() != null
                 && !"Chủ hộ".equalsIgnoreCase(dto.getQuanHeChuHo())) {
 
             if (dto.getNewChuHoId() == null) {
@@ -315,16 +333,16 @@ public class NhanKhauService {
             newOwner.setQuanHeChuHo("Chủ hộ");
             nhanKhauRepo.save(newOwner);
 
-            // Cập nhật tên chủ hộ trong bảng Hộ Khẩu ngay lập tức
-            com.example.QuanLyDanCu.entity.HoKhau hk = hoKhauRepo.findById(existing.getHoKhauId())
-                    .orElseThrow(() -> new NotFoundException(
-                            "Không tìm thấy hộ khẩu"));
-            hk.setTenChuHo(newOwner.getHoTen());
-            hoKhauRepo.save(hk);
+            // Cập nhật tên chủ hộ trong bảng Hộ Khẩu ngay lập tức (Dùng Custom Query để
+            // tránh lỗi mất thành viên)
+            hoKhauRepo.updateTenChuHo(existing.getHoKhauId(), newOwner.getHoTen());
 
             bienDongService.log(BienDongType.THAY_DOI_THONG_TIN,
                     "Chuyển quyền Chủ hộ từ " + existing.getHoTen() + " sang " + newOwner.getHoTen(),
                     existing.getHoKhauId(), newOwner.getId());
+
+            // Trigger fee recalc
+            triggerFeeRecalculation(existing.getHoKhauId());
         }
 
         if (!changed) {
@@ -339,8 +357,7 @@ public class NhanKhauService {
             com.example.QuanLyDanCu.entity.HoKhau hk = hoKhauRepo.findById(saved.getHoKhauId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy hộ khẩu"));
             if (!Objects.equals(hk.getTenChuHo(), saved.getHoTen())) {
-                hk.setTenChuHo(saved.getHoTen());
-                hoKhauRepo.save(hk);
+                hoKhauRepo.updateTenChuHo(saved.getHoKhauId(), saved.getHoTen());
             }
         }
 
@@ -350,9 +367,12 @@ public class NhanKhauService {
             triggerFeeRecalculation(oldHoKhauId);
 
             // STRICT_RULE_TRANSFER: Nếu hộ cũ không còn ai (sống) -> Xóa Hộ Khẩu
-            long remaining = nhanKhauRepo.countByHoKhauIdAndTrangThaiNot(oldHoKhauId, "KHAI_TU");
+            // Lưu ý: remaining tính cả người đang chuyển đi (vì query DB vẫn thấy member
+            // oldHoKhauId)
+            // Nên điều kiện là remaining <= 1 (người cuối cùng chuyển đi)
+            long remaining = nhanKhauRepo.countActiveMembersExcludeStatus(oldHoKhauId, "KHAI_TU");
             if (remaining == 0) {
-                // Nếu không còn thành viên sống nào, đánh dấu xóa mềm hộ khẩu
+                // Nếu không còn thành viên sống nào khác, đánh dấu xóa mềm hộ khẩu
                 hoKhauRepo.findById(oldHoKhauId).ifPresent(hk -> {
                     hk.setIsDeleted(true);
                     hoKhauRepo.save(hk);
@@ -392,9 +412,15 @@ public class NhanKhauService {
                 : "Xóa nhân khẩu " + nk.getHoTen();
         bienDongService.log(deletionType, content, hoKhauId, null);
 
+        // CASE: Remove detached resident (e.g. Deceased) -> No household checks needed
+        if (hoKhauId == null) {
+            nhanKhauRepo.delete(nk);
+            return;
+        }
+
         // STRICT_RULE_DELETE:
         // Đếm số thành viên còn sống (không tính KHAI_TU)
-        long livingMembers = nhanKhauRepo.countByHoKhauIdAndTrangThaiNot(hoKhauId, "KHAI_TU");
+        long livingMembers = nhanKhauRepo.countActiveMembersExcludeStatus(hoKhauId, "KHAI_TU");
 
         if (livingMembers > 1) {
             // Nếu còn nhiều hơn 1 người sống -> Không được xóa Chủ hộ
@@ -553,7 +579,7 @@ public class NhanKhauService {
         nk.setTrangThai("KHAI_TU");
 
         // STRICT_RULE_DEATH:
-        long livingMembers = nhanKhauRepo.countByHoKhauIdAndTrangThaiNot(nk.getHoKhauId(), "KHAI_TU");
+        long livingMembers = nhanKhauRepo.countActiveMembersExcludeStatus(nk.getHoKhauId(), "KHAI_TU");
         // livingMembers tính cả NK này (vì chưa set KHAI_TU trong DB, chỉ mới set trong
         // memory nk object nhưng chưa save?
         // Ah, nk object is managed/derived.
@@ -577,6 +603,11 @@ public class NhanKhauService {
                 hoKhauRepo.save(hk);
             });
         }
+
+        // Detach from household
+        nk.setHoKhauId(null);
+        nk.setQuanHeChuHo(null);
+        nhanKhauRepo.save(nk);
 
         return toResponseDTO(saved);
     }

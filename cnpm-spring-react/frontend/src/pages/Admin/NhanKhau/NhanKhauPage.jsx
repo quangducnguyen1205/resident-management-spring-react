@@ -101,6 +101,9 @@ function NhanKhauPage() {
     return <NoPermission />;
   }
 
+  // Calculate Lock State: Locked if originally Dead AND still Dead in form
+  const isLocked = (editingItem?.trangThai === 'KHAI_TU' || editingItem?.trangThai === 'Đã mất') && (formData.trangThai === 'KHAI_TU' || formData.trangThai === 'Đã mất');
+
   useEffect(() => {
     loadNhanKhaus();
     loadHoKhaus();
@@ -747,46 +750,51 @@ function NhanKhauPage() {
                   <button className="btn-edit" onClick={handleEditFromDetail}>
                     Sửa
                   </button>
-                  {detailNhanKhau.trangThaiHienTai !== "TAM_TRU" ? (
-                    <button
-                      className="btn-tamtru"
-                      onClick={() => handleActionFromDetail("tamtru")}
-                    >
-                      Tạm trú
-                    </button>
-                  ) : (
-                    <button
-                      className="btn-cancel-tamtru"
-                      onClick={handleCancelTamTruFromDetail}
-                    >
-                      Hủy tạm trú
-                    </button>
-                  )}
 
-                  {detailNhanKhau.trangThaiHienTai !== "TAM_VANG" ? (
-                    <button
-                      className="btn-tamvang"
-                      onClick={() => handleActionFromDetail("tamvang")}
-                    >
-                      Tạm vắng
-                    </button>
-                  ) : (
-                    <button
-                      className="btn-cancel-tamvang"
-                      onClick={handleCancelTamVangFromDetail}
-                    >
-                      Hủy tạm vắng
-                    </button>
-                  )}
-
+                  {/* Buttons hidden if Deceased */}
                   {detailNhanKhau.trangThaiHienTai !== "KHAI_TU" && (
-                    <button
-                      className="btn-khaitu"
-                      onClick={() => handleActionFromDetail("khaitu")}
-                    >
-                      Khai tử
-                    </button>
+                    <>
+                      {detailNhanKhau.trangThaiHienTai !== "TAM_TRU" ? (
+                        <button
+                          className="btn-tamtru"
+                          onClick={() => handleActionFromDetail("tamtru")}
+                        >
+                          Tạm trú
+                        </button>
+                      ) : (
+                        <button
+                          className="btn-cancel-tamtru"
+                          onClick={handleCancelTamTruFromDetail}
+                        >
+                          Hủy tạm trú
+                        </button>
+                      )}
+
+                      {detailNhanKhau.trangThaiHienTai !== "TAM_VANG" ? (
+                        <button
+                          className="btn-tamvang"
+                          onClick={() => handleActionFromDetail("tamvang")}
+                        >
+                          Tạm vắng
+                        </button>
+                      ) : (
+                        <button
+                          className="btn-cancel-tamvang"
+                          onClick={handleCancelTamVangFromDetail}
+                        >
+                          Hủy tạm vắng
+                        </button>
+                      )}
+
+                      <button
+                        className="btn-khaitu"
+                        onClick={() => handleActionFromDetail("khaitu")}
+                      >
+                        Khai tử
+                      </button>
+                    </>
                   )}
+
                   <button className="btn-delete" onClick={handleDeleteFromDetail}>
                     Xóa
                   </button>
@@ -813,6 +821,14 @@ function NhanKhauPage() {
                   {submitError}
                 </div>
               )}
+
+              {isLocked && (
+                <div style={{ backgroundColor: "#fff3cd", color: "#856404", padding: "10px", marginBottom: "15px", borderRadius: "4px", border: "1px solid #ffeeba" }}>
+                  <strong>⚠ Nhân khẩu đã Khai tử/Đã mất.</strong><br />
+                  Thông tin bị khóa. Để chỉnh sửa, vui lòng đổi <strong>Trạng thái</strong> sang "Thường trú" (Hủy khai tử).
+                </div>
+              )}
+
               <div className="form-row">
                 <div className="form-group">
                   <label>Họ tên <span className="required">*</span></label>
@@ -821,6 +837,7 @@ function NhanKhauPage() {
                     value={formData.hoTen}
                     onChange={(e) => setFormData({ ...formData, hoTen: e.target.value })}
                     required
+                    disabled={isLocked}
                   />
                 </div>
                 <div className="form-group">
@@ -830,6 +847,7 @@ function NhanKhauPage() {
                     value={formData.ngaySinh}
                     onChange={(e) => setFormData({ ...formData, ngaySinh: e.target.value })}
                     required
+                    disabled={isLocked}
                   />
                 </div>
               </div>
@@ -853,6 +871,7 @@ function NhanKhauPage() {
                     value={formData.danToc}
                     onChange={(e) => setFormData({ ...formData, danToc: e.target.value })}
                     required
+                    disabled={isLocked}
                   />
                 </div>
               </div>
@@ -968,8 +987,8 @@ function NhanKhauPage() {
                 </div>
               </div>
 
-              {/* SECTION: Chọn chủ hộ mới (Chỉ hiện khi đang là Chủ hộ và đổi sang vai trò khác) */}
-              {editingItem?.quanHeChuHo === "Chủ hộ" && formData.quanHeChuHo !== "Chủ hộ" && (
+              {/* SECTION: Chọn chủ hộ mới (Chỉ hiện khi đang là Chủ hộ và đổi sang vai trò khác, VÀ KHÔNG PHẢI LÀ CHUYỂN HỘ) */}
+              {editingItem?.quanHeChuHo === "Chủ hộ" && formData.quanHeChuHo !== "Chủ hộ" && Number(formData.hoKhauId) === Number(editingItem?.hoKhauId) && (
                 <div className="form-row" style={{ backgroundColor: "#fff3cd", padding: "10px", borderRadius: "5px", border: "1px solid #ffeeba" }}>
                   <div className="form-group" style={{ width: "100%" }}>
                     <label style={{ color: "#856404" }}>
@@ -1012,6 +1031,7 @@ function NhanKhauPage() {
                     });
                   }}
                   required
+                  disabled={isLocked}
                 >
                   <option value="">Chọn hộ khẩu</option>
                   {hoKhaus.map((hk) => (

@@ -13,7 +13,10 @@ Thumbs.db
 /dist/
 /.vite/
 /.cache/
-*.log
+/dist/
+/.vite/
+/.cache/
+
 
 # Dependencies
 /node_modules/

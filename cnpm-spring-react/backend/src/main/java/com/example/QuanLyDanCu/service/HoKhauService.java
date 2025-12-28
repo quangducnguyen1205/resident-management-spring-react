@@ -32,7 +32,7 @@ public class HoKhauService {
 
     // Lấy tất cả hộ khẩu (DTO) - ordered by soHoKhau for stable UI display
     public List<HoKhauResponseDto> getAll() {
-        return hoKhauRepo.findAllByIsDeletedFalseOrderByIdAsc().stream()
+        return hoKhauRepo.findActiveHouseholds().stream()
                 .map(this::toResponseDto)
                 .collect(Collectors.toList());
     }

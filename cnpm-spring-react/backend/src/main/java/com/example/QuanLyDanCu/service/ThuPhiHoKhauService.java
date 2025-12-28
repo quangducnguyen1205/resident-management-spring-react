@@ -138,7 +138,7 @@ public class ThuPhiHoKhauService {
                         (left, right) -> left,
                         LinkedHashMap::new));
 
-        List<HoKhau> households = hoKhauRepo.findAllByIsDeletedFalseOrderByIdAsc();
+        List<HoKhau> households = hoKhauRepo.findActiveHouseholds();
         households.sort(Comparator.comparing(
                 HoKhau::getSoHoKhau,
                 Comparator.nullsLast(String::compareTo)));
