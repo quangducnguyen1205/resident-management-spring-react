@@ -3,10 +3,11 @@
 Thumbs.db
 
 # IDE - IntelliJ
-.idea/
+/.idea/
 *.iml
 *.iws
 *.ipr
+/.vscode/
 
 # Build Outputs & Caches
 /target/
